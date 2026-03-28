@@ -739,69 +739,39 @@
     top: 4.5rem;
     z-index: 50;
     background: var(--navy);
-    padding: 1.5rem 3rem 0;
-    border-bottom: 1px solid rgba(196,164,74,0.15);
+    padding: 1.25rem 3rem;
+    border-bottom: 1px solid rgba(196,164,74,0.1);
   }
 
   .tl-years-row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.75rem;
+    align-items: center;
+    margin-bottom: 0;
   }
 
   .tl-year-label {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 0.75rem;
-    color: rgba(245,240,232,0.25);
-    letter-spacing: 0.1em;
-    transition: color 0.4s, font-size 0.4s;
+    font-size: 0.85rem;
+    color: rgba(245,240,232,0.2);
+    letter-spacing: 0.12em;
+    transition: color 0.35s, font-size 0.35s, font-weight 0.35s;
     text-align: center;
     min-width: 40px;
   }
 
   .tl-year-label.active {
     color: var(--gold-light);
-    font-size: 1.1rem;
-    font-weight: 500;
+    font-size: 1.3rem;
+    font-weight: 600;
   }
 
-  .tl-track {
-    position: relative;
-    height: 3px;
-    background: rgba(245,240,232,0.1);
-    margin-bottom: 0;
-  }
 
-  .tl-fill {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    background: var(--gold-light);
-    transition: width 0.4s ease;
-    width: 0%;
-  }
-
-  .tl-dot {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: rgba(245,240,232,0.2);
-    border: 1px solid rgba(196,164,74,0.3);
-    transition: background 0.3s, transform 0.3s;
-    cursor: pointer;
-  }
-
-  .tl-dot.active {
-    background: var(--gold-light);
-    transform: translate(-50%, -50%) scale(1.4);
-    border-color: var(--gold-light);
-  }
 
   .tl-slides {
     display: flex;
     overflow-x: scroll;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     flex: 1;
@@ -1215,7 +1185,7 @@
 
 <!-- NAVIGATION -->
 <nav>
-  <a href="#" class="nav-brand">Holocene Maps <span class="nav-tagline">· A Collection from the Human Era</span></a>
+  <a href="#" class="nav-brand">Holocene Maps <span class="nav-tagline">· A Collection for the Human Era</span></a>
   <ul class="nav-links">
     <li><a href="#collection">Collection</a></li>
     <li><a href="#timeline">Timeline</a></li>
@@ -13237,10 +13207,7 @@ BRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB//2Q==" alt="Chatelain 1719">
 
   <div class="tl-progress-bar">
     <div class="tl-years-row" id="tl-years-row"></div>
-    <div class="tl-track">
-      <div class="tl-fill" id="tl-fill"></div>
-      <div id="tl-dots"></div>
-    </div>
+
   </div>
 
   <div class="tl-slides" id="tl-slides">
@@ -19269,11 +19236,8 @@ BRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB//2Q==" alt="Chatelain 1719">
   // ─── TIMELINE ───
   window.addEventListener('load', function() {
     var yearsRow = document.getElementById('tl-years-row');
-    var dotsContainer = document.getElementById('tl-dots');
     var slides = document.getElementById('tl-slides');
-    var fill = document.getElementById('tl-fill');
-
-    if (!slides || !yearsRow || !dotsContainer || !fill) return;
+    if (!slides || !yearsRow) return;
 
     var mapYears = [1719, 1740, 1763, 1939, 1909];
     var slideCount = slides.querySelectorAll('.tl-slide').length;
@@ -19286,23 +19250,7 @@ BRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB//2Q==" alt="Chatelain 1719">
       yearsRow.appendChild(el);
     });
 
-    // Build dots
-    mapYears.forEach(function(yr, i) {
-      var dot = document.createElement('div');
-      dot.className = 'tl-dot';
-      dot.style.left = ((i / (slideCount - 1)) * 100) + '%';
-      dot.addEventListener('click', function() {
-        slides.scrollTo({ left: i * slides.offsetWidth, behavior: 'smooth' });
-      });
-      dotsContainer.appendChild(dot);
-    });
-
     function updateTimeline(idx) {
-      var pct = slideCount > 1 ? (idx / (slideCount - 1)) * 100 : 0;
-      fill.style.width = pct + '%';
-      document.querySelectorAll('.tl-dot').forEach(function(d, i) {
-        d.classList.toggle('active', i === idx);
-      });
       document.querySelectorAll('.tl-year-label').forEach(function(el, i) {
         el.classList.toggle('active', i === idx);
       });
