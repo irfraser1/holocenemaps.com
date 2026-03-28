@@ -724,6 +724,34 @@
   #lightbox-zoom button:hover { background: rgba(245, 240, 232, 0.2); }
   .map-image-container img { cursor: zoom-in; }
 
+
+  /* ─── MOBILE ─── */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.25rem; }
+    .nav-links { gap: 1.25rem; }
+    .hero { grid-template-columns: 1fr; min-height: auto; }
+    .hero-image-panel { height: 55vw; min-height: 220px; }
+    .hero-image-panel::after { background: linear-gradient(to bottom, transparent 60%, var(--cream) 100%); }
+    .hero-text { padding: 2rem 1.5rem 3rem; }
+    .hero-title { font-size: 2.4rem; }
+    .thesis-band { padding: 2.5rem 1.5rem; gap: 1.5rem; flex-direction: column; }
+    .thesis-label { writing-mode: horizontal-tb; transform: none; font-size: 0.6rem; }
+    .acts-section { padding: 3rem 1.25rem; }
+    .acts-grid { grid-template-columns: 1fr; }
+    .act-card { border-right: none; border-bottom: 1px solid var(--border); }
+    .act-card:last-child { border-bottom: none; }
+    .collection-section { padding: 3rem 1.25rem; }
+    .map-entry { grid-template-columns: 1fr; }
+    .map-image-container { min-height: 260px; }
+    .map-details { padding: 1.5rem; }
+    .map-title { font-size: 1.2rem; }
+    .map-meta { flex-wrap: wrap; gap: 1rem; }
+    .about-section { grid-template-columns: 1fr; gap: 2rem; padding: 3rem 1.25rem; }
+    .about-left { position: static; }
+    footer { flex-direction: column; gap: 0.5rem; text-align: center; padding: 1.5rem; }
+    #lightbox-hint { display: none; }
+  }
+
 </style>
 </head>
 <body>
@@ -733,8 +761,7 @@
   <a href="#" class="nav-brand">Holocene Maps</a>
   <ul class="nav-links">
     <li><a href="#collection">Collection</a></li>
-    <li><a href="#acts">Framework</a></li>
-    <li><a href="#about">About</a></li>
+    <li><a href="#acts">The Three Acts</a></li>
   </ul>
 </nav>
 
@@ -6666,7 +6693,7 @@ QAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFA
 BRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB//2Q==" alt="Chatelain, Carte de la Nouvelle France, 1719">
   </div>
   <div class="hero-text">
-    <p class="hero-eyebrow">Cartographic History · c. 1680–1780</p>
+    <p class="hero-eyebrow">A Collection from the Human Era</p>
     <h1 class="hero-title">The Imperial<br>Contest for<br><em>North America</em></h1>
     <p class="hero-subtitle">A century of cartographic ambition, territorial claim, and geopolitical resolution — told through the maps that made the argument.</p>
     <p class="hero-desc">Maps were not neutral records. They were instruments of empire — staking claims, asserting boundaries, and justifying campaigns across an unsettled continent.</p>
@@ -6683,7 +6710,7 @@ BRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB//2Q==" alt="Chatelain, Carte de la Nouvel
 </div>
 
 <!-- THREE ACTS -->
-<section class="acts-section" id="acts">
+<section class="acts-section" id="acts" style="padding-top: 4rem;">
   <div class="section-header animate-on-scroll">
     <h2 class="section-title">Three Acts</h2>
     <div class="section-rule"></div>
@@ -12730,22 +12757,6 @@ BRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB//2Q==" alt="Chatelain 1719">
 
   </div>
 </section>
-
-<!-- ABOUT -->
-<section class="about-section" id="about">
-  <div class="about-left animate-on-scroll">
-    <h2 class="about-title">About <em>Holocene Maps</em></h2>
-    <div class="about-divider"></div>
-    <p class="about-tagline">A private collection and ongoing research project exploring what maps reveal about power, ambition, and the contested making of North America.</p>
-  </div>
-  <div class="about-body animate-on-scroll">
-    <p>Holocene Maps began with a simple observation: the maps produced between 1680 and 1780 are among the most politically charged objects in the history of cartography. These were not neutral records of geography. They were arguments — staking claims, asserting sovereignty, and imagining territories that their makers had often never seen.</p>
-    <p>The collection is organised around a three-act historical argument: French imperial confidence, the collision of empires across the contested interior, and the British resolution that followed the Seven Years' War. Each piece is selected for its ability to advance that argument visually — to communicate its historical moment at a glance, without requiring specialist knowledge.</p>
-    <p>This site is an attempt to share that argument with other enthusiasts — collectors, historians, students, and anyone drawn to the idea that a map can be read like a political document. The annotations, the framework, and the commentary are all works in progress. Contributions and corrections are welcome.</p>
-    <p>Recommended reading: Fred Anderson's <em>Crucible of War</em> and J.B. Harley's <em>The New Nature of Maps</em> — the two books that most shaped how this collection thinks about cartography as argument.</p>
-  </div>
-</section>
-
 
 <!-- ADDITIONAL MAPS -->
 <section class="collection-section" id="additional" style="padding-top: 0;">
