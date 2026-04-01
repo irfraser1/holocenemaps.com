@@ -109,7 +109,7 @@
     position: absolute;
     inset: 0;
     opacity: 0;
-    transition: opacity 1.8s ease;
+    transition: opacity 2.5s ease;
   }
 
   .hero-slide.active { opacity: 1; }
@@ -119,17 +119,10 @@
     height: 100%;
     object-fit: cover;
     object-position: center;
-    transform: scale(1.08);
-    animation: none;
   }
 
   .hero-slide.active img {
-    animation: slowZoom 8s ease forwards;
-  }
-
-  @keyframes slowZoom {
-    from { transform: scale(1.08); }
-    to   { transform: scale(1.0); }
+    animation: none;
   }
 
   /* Dark overlay so text reads cleanly */
@@ -380,24 +373,24 @@
 
   .holocene-intro-body p {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
     font-weight: 300;
-    line-height: 1.75;
+    line-height: 1.8;
     color: var(--ink);
   }
 
   .holocene-intro-body p:first-child {
-    font-size: clamp(1.2rem, 2vw, 1.55rem);
-    color: var(--navy);
+    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+    color: var(--ink);
   }
 
   .holocene-intro-body p:last-child {
-    font-style: italic;
-    color: var(--text-secondary);
-    font-size: clamp(0.95rem, 1.4vw, 1.15rem);
-    border-left: 2px solid var(--gold-light);
-    padding-left: 1.5rem;
-    margin-top: 0.4rem;
+    font-style: normal;
+    color: var(--ink);
+    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+    border-left: none;
+    padding-left: 0;
+    margin-top: 0;
   }
 
   /* ─── THREE ACTS ─── */
@@ -1370,13 +1363,6 @@
     <!-- Brand level -->
     <h1 class="hero-brand">Holocene Maps</h1>
     <p class="hero-tagline">A Collection for the Human Era</p>
-    <div class="hero-divider"></div>
-
-    <!-- Collection level -->
-    <p class="hero-eyebrow">The Collection</p>
-    <h2 class="hero-title">The Imperial Contest<br>for <em>North America</em></h2>
-    <p class="hero-subtitle">The Holocene, our current geological epoch, began around 12,000 years ago. The stable climate it brought allowed humans to build civilizations — and maps were how they claimed them. This collection spans one century of that contest: France, Britain, and Spain fighting for a continent, 1680–1780.</p>
-    <a href="#collection" class="hero-cta">Explore the collection</a>
 
   </div>
 
