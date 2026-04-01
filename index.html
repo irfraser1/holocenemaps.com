@@ -88,112 +88,198 @@
 
   /* ─── HERO ─── */
   .hero {
+    position: relative;
     min-height: 100vh;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--navy);
     padding-top: 4.5rem;
   }
 
-  .hero-image-panel {
-    position: relative;
-    overflow: hidden;
-    background: var(--navy);
+  /* Slideshow panels */
+  .hero-slides {
+    position: absolute;
+    inset: 0;
+    display: flex;
   }
 
-  .hero-map-img {
+  .hero-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1.8s ease;
+  }
+
+  .hero-slide.active { opacity: 1; }
+
+  .hero-slide img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center;
-    opacity: 0;
-    transform: scale(1.04);
-    animation: heroReveal 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s forwards;
+    transform: scale(1.08);
+    animation: none;
   }
 
-  @keyframes heroReveal {
-    to { opacity: 0.88; transform: scale(1); }
+  .hero-slide.active img {
+    animation: slowZoom 8s ease forwards;
   }
 
-  .hero-image-panel::after {
-    content: '';
+  @keyframes slowZoom {
+    from { transform: scale(1.08); }
+    to   { transform: scale(1.0); }
+  }
+
+  /* Dark overlay so text reads cleanly */
+  .hero-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to right, transparent 60%, var(--cream) 100%);
+    background: linear-gradient(
+      to bottom,
+      rgba(28, 43, 58, 0.35) 0%,
+      rgba(28, 43, 58, 0.65) 50%,
+      rgba(28, 43, 58, 0.80) 100%
+    );
+    z-index: 1;
   }
 
+  /* Text sits above overlay */
   .hero-text {
+    position: relative;
+    z-index: 2;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 5rem 5rem 5rem 3rem;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    max-width: 860px;
     opacity: 0;
-    transform: translateY(20px);
-    animation: fadeUp 1.2s ease 0.8s forwards;
+    transform: translateY(24px);
+    animation: fadeUp 1.4s ease 0.6s forwards;
   }
 
   @keyframes fadeUp {
     to { opacity: 1; transform: translateY(0); }
   }
 
+  /* Brand-level: Holocene Maps */
+  .hero-brand {
+    font-family: 'Cormorant SC', serif;
+    font-size: clamp(3rem, 6vw, 6rem);
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    color: var(--cream);
+    line-height: 1;
+    margin-bottom: 0.6rem;
+  }
+
+  .hero-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+    font-style: italic;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+    margin-bottom: 2.8rem;
+  }
+
+  /* Divider */
+  .hero-divider {
+    width: 60px;
+    height: 1px;
+    background: var(--gold-light);
+    margin: 0 auto 2.8rem;
+    opacity: 0.6;
+  }
+
+  /* Collection-level intro */
   .hero-eyebrow {
     font-family: 'Cormorant SC', serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.3em;
-    color: var(--gold);
-    margin-bottom: 1.5rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.32em;
+    color: var(--gold-light);
+    margin-bottom: 1rem;
+    opacity: 0.85;
   }
 
   .hero-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(3rem, 4.5vw, 5.5rem);
+    font-size: clamp(1.6rem, 3vw, 2.6rem);
     font-weight: 300;
-    line-height: 1.05;
-    color: var(--navy);
-    margin-bottom: 1rem;
+    line-height: 1.2;
+    color: var(--cream);
+    margin-bottom: 1.4rem;
   }
 
   .hero-title em {
     font-style: italic;
-    color: var(--gold);
+    color: var(--gold-light);
   }
 
   .hero-subtitle {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.05rem;
+    font-family: 'Spectral', serif;
+    font-size: clamp(0.88rem, 1.3vw, 1rem);
     font-style: italic;
-    color: var(--text-secondary);
+    color: rgba(245, 240, 232, 0.72);
     margin-bottom: 2.5rem;
-    line-height: 1.6;
-    max-width: 36ch;
-  }
-
-  .hero-desc {
-    font-size: 0.92rem;
-    color: var(--text-secondary);
-    max-width: 38ch;
     line-height: 1.8;
-    border-left: 2px solid var(--gold-light);
-    padding-left: 1.25rem;
+    max-width: 52ch;
   }
 
   .hero-cta {
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
-    margin-top: 2.5rem;
     font-family: 'Cormorant SC', serif;
     font-size: 0.72rem;
     letter-spacing: 0.22em;
-    color: var(--navy);
+    color: var(--cream);
     text-decoration: none;
-    border-bottom: 1px solid var(--gold-light);
+    border-bottom: 1px solid rgba(196, 164, 74, 0.5);
     padding-bottom: 0.3rem;
     transition: color 0.3s, border-color 0.3s;
     width: fit-content;
   }
 
-  .hero-cta:hover { color: var(--gold); border-color: var(--gold); }
+  .hero-cta:hover { color: var(--gold-light); border-color: var(--gold-light); }
   .hero-cta::after { content: '→'; font-size: 0.9rem; }
+
+  /* Slide caption bottom-right */
+  .hero-caption {
+    position: absolute;
+    bottom: 2rem;
+    right: 2.5rem;
+    z-index: 2;
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: rgba(245, 240, 232, 0.4);
+    text-align: right;
+    transition: opacity 0.6s;
+  }
+
+  /* Slide dots */
+  .hero-dots {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .hero-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(245, 240, 232, 0.3);
+    transition: background 0.4s;
+    cursor: pointer;
+  }
+
+  .hero-dot.active { background: var(--gold-light); }
 
   /* ─── THESIS BAND ─── */
   .thesis-band {
@@ -248,6 +334,70 @@
     font-style: normal;
     font-weight: 500;
     color: var(--gold-light);
+  }
+
+  /* ─── HOLOCENE INTRO ─── */
+  .holocene-intro {
+    background: var(--cream-dark);
+    padding: 7rem 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .holocene-intro::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold-light), transparent);
+  }
+
+  .holocene-intro-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 4rem;
+    align-items: start;
+  }
+
+  .holocene-intro-label {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    opacity: 0.7;
+    padding-top: 0.4rem;
+  }
+
+  .holocene-intro-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+  }
+
+  .holocene-intro-body p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+    font-weight: 300;
+    line-height: 1.75;
+    color: var(--ink);
+  }
+
+  .holocene-intro-body p:first-child {
+    font-size: clamp(1.2rem, 2vw, 1.55rem);
+    color: var(--navy);
+  }
+
+  .holocene-intro-body p:last-child {
+    font-style: italic;
+    color: var(--text-secondary);
+    font-size: clamp(0.95rem, 1.4vw, 1.15rem);
+    border-left: 2px solid var(--gold-light);
+    padding-left: 1.5rem;
+    margin-top: 0.4rem;
   }
 
   /* ─── THREE ACTS ─── */
@@ -881,11 +1031,14 @@
   @media (max-width: 768px) {
     nav { padding: 1rem 1.25rem; }
     .nav-links { gap: 1.25rem; }
-    .hero { grid-template-columns: 1fr; min-height: auto; }
-    .hero-image-panel { height: 55vw; min-height: 220px; }
-    .hero-image-panel::after { background: linear-gradient(to bottom, transparent 60%, var(--cream) 100%); }
-    .hero-text { padding: 2rem 1.5rem 3rem; }
-    .hero-title { font-size: 2.4rem; }
+    .hero { min-height: 100svh; }
+    .hero-text { padding: 2rem 1.5rem 5rem; }
+    .hero-brand { font-size: 2.6rem; }
+    .hero-title { font-size: 1.5rem; }
+    .hero-subtitle { font-size: 0.88rem; max-width: 100%; }
+    .holocene-intro { padding: 4rem 1.5rem; }
+    .holocene-intro-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .holocene-intro-label { writing-mode: horizontal-tb; transform: none; }
     .thesis-band { padding: 2.5rem 1.5rem; gap: 1.5rem; flex-direction: column; }
     .thesis-label { writing-mode: horizontal-tb; transform: none; font-size: 0.6rem; }
     .acts-section { padding: 3rem 1.25rem; }
@@ -1193,15 +1346,61 @@
 </nav>
 
 <!-- HERO -->
-<section class="hero">
-  <div class="hero-image-panel">
-    <img class="hero-map-img" src="https://holocenemaps.com/chatelain-1719.jpg" alt="Chatelain, Carte de la Nouvelle France, 1719">
+<section class="hero" id="hero">
+
+  <!-- Map slideshow background -->
+  <div class="hero-slides">
+    <div class="hero-slide active" data-caption="Chatelain · Carte de la Nouvelle France · 1719">
+      <img src="https://holocenemaps.com/chatelain-1719.jpg" alt="Chatelain, Carte de la Nouvelle France, 1719">
+    </div>
+    <div class="hero-slide" data-caption="Bowen · Atlantic World · c.1740">
+      <img src="https://holocenemaps.com/bowen-1740.jpg" alt="Bowen, Atlantic World, c.1740">
+    </div>
+    <div class="hero-slide" data-caption="Gibson · Proclamation Map · 1763">
+      <img src="https://holocenemaps.com/gibson-1763.jpg" alt="Gibson, Proclamation Map, 1763">
+    </div>
   </div>
+
+  <!-- Overlay -->
+  <div class="hero-overlay"></div>
+
+  <!-- Text -->
   <div class="hero-text">
-    <p class="hero-eyebrow">c. 1680–1780</p>
-    <h1 class="hero-title">The Imperial<br>Contest for<br><em>North America</em><br><span style="font-size:0.45em;letter-spacing:0.15em;color:var(--gold);font-style:normal;">1680–1780</span></h1>
-    <p class="hero-subtitle">By the late 17th century, France was staking bold claims across North America. Within 100 years they had ceded it all to the British and Spanish empires. This map collection tells the story of 1680–1780 America — a century of ambition, contest and resolution.</p>
+
+    <!-- Brand level -->
+    <h1 class="hero-brand">Holocene Maps</h1>
+    <p class="hero-tagline">A Collection for the Human Era</p>
+    <div class="hero-divider"></div>
+
+    <!-- Collection level -->
+    <p class="hero-eyebrow">The Collection</p>
+    <h2 class="hero-title">The Imperial Contest<br>for <em>North America</em></h2>
+    <p class="hero-subtitle">The Holocene, our current geological epoch, began around 12,000 years ago. The stable climate it brought allowed humans to build civilizations — and maps were how they claimed them. This collection spans one century of that contest: France, Britain, and Spain fighting for a continent, 1680–1780.</p>
     <a href="#collection" class="hero-cta">Explore the collection</a>
+
+  </div>
+
+  <!-- Slide indicator dots -->
+  <div class="hero-dots">
+    <div class="hero-dot active" onclick="goToSlide(0)"></div>
+    <div class="hero-dot" onclick="goToSlide(1)"></div>
+    <div class="hero-dot" onclick="goToSlide(2)"></div>
+  </div>
+
+  <!-- Map caption -->
+  <div class="hero-caption" id="heroCaption">Chatelain · Carte de la Nouvelle France · 1719</div>
+
+</section>
+
+<!-- HOLOCENE INTRO -->
+<section class="holocene-intro animate-on-scroll">
+  <div class="holocene-intro-inner">
+    <span class="holocene-intro-label">About</span>
+    <div class="holocene-intro-body">
+      <p>The Holocene, our current geological epoch, began around 12,000 years ago. The stable climate it brought allowed humans to build civilizations and terraform the planet to their own design.</p>
+      <p>These maps illustrate that transformation. They were used by our ancestors to stake claims, assert dominance, and demonstrate power over contested lands — cartography as instrument of empire.</p>
+      <p>This collection focuses on a century of imperial struggle between France and Britain for North America, 1680–1780, from the height of French ambition to its final resolution.</p>
+    </div>
   </div>
 </section>
 
@@ -1385,6 +1584,41 @@
 </footer>
 
 <script>
+  // ─── HERO SLIDESHOW ───
+  (function() {
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots   = document.querySelectorAll('.hero-dot');
+    const caption = document.getElementById('heroCaption');
+    let current = 0;
+    let timer;
+
+    function goToSlide(n) {
+      slides[current].classList.remove('active');
+      dots[current].classList.remove('active');
+      current = (n + slides.length) % slides.length;
+      slides[current].classList.add('active');
+      dots[current].classList.add('active');
+      // Reset zoom animation
+      const img = slides[current].querySelector('img');
+      img.style.animation = 'none';
+      img.offsetHeight; // reflow
+      img.style.animation = '';
+      // Update caption
+      caption.textContent = slides[current].dataset.caption;
+      resetTimer();
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      timer = setInterval(() => goToSlide(current + 1), 7000);
+    }
+
+    // Expose for dot clicks
+    window.goToSlide = goToSlide;
+
+    resetTimer();
+  })();
+
   // Scroll reveal
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -1605,6 +1839,7 @@
     var handle = document.getElementById('timeline-handle');
     var progress = document.getElementById('timeline-progress');
     var markersEl = document.getElementById('timeline-markers');
+    if (!track || !handle || !progress || !markersEl) return;
     var tlImg = document.getElementById('timeline-img');
     var tlNarrative = document.getElementById('timeline-narrative');
 
