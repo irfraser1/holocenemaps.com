@@ -874,153 +874,302 @@
 
   /* ─── TIMELINE ─── */
   #timeline {
-    background: var(--navy);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .tl-progress-bar {
-    position: sticky;
-    top: 4.5rem;
-    z-index: 50;
-    background: var(--navy);
-    padding: 1.25rem 3rem;
-    border-bottom: 1px solid rgba(196,164,74,0.1);
-  }
-
-  .tl-years-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0;
-  }
-
-  .tl-year-label {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.85rem;
-    color: rgba(245,240,232,0.2);
-    letter-spacing: 0.12em;
-    transition: color 0.35s, font-size 0.35s, font-weight 0.35s;
-    text-align: center;
-    min-width: 40px;
-  }
-
-  .tl-year-label.active {
-    color: var(--gold-light);
-    font-size: 1.3rem;
-    font-weight: 600;
-  }
-
-
-
-  .tl-slides {
-    display: flex;
-    overflow-x: scroll;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex: 1;
-  }
-
-  .tl-slides::-webkit-scrollbar { display: none; }
-
-  .tl-slide {
-    min-width: 100%;
-    scroll-snap-align: start;
-    display: grid;
-    grid-template-columns: 55% 45%;
-    min-height: calc(100vh - 8rem);
-  }
-
-  .tl-map-panel {
     position: relative;
+    height: 100vh;
+    background: #0a0d11;
     overflow: hidden;
-    background: #111;
     cursor: zoom-in;
   }
 
-  .tl-map-panel img {
+  .tl-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .tl-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: scale(1.05);
+    transition: opacity 750ms cubic-bezier(0.4,0,0.2,1),
+                transform 750ms cubic-bezier(0.4,0,0.2,1);
+    will-change: opacity, transform;
+    z-index: 1;
+  }
+
+  .tl-slide img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center;
-    transition: transform 0.6s ease;
     display: block;
   }
 
-  .tl-map-panel:hover img { transform: scale(1.02); }
+  .tl-slide.active {
+    opacity: 1;
+    transform: scale(1);
+    z-index: 2;
+  }
 
-  .tl.detail-link { display: inline-block; margin-top: 0.5rem; font-family: 'Cormorant SC', serif; font-size: 0.6rem; letter-spacing: 0.2em; color: #c4a44a; text-decoration: none; opacity: 0.8; transition: opacity 0.2s; } .detail-link:hover { opacity: 1; } .act-tag {
+  .tl-slide.leaving {
+    opacity: 0;
+    transform: scale(1.05);
+    z-index: 1;
+  }
+
+  /* Gradient vignette over the map */
+  .tl-stage::after {
+    content: '';
     position: absolute;
-    top: 1.5rem;
-    left: 1.5rem;
+    inset: 0;
+    background:
+      linear-gradient(to top,  rgba(10,13,17,0.95) 0%,  rgba(10,13,17,0.45) 32%, transparent 58%),
+      linear-gradient(to right, rgba(10,13,17,0.5) 0%, transparent 42%);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Act badge */
+  .tl-act-badge {
+    position: absolute;
+    top: 2rem;
+    left: 2.5rem;
+    z-index: 10;
     font-family: 'Cormorant SC', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.25em;
-    padding: 0.35rem 0.85rem;
-    background: rgba(28,43,58,0.85);
+    font-size: 0.58rem;
+    letter-spacing: 0.3em;
     color: var(--gold-light);
-    backdrop-filter: blur(4px);
+    padding: 0.4rem 1rem;
+    border: 1px solid rgba(196,164,74,0.3);
+    background: rgba(10,13,17,0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
-  .tl-text-panel {
-    padding: 4rem 3.5rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    color: var(--cream);
+  /* Caption */
+  .tl-caption {
+    position: absolute;
+    bottom: 10rem;
+    left: 2.5rem;
+    z-index: 10;
+    max-width: 460px;
+    padding: 1.75rem 2rem 1.75rem 1.75rem;
+    background: rgba(10,13,17,0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-left: 2px solid rgba(196,164,74,0.55);
+    pointer-events: none;
   }
 
-  .tl-cartographer {
+  .tl-cap-cartographer,
+  .tl-cap-title,
+  .tl-cap-date,
+  .tl-cap-narrative {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+
+  .tl-cap-cartographer {
     font-family: 'Cormorant SC', serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.25em;
+    font-size: 0.58rem;
+    letter-spacing: 0.28em;
     color: var(--gold-light);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
+    transition-delay: 0.08s;
   }
 
-  .tl-title {
+  .tl-cap-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(1.4rem, 2.5vw, 2.2rem);
+    font-size: clamp(1.2rem, 2vw, 1.75rem);
     font-weight: 300;
     color: var(--cream);
     line-height: 1.2;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.3rem;
+    transition-delay: 0.16s;
   }
 
-  .tl-date {
+  .tl-cap-date {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;
-    color: var(--gold-light);
-    font-size: 0.95rem;
-    margin-bottom: 2rem;
+    font-size: 0.88rem;
+    color: rgba(196,164,74,0.85);
+    margin-bottom: 1rem;
+    transition-delay: 0.24s;
   }
 
-  .tl-narrative {
-    font-size: 0.95rem;
-    color: rgba(245,240,232,0.75);
+  .tl-cap-narrative {
+    font-size: 0.83rem;
+    color: rgba(245,240,232,0.65);
     line-height: 1.9;
-    max-width: 46ch;
+    transition-delay: 0.32s;
   }
 
-  .tl-swipe-hint {
-    text-align: center;
-    padding: 1rem;
+  .tl-caption.visible .tl-cap-cartographer,
+  .tl-caption.visible .tl-cap-title,
+  .tl-caption.visible .tl-cap-date,
+  .tl-caption.visible .tl-cap-narrative {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Nav arrows */
+  .tl-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: rgba(10,13,17,0.5);
+    border: 1px solid rgba(196,164,74,0.25);
+    color: var(--gold-light);
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 0;
+    line-height: 1;
+  }
+
+  .tl-nav:hover {
+    background: rgba(28,43,58,0.9);
+    border-color: rgba(196,164,74,0.6);
+  }
+
+  .tl-nav:disabled { opacity: 0.2; cursor: default; pointer-events: none; }
+  .tl-nav-prev { left: 1.5rem; }
+  .tl-nav-next { right: 1.5rem; }
+
+  /* Scrubber */
+  .tl-scrubber {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    z-index: 10;
+    padding: 0 3.5rem 2rem;
+    cursor: default;
+  }
+
+  .tl-year-nodes {
+    position: relative;
+    height: 44px;
+    margin-bottom: 6px;
+  }
+
+  .tl-year-node {
+    position: absolute;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .tl-year-node-label {
     font-family: 'Cormorant SC', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.25em;
-    color: rgba(245,240,232,0.2);
+    font-size: 0.58rem;
+    letter-spacing: 0.14em;
+    color: rgba(196,164,74,0.4);
+    transition: color 0.35s, font-size 0.35s;
+    white-space: nowrap;
+  }
+
+  .tl-year-node-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(196,164,74,0.25);
+    border: 1px solid rgba(196,164,74,0.45);
+    transition: background 0.35s, transform 0.35s, border-color 0.35s, box-shadow 0.35s;
+    display: block;
+  }
+
+  .tl-year-node.active .tl-year-node-label {
+    color: var(--gold-light);
+    font-size: 0.7rem;
+  }
+
+  .tl-year-node.active .tl-year-node-dot {
+    background: var(--gold-light);
+    border-color: var(--gold-light);
+    transform: scale(1.7);
+    box-shadow: 0 0 8px rgba(196,164,74,0.7);
+  }
+
+  .tl-track {
+    position: relative;
+    height: 2px;
+    background: rgba(245,240,232,0.1);
+    cursor: pointer;
+    margin-bottom: 0.75rem;
+  }
+
+  .tl-track-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(to right, rgba(139,105,20,0.6), var(--gold-light));
+    pointer-events: none;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .tl-handle {
+    position: absolute;
+    top: 50%;
+    width: 16px;
+    height: 16px;
     background: var(--navy);
+    border: 2px solid var(--gold-light);
+    transform: translate(-50%, -50%) rotate(45deg);
+    cursor: grab;
+    transition: left 0.4s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s ease;
+    box-shadow: 0 0 0 3px rgba(196,164,74,0.12);
+    z-index: 5;
+  }
+
+  .tl-handle:hover {
+    box-shadow: 0 0 0 6px rgba(196,164,74,0.18), 0 0 18px rgba(196,164,74,0.4);
+  }
+
+  .tl-handle.dragging {
+    cursor: grabbing;
+    box-shadow: 0 0 0 8px rgba(196,164,74,0.22), 0 0 24px rgba(196,164,74,0.5);
+  }
+
+  .tl-track-ends {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .tl-track-ends span {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.52rem;
+    letter-spacing: 0.18em;
+    color: rgba(245,240,232,0.15);
   }
 
   @media (max-width: 768px) {
-    .tl-progress-bar { padding: 1rem 1.25rem 0; }
-    .tl-slide { grid-template-columns: 1fr; min-height: auto; }
-    .tl-map-panel { height: 60vw; min-height: 240px; }
-    .tl-text-panel { padding: 2rem 1.5rem; }
-    .tl-year-label { font-size: 0.65rem; }
-    .tl-year-label.active { font-size: 0.9rem; }
+    .tl-caption {
+      bottom: 10.5rem;
+      left: 1rem;
+      right: 1rem;
+      max-width: none;
+      padding: 1.25rem 1.5rem;
+    }
+    .tl-cap-narrative { display: none; }
+    .tl-act-badge { top: 1rem; left: 1rem; }
+    .tl-scrubber { padding: 0 1.5rem 1.5rem; }
+    .tl-nav-prev { left: 0.5rem; }
+    .tl-nav-next { right: 0.5rem; }
   }
 
   /* ─── MOBILE ─── */
@@ -1082,251 +1231,6 @@
   }
 
 
-  /* ─── TIMELINE ─── */
-  #timeline {
-    background: var(--navy);
-    padding: 5rem 0 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .timeline-header {
-    padding: 0 3rem 3rem;
-    opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-  }
-
-  .timeline-header.visible { opacity: 1; transform: translateY(0); }
-
-  .timeline-eyebrow {
-    font-family: 'Cormorant SC', serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.35em;
-    color: var(--gold-light);
-    margin-bottom: 0.75rem;
-    display: block;
-  }
-
-  .timeline-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 2.2rem;
-    font-weight: 300;
-    color: var(--cream);
-    line-height: 1.15;
-  }
-
-  /* Scrubber */
-  .timeline-scrubber {
-    padding: 0 3rem;
-    margin-bottom: 3rem;
-    position: relative;
-  }
-
-  .timeline-track {
-    position: relative;
-    height: 2px;
-    background: rgba(245, 240, 232, 0.12);
-    margin: 2rem 0 1rem;
-    cursor: pointer;
-  }
-
-  .timeline-progress {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    background: var(--gold-light);
-    transition: width 0.3s ease;
-    pointer-events: none;
-  }
-
-  .timeline-handle {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 16px;
-    height: 16px;
-    background: var(--gold-light);
-    border-radius: 50%;
-    cursor: grab;
-    transition: left 0.3s ease, transform 0.15s;
-    z-index: 10;
-  }
-
-  .timeline-handle:active { cursor: grabbing; transform: translate(-50%, -50%) scale(1.3); }
-
-  .timeline-markers {
-    position: relative;
-    height: 48px;
-  }
-
-  .timeline-marker {
-    position: absolute;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-
-  .timeline-marker:hover { opacity: 0.8; }
-
-  .timeline-marker-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: rgba(196, 164, 74, 0.4);
-    border: 1px solid var(--gold-light);
-    transition: background 0.2s, transform 0.2s;
-  }
-
-  .timeline-marker.active .timeline-marker-dot {
-    background: var(--gold-light);
-    transform: scale(1.4);
-  }
-
-  .timeline-marker-year {
-    font-family: 'Cormorant SC', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.15em;
-    color: rgba(196, 164, 74, 0.6);
-    white-space: nowrap;
-    transition: color 0.2s;
-  }
-
-  .timeline-marker.active .timeline-marker-year { color: var(--gold-light); }
-
-  .timeline-year-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-  }
-
-  .timeline-year-label {
-    font-family: 'Cormorant SC', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.15em;
-    color: rgba(245, 240, 232, 0.2);
-  }
-
-  /* Map display */
-  .timeline-display {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border-top: 1px solid rgba(196, 164, 74, 0.15);
-  }
-
-  .timeline-map-view {
-    position: relative;
-    overflow: hidden;
-    background: #0f0e0c;
-    min-height: 480px;
-    cursor: zoom-in;
-  }
-
-  .timeline-map-view img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-
-  .timeline-map-view img.loaded { opacity: 1; }
-
-  .timeline-act-badge {
-    position: absolute;
-    top: 1.5rem;
-    left: 1.5rem;
-    font-family: 'Cormorant SC', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.25em;
-    padding: 0.35rem 0.75rem;
-    background: rgba(28, 43, 58, 0.9);
-    color: var(--gold-light);
-    backdrop-filter: blur(4px);
-  }
-
-  .timeline-narrative {
-    padding: 3rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    border-left: 1px solid rgba(196, 164, 74, 0.12);
-  }
-
-  .timeline-map-cartographer {
-    font-family: 'Cormorant SC', serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.25em;
-    color: var(--gold-light);
-    margin-bottom: 0.5rem;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.4s ease 0.1s, transform 0.4s ease 0.1s;
-  }
-
-  .timeline-map-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.5rem;
-    font-weight: 400;
-    color: var(--cream);
-    line-height: 1.2;
-    margin-bottom: 0.4rem;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.4s ease 0.15s, transform 0.4s ease 0.15s;
-  }
-
-  .timeline-map-date {
-    font-family: 'Cormorant Garamond', serif;
-    font-style: italic;
-    color: rgba(196, 164, 74, 0.7);
-    font-size: 0.9rem;
-    margin-bottom: 1.5rem;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.4s ease 0.2s, transform 0.4s ease 0.2s;
-  }
-
-  .timeline-map-narrative {
-    font-size: 0.88rem;
-    color: rgba(245, 240, 232, 0.65);
-    line-height: 1.9;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.4s ease 0.25s, transform 0.4s ease 0.25s;
-  }
-
-  .timeline-narrative.animate .timeline-map-cartographer,
-  .timeline-narrative.animate .timeline-map-title,
-  .timeline-narrative.animate .timeline-map-date,
-  .timeline-narrative.animate .timeline-map-narrative {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .timeline-nav-hint {
-    padding: 1rem 3rem;
-    font-family: 'Cormorant SC', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.2em;
-    color: rgba(245, 240, 232, 0.2);
-    text-align: center;
-    border-top: 1px solid rgba(196, 164, 74, 0.08);
-  }
-
-  @media (max-width: 768px) {
-    .timeline-display { grid-template-columns: 1fr; }
-    .timeline-map-view { min-height: 280px; }
-    .timeline-narrative { padding: 1.5rem; border-left: none; border-top: 1px solid rgba(196, 164, 74, 0.12); }
-    .timeline-scrubber { padding: 0 1.25rem; }
-    .timeline-header { padding: 0 1.25rem 2rem; }
-    .timeline-title { font-size: 1.6rem; }
-  }
 
 </style>
 </head>
@@ -1488,81 +1392,52 @@
 <!-- TIMELINE -->
 <section id="timeline">
 
-  <div class="tl-progress-bar">
-    <div class="tl-years-row" id="tl-years-row"></div>
-
+  <!-- Full-bleed map stage -->
+  <div class="tl-stage" id="tl-stage">
+    <div class="tl-slide active" data-index="0">
+      <img src="https://holocenemaps.com/chatelain-1719.jpg" alt="Chatelain · Nouvelle France · 1719">
+    </div>
+    <div class="tl-slide" data-index="1">
+      <img src="https://holocenemaps.com/bowen-1740.jpg" alt="Bowen · Atlantic World · c.1740">
+    </div>
+    <div class="tl-slide" data-index="2">
+      <img src="https://holocenemaps.com/gibson-1763.jpg" alt="Gibson · Proclamation Map · 1763">
+    </div>
+    <div class="tl-slide" data-index="3">
+      <img src="https://holocenemaps.com/texas-1909.jpg" alt="Texas · Iron Mountain Route · 1909">
+    </div>
+    <div class="tl-slide" data-index="4">
+      <img src="https://holocenemaps.com/nyc-eres-1939.jpg" alt="Harrison · New York City · 1939">
+    </div>
   </div>
 
-  <div class="tl-slides" id="tl-slides">
+  <!-- Act badge -->
+  <div class="tl-act-badge" id="tl-act-badge"></div>
 
-    <div class="tl-slide">
-      <div class="tl-map-panel" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
-        <a href="champlain.html"><img src="https://holocenemaps.com/chatelain-1719.jpg" alt="Chatelain 1719"></a>
-        <span class="tl-act-tag">Act I · French Dominance</span>
-      </div>
-      <div class="tl-text-panel">
-        <p class="tl-cartographer">Henri Abraham Chatelain</p>
-        <h3 class="tl-title">Carte de la Nouvelle France</h3>
-        <p class="tl-date">1719 · Amsterdam</p>
-        <p class="tl-narrative">Produced in 1719 for Chatelain's Atlas Historique, this map draws on De l'Isle's authoritative 1718 cartography to present French territorial claims at the precise moment the Mississippi Bubble was at its peak. Published for an audience gripped by Louisiana fever, its rich decoration made French imperial ambition feel vivid, real, and vast to the European readership consuming it.</p>
-      </div>
-    </div>
-
-    <div class="tl-slide">
-      <div class="tl-map-panel" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
-        <img src="https://holocenemaps.com/bowen-1740.jpg" alt="Bowen 1740">
-        <span class="tl-act-tag">Act II · The Imperial Contest</span>
-      </div>
-      <div class="tl-text-panel">
-        <p class="tl-cartographer">Emanuel Bowen</p>
-        <h3 class="tl-title">A Map of the King of Great Britain's Dominions in Europe, Africa, and America</h3>
-        <p class="tl-date">c. 1740 · London</p>
-        <p class="tl-narrative">Produced on the eve of the French and Indian War, this map makes British imperial claim its explicit subject. Yellow outlining identifies territories possessed by the King of Great Britain. The Atlantic is framed as a British lake — a statement of what Britain believed it owned, and was prepared to defend.</p>
-      </div>
-    </div>
-
-    <div class="tl-slide">
-      <div class="tl-map-panel" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
-        <img src="https://holocenemaps.com/gibson-1763.jpg" alt="Gibson 1763">
-        <span class="tl-act-tag">Act III · British Resolution</span>
-      </div>
-      <div class="tl-text-panel">
-        <p class="tl-cartographer">John Gibson · The Gentleman's Magazine</p>
-        <h3 class="tl-title">The British Governments in North America, Agreeable to the Proclamation of October 7, 1763</h3>
-        <p class="tl-date">1763 · London</p>
-        <p class="tl-narrative">Published to accompany the Royal Proclamation of 1763, this map codifies Britain's victory over France in visual form. The vast territory labeled "LANDS RESERVED for the INDIANS" marks the Proclamation Line — the moment of British resolution, and the seed of the coming revolution.</p>
-      </div>
-    </div>
-
-    <div class="tl-slide">
-      <div class="tl-map-panel" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
-        <a href="texas.html"><img src="https://holocenemaps.com/texas-1909.jpg" alt="Texas 1909"></a>
-        <span class="tl-act-tag">Railroad Promotion · 1909</span>
-      </div>
-      <div class="tl-text-panel">
-        <p class="tl-cartographer">Poole Brothers · The Texas Realty Journal</p>
-        <h3 class="tl-title">Iron Mountain Route to All Parts of Texas</h3>
-        <p class="tl-date">1909 · Houston, Texas</p>
-        <p class="tl-narrative">A railroad promotion map advertising round-trip homeseeker rates on the Iron Mountain Route. The map annotates the state by agricultural product and land use — cotton, corn, cattle, oil fields — making it as much an economic argument as a geographic document. A vivid artifact of the era's land promotion culture.</p>
-      </div>
-    </div>
-
-    <div class="tl-slide">
-      <div class="tl-map-panel" onclick="openLightbox(this.querySelector('img').src, this.querySelector('img').alt)">
-        <img src="https://holocenemaps.com/nyc-eres-1939.jpg" alt="Richard Edes Harrison NYC 1939">
-        <span class="tl-act-tag">Fortune Magazine · 1939</span>
-      </div>
-      <div class="tl-text-panel">
-        <p class="tl-cartographer">Richard Edes Harrison</p>
-        <h3 class="tl-title">The City of New York</h3>
-        <p class="tl-date">July 1939 · Fortune Magazine</p>
-        <p class="tl-narrative">One of the most celebrated American maps of the twentieth century. Harrison's oblique aerial projection was revolutionary — presenting the city as if seen from an aircraft at a time when such a view was still extraordinary. It would go on to define wartime cartography in American media.</p>
-      </div>
-    </div>
-
+  <!-- Caption overlay -->
+  <div class="tl-caption" id="tl-caption">
+    <p class="tl-cap-cartographer" id="tl-cap-cart"></p>
+    <h3 class="tl-cap-title" id="tl-cap-title"></h3>
+    <p class="tl-cap-date" id="tl-cap-date"></p>
+    <p class="tl-cap-narrative" id="tl-cap-narrative"></p>
   </div>
 
-  <div class="tl-swipe-hint">Swipe or scroll to move through time · Click any map to zoom</div>
+  <!-- Prev / Next arrows -->
+  <button class="tl-nav tl-nav-prev" id="tl-prev" aria-label="Previous map">&#8592;</button>
+  <button class="tl-nav tl-nav-next" id="tl-next" aria-label="Next map">&#8594;</button>
+
+  <!-- Year scrubber -->
+  <div class="tl-scrubber">
+    <div class="tl-year-nodes" id="tl-year-nodes"></div>
+    <div class="tl-track" id="tl-track">
+      <div class="tl-track-fill" id="tl-track-fill"></div>
+      <div class="tl-handle" id="tl-handle"></div>
+    </div>
+    <div class="tl-track-ends">
+      <span>1719</span>
+      <span>1939</span>
+    </div>
+  </div>
 
 </section>
 
@@ -1629,43 +1504,6 @@
   });
 
 
-  // ─── TIMELINE ───
-  window.addEventListener('load', function() {
-    var yearsRow = document.getElementById('tl-years-row');
-    var slides = document.getElementById('tl-slides');
-    if (!slides || !yearsRow) return;
-
-    var mapYears = [1719, 1740, 1763, 1909, 1939];
-    var slideCount = slides.querySelectorAll('.tl-slide').length;
-
-    // Build year labels
-    mapYears.forEach(function(yr) {
-      var el = document.createElement('span');
-      el.className = 'tl-year-label';
-      el.textContent = yr;
-      yearsRow.appendChild(el);
-    });
-
-    function updateTimeline(idx) {
-      document.querySelectorAll('.tl-year-label').forEach(function(el, i) {
-        el.classList.toggle('active', i === idx);
-      });
-    }
-
-    var ticking = false;
-    slides.addEventListener('scroll', function() {
-      if (!ticking) {
-        requestAnimationFrame(function() {
-          var idx = Math.round(slides.scrollLeft / slides.offsetWidth);
-          updateTimeline(idx);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    });
-
-    updateTimeline(0);
-  });
 
   // ─── LIGHTBOX ───
   document.addEventListener('DOMContentLoaded', function() {
@@ -1687,6 +1525,7 @@
       lightbox.classList.add('open');
       document.body.style.overflow = 'hidden';
     }
+    window.openLightbox = openLightbox;
 
     function closeLightbox() {
       lightbox.classList.remove('open');
@@ -1762,186 +1601,215 @@
 
 
   // ─── TIMELINE ───
-  document.addEventListener('DOMContentLoaded', function() {
-    var maps = [
+  (function() {
+    var MAPS = [
       {
         year: 1719,
+        act: 'Act I · French Dominance',
         cartographer: 'Henri Abraham Chatelain',
         title: 'Carte de la Nouvelle France',
         date: '1719 · Amsterdam',
-        act: 'Act I · French Dominance',
-        narrative: 'Produced in 1719 for Chatelain\'s Atlas Historique, this map draws on De l\'Isle\'s authoritative 1718 cartography to present French territorial claims at the precise moment the Mississippi Bubble was at its peak. Published for an audience gripped by Louisiana fever, its rich decoration made French imperial ambition feel vivid, real, and vast to the European readership consuming it.',
-        imgId: 'chatelain-src'
+        narrative: 'Produced in 1719 for Chatelain\'s Atlas Historique, this map draws on De l\'Isle\'s authoritative 1718 cartography to present French territorial claims at the precise moment the Mississippi Bubble was at its peak. Published for an audience gripped by Louisiana fever, its rich decoration made French imperial ambition feel vivid, real, and vast to the European readership consuming it.'
       },
       {
         year: 1740,
+        act: 'Act II · The Imperial Contest',
         cartographer: 'Emanuel Bowen',
         title: 'A Map of the King of Great Britain\'s Dominions in Europe, Africa, and America',
         date: 'c. 1740 · London',
-        act: 'Act II · The Imperial Contest',
-        narrative: 'Produced on the eve of the French and Indian War, this map makes British imperial claim its explicit subject. Yellow outlining identifies territories possessed by the King of Great Britain across the Atlantic world. Published at the moment of maximum tension before open conflict — a statement of what Britain believed it owned, and what it was prepared to defend.',
-        imgId: 'bowen-src'
+        narrative: 'Produced on the eve of the French and Indian War, this map makes British imperial claim its explicit subject. Yellow outlining identifies territories possessed by the King of Great Britain. The Atlantic is framed as a British lake — a statement of what Britain believed it owned, and was prepared to defend.'
       },
       {
         year: 1763,
-        cartographer: 'John Gibson · The Gentleman\'s Magazine',
-        title: 'The British Governments in North America, Laid Down Agreeable to the Proclamation of October 7, 1763',
-        date: '1763 · London',
         act: 'Act III · British Resolution',
-        narrative: 'Published to accompany the Royal Proclamation of October 7, 1763, this map codifies Britain\'s victory over France in visual form. The vast territory labeled "LANDS RESERVED for the INDIANS" marks the Proclamation Line that would become a major source of colonial resentment — the seed of revolution planted in the moment of British triumph.',
-        imgId: 'gibson-src'
-      },
-      {
-        year: 1939,
-        cartographer: 'Richard Edes Harrison',
-        title: 'The City of New York',
-        date: 'July 1939 · Fortune Magazine',
-        act: 'Fortune · 1939',
-        narrative: 'One of the most celebrated American maps of the twentieth century. Harrison\'s revolutionary oblique aerial projection of New York City appeared as a Fortune Magazine supplement in July 1939, defining wartime cartographic design in America and establishing a new visual language for geographic representation.',
-        imgId: 'nyc-src'
+        cartographer: 'John Gibson · The Gentleman\'s Magazine',
+        title: 'The British Governments in North America, Agreeable to the Proclamation of October 7, 1763',
+        date: '1763 · London',
+        narrative: 'Published to accompany the Royal Proclamation of 1763, this map codifies Britain\'s victory over France in visual form. The vast territory labeled "LANDS RESERVED for the INDIANS" marks the Proclamation Line — the moment of British resolution, and the seed of the coming revolution.'
       },
       {
         year: 1909,
+        act: 'Texas · Railroad Promotion',
         cartographer: 'Poole Brothers · The Texas Realty Journal',
         title: 'Iron Mountain Route to All Parts of Texas',
         date: '1909 · Houston, Texas',
-        act: 'Texas · 1909',
-        narrative: 'A railroad promotion map advertising round-trip homeseeker rates on the Iron Mountain Route, published for The Texas Realty Journal. The map annotates the state by agricultural product and land use — cotton, corn, cattle, oil fields — making it as much an economic argument as a geographic document.',
-        imgId: 'texas-src'
+        narrative: 'A railroad promotion map advertising round-trip homeseeker rates on the Iron Mountain Route. The map annotates the state by agricultural product and land use — cotton, corn, cattle, oil fields — making it as much an economic argument as a geographic document.'
+      },
+      {
+        year: 1939,
+        act: 'Fortune Magazine · 1939',
+        cartographer: 'Richard Edes Harrison',
+        title: 'The City of New York',
+        date: 'July 1939 · Fortune Magazine',
+        narrative: 'One of the most celebrated American maps of the twentieth century. Harrison\'s oblique aerial projection was revolutionary — presenting the city as if seen from an aircraft at a time when such a view was still extraordinary. It would go on to define wartime cartographic design in American media.'
       }
     ];
 
-    // Store image srcs from collection entries
-    var imgSrcs = {};
-    document.querySelectorAll('.map-image-container img').forEach(function(img) {
-      var alt = img.alt || '';
-      if (alt.includes('Chatelain') || alt.includes('1719')) imgSrcs['chatelain-src'] = img.src;
-      if (alt.includes('Bowen') || alt.includes('1740')) imgSrcs['bowen-src'] = img.src;
-      if (alt.includes('Gibson') || alt.includes('1763')) imgSrcs['gibson-src'] = img.src;
-      if (alt.includes('New York') || alt.includes('nyc') || alt.includes('1939')) imgSrcs['nyc-src'] = img.src;
-      if (alt.includes('Texas') || alt.includes('1909')) imgSrcs['texas-src'] = img.src;
+    var MIN_YEAR = MAPS[0].year, MAX_YEAR = MAPS[MAPS.length - 1].year;
+    function yearToPercent(y) { return (y - MIN_YEAR) / (MAX_YEAR - MIN_YEAR) * 100; }
+
+    var current = 0, transitioning = false;
+    var slides    = document.querySelectorAll('#tl-stage .tl-slide');
+    var actBadge  = document.getElementById('tl-act-badge');
+    var caption   = document.getElementById('tl-caption');
+    var capCart   = document.getElementById('tl-cap-cart');
+    var capTitle  = document.getElementById('tl-cap-title');
+    var capDate   = document.getElementById('tl-cap-date');
+    var capNarr   = document.getElementById('tl-cap-narrative');
+    var prevBtn   = document.getElementById('tl-prev');
+    var nextBtn   = document.getElementById('tl-next');
+    var yearNodes = document.getElementById('tl-year-nodes');
+    var track     = document.getElementById('tl-track');
+    var trackFill = document.getElementById('tl-track-fill');
+    var handle    = document.getElementById('tl-handle');
+
+    // Build proportionally-spaced year nodes
+    MAPS.forEach(function(m, i) {
+      var node = document.createElement('button');
+      node.className = 'tl-year-node' + (i === 0 ? ' active' : '');
+      node.style.left = yearToPercent(m.year) + '%';
+      node.setAttribute('aria-label', 'Go to ' + m.year);
+      node.innerHTML =
+        '<span class="tl-year-node-label">' + m.year + '</span>' +
+        '<span class="tl-year-node-dot"></span>';
+      node.addEventListener('click', function() { goTo(i); });
+      yearNodes.appendChild(node);
     });
 
-    var MIN_YEAR = 1680, MAX_YEAR = 1780;
-    var currentIdx = 0;
-    var track = document.getElementById('timeline-track');
-    var handle = document.getElementById('timeline-handle');
-    var progress = document.getElementById('timeline-progress');
-    var markersEl = document.getElementById('timeline-markers');
-    if (!track || !handle || !progress || !markersEl) return;
-    var tlImg = document.getElementById('timeline-img');
-    var tlNarrative = document.getElementById('timeline-narrative');
-
-    // Build markers - only show maps within 1680-1780 range on track
-    // Clamp year for track position
-    function yearToPercent(year) {
-      var y = Math.min(Math.max(year, MIN_YEAR), MAX_YEAR);
-      return ((y - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * 100;
-    }
-
-    maps.forEach(function(map, i) {
-      var pct = yearToPercent(map.year);
-      var marker = document.createElement('div');
-      marker.className = 'timeline-marker' + (i === 0 ? ' active' : '');
-      marker.style.left = pct + '%';
-      marker.innerHTML = '<div class="timeline-marker-dot"></div><span class="timeline-marker-year">' + map.year + '</span>';
-      marker.addEventListener('click', function() { setActive(i); });
-      markersEl.appendChild(marker);
-    });
-
-    function setActive(idx) {
-      currentIdx = idx;
-      var map = maps[idx];
-      var pct = yearToPercent(map.year);
-
-      // Update handle and progress
-      handle.style.left = pct + '%';
-      progress.style.width = pct + '%';
-
-      // Update markers
-      document.querySelectorAll('.timeline-marker').forEach(function(m, i) {
-        m.classList.toggle('active', i === idx);
-      });
-
-      // Update image
-      tlImg.classList.remove('loaded');
-      var src = imgSrcs[map.imgId] || '';
-      if (src) {
-        tlImg.src = src;
-        tlImg.alt = map.title;
-        tlImg.onload = function() { tlImg.classList.add('loaded'); };
-        if (tlImg.complete) tlImg.classList.add('loaded');
+    function updateScrubber(idx, animate) {
+      var pct = yearToPercent(MAPS[idx].year);
+      if (!animate) {
+        trackFill.style.transition = 'none';
+        handle.style.transition = 'none';
+        void handle.offsetWidth;
       }
-
-      // Update act badge
-      document.getElementById('timeline-act-badge').textContent = map.act;
-
-      // Animate text
-      tlNarrative.classList.remove('animate');
-      void tlNarrative.offsetWidth;
-      document.getElementById('tl-cartographer').textContent = map.cartographer;
-      document.getElementById('tl-title').textContent = map.title;
-      document.getElementById('tl-date').textContent = map.date;
-      document.getElementById('tl-narrative').textContent = map.narrative;
-      requestAnimationFrame(function() { tlNarrative.classList.add('animate'); });
+      trackFill.style.width = pct + '%';
+      handle.style.left = pct + '%';
+      if (!animate) {
+        requestAnimationFrame(function() {
+          trackFill.style.transition = '';
+          handle.style.transition = '';
+        });
+      }
+      document.querySelectorAll('.tl-year-node').forEach(function(n, i) {
+        n.classList.toggle('active', i === idx);
+      });
+      prevBtn.disabled = idx === 0;
+      nextBtn.disabled = idx === MAPS.length - 1;
     }
 
-    // Drag handle
-    var dragging = false;
-    handle.addEventListener('mousedown', function(e) { dragging = true; e.preventDefault(); });
-    document.addEventListener('mousemove', function(e) {
-      if (!dragging) return;
-      var rect = track.getBoundingClientRect();
-      var pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
-      var year = MIN_YEAR + pct * (MAX_YEAR - MIN_YEAR);
-      // Find closest map
-      var closest = 0, minDist = Infinity;
-      maps.forEach(function(m, i) {
-        var dist = Math.abs(m.year - year);
-        if (dist < minDist) { minDist = dist; closest = i; }
-      });
-      setActive(closest);
-    });
-    document.addEventListener('mouseup', function() { dragging = false; });
+    function updateCaption(idx) {
+      var m = MAPS[idx];
+      caption.classList.remove('visible');
+      setTimeout(function() {
+        actBadge.textContent = m.act;
+        capCart.textContent  = m.cartographer;
+        capTitle.textContent = m.title;
+        capDate.textContent  = m.date;
+        capNarr.textContent  = m.narrative;
+        requestAnimationFrame(function() { caption.classList.add('visible'); });
+      }, 100);
+    }
 
-    // Click track
+    function goTo(idx) {
+      if (idx < 0 || idx >= MAPS.length || idx === current || transitioning) return;
+      transitioning = true;
+      var prev = current;
+      current = idx;
+
+      slides[prev].classList.remove('active');
+      slides[prev].classList.add('leaving');
+      slides[current].classList.add('active');
+
+      setTimeout(function() {
+        slides[prev].classList.remove('leaving');
+        transitioning = false;
+      }, 780);
+
+      updateScrubber(idx, true);
+      updateCaption(idx);
+    }
+
+    prevBtn.addEventListener('click', function() { goTo(current - 1); });
+    nextBtn.addEventListener('click', function() { goTo(current + 1); });
+
+    // Keyboard nav (only when timeline in view)
+    document.addEventListener('keydown', function(e) {
+      var r = document.getElementById('timeline').getBoundingClientRect();
+      if (r.top > window.innerHeight || r.bottom < 0) return;
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); goTo(current - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); goTo(current + 1); }
+    });
+
+    // Stage click → lightbox
+    document.getElementById('tl-stage').addEventListener('click', function() {
+      var img = slides[current] && slides[current].querySelector('img');
+      if (img && window.openLightbox) window.openLightbox(img.src, img.alt);
+    });
+
+    // ── Drag ──
+    var dragging = false;
+
+    function pctFromX(clientX) {
+      var r = track.getBoundingClientRect();
+      return Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    }
+
+    function nearestIdx(pct) {
+      var year = MIN_YEAR + pct * (MAX_YEAR - MIN_YEAR);
+      var nearest = 0, best = Infinity;
+      MAPS.forEach(function(m, i) {
+        var d = Math.abs(m.year - year);
+        if (d < best) { best = d; nearest = i; }
+      });
+      return nearest;
+    }
+
+    function dragMove(clientX) {
+      var pct = pctFromX(clientX) * 100;
+      handle.style.transition = 'box-shadow 0.2s';
+      handle.style.left = pct + '%';
+      trackFill.style.transition = 'none';
+      trackFill.style.width = pct + '%';
+      var near = nearestIdx(pct / 100);
+      document.querySelectorAll('.tl-year-node').forEach(function(n, i) {
+        n.classList.toggle('active', i === near);
+      });
+    }
+
+    function dragEnd(clientX) {
+      dragging = false;
+      handle.classList.remove('dragging');
+      handle.style.transition = '';
+      trackFill.style.transition = '';
+      goTo(nearestIdx(pctFromX(clientX)));
+    }
+
+    handle.addEventListener('mousedown', function(e) {
+      dragging = true; handle.classList.add('dragging'); e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) { if (dragging) dragMove(e.clientX); });
+    document.addEventListener('mouseup',   function(e) { if (dragging) dragEnd(e.clientX); });
+
     track.addEventListener('click', function(e) {
       if (e.target === handle) return;
-      var rect = track.getBoundingClientRect();
-      var pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
-      var year = MIN_YEAR + pct * (MAX_YEAR - MIN_YEAR);
-      var closest = 0, minDist = Infinity;
-      maps.forEach(function(m, i) {
-        var dist = Math.abs(m.year - year);
-        if (dist < minDist) { minDist = dist; closest = i; }
-      });
-      setActive(closest);
+      goTo(nearestIdx(pctFromX(e.clientX)));
     });
 
-    // Touch drag
-    handle.addEventListener('touchstart', function(e) { dragging = true; }, { passive: true });
-    document.addEventListener('touchmove', function(e) {
-      if (!dragging) return;
-      var rect = track.getBoundingClientRect();
-      var pct = Math.min(Math.max((e.touches[0].clientX - rect.left) / rect.width, 0), 1);
-      var year = MIN_YEAR + pct * (MAX_YEAR - MIN_YEAR);
-      var closest = 0, minDist = Infinity;
-      maps.forEach(function(m, i) {
-        var dist = Math.abs(m.year - year);
-        if (dist < minDist) { minDist = dist; closest = i; }
-      });
-      setActive(closest);
+    handle.addEventListener('touchstart', function() {
+      dragging = true; handle.classList.add('dragging');
     }, { passive: true });
-    document.addEventListener('touchend', function() { dragging = false; });
-
-    // Click map to open lightbox
-    document.getElementById('timeline-map-view').addEventListener('click', function() {
-      if (tlImg.src) openLightbox(tlImg.src, tlImg.alt);
+    document.addEventListener('touchmove', function(e) {
+      if (dragging) dragMove(e.touches[0].clientX);
+    }, { passive: true });
+    document.addEventListener('touchend', function(e) {
+      if (dragging) dragEnd(e.changedTouches[0].clientX);
     });
 
     // Init
-    setActive(0);
-  });
+    updateScrubber(0, false);
+    updateCaption(0);
+  })();
 
 </script>
 
