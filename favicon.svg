@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#1c2b3a" stroke="#8b6914" stroke-width="1.5"/>
+
+  <!-- Cardinal points - N/S spires (tall, dark) -->
+  <polygon points="32,6 35,30 29,30" fill="#f5f0e8"/>
+  <polygon points="32,58 35,34 29,34" fill="#c4a44a"/>
+
+  <!-- Cardinal points - E/W spires -->
+  <polygon points="58,32 34,29 34,35" fill="#c4a44a"/>
+  <polygon points="6,32 30,29 30,35" fill="#c4a44a"/>
+
+  <!-- Ordinal points (smaller diamonds) -->
+  <polygon points="32,16 38,26 32,22 26,26" fill="#8b6914" opacity="0.8"/>
+  <polygon points="32,48 38,38 32,42 26,38" fill="#8b6914" opacity="0.8"/>
+  <polygon points="48,32 38,26 42,32 38,38" fill="#8b6914" opacity="0.8"/>
+  <polygon points="16,32 26,26 22,32 26,38" fill="#8b6914" opacity="0.8"/>
+
+  <!-- Center circle -->
+  <circle cx="32" cy="32" r="4" fill="#8b6914" stroke="#c4a44a" stroke-width="1"/>
+  <circle cx="32" cy="32" r="2" fill="#f5f0e8"/>
+</svg>
