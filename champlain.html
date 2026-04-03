@@ -56,30 +56,31 @@
 
     /* ── Annotation hotspots ── */
     .ann-dot {
-      width: 28px; height: 28px;
+      width: 56px; height: 56px;
       cursor: pointer; background: none; border: none; padding: 0;
       position: relative; outline: none;
     }
     .ann-dot-inner {
       position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 10px; height: 10px;
-      background: var(--gold-light); border-radius: 50%;
-      box-shadow: 0 0 8px rgba(196,164,74,0.6);
+      width: 24px; height: 24px;
+      background: #c4a44a; border-radius: 50%;
+      border: 2.5px solid #ffffff;
+      box-shadow: 0 0 14px rgba(196,164,74,0.8), 0 2px 10px rgba(0,0,0,0.6);
       z-index: 1; transition: transform 0.2s;
     }
     .ann-dot:hover .ann-dot-inner,
-    .ann-dot.active .ann-dot-inner { transform: translate(-50%, -50%) scale(1.4); }
+    .ann-dot.active .ann-dot-inner { transform: translate(-50%, -50%) scale(1.25); }
     .ann-dot-ring {
       position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 10px; height: 10px; border-radius: 50%;
-      background: rgba(196,164,74,0.55);
-      animation: ann-pulse 2.4s ease-out infinite;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(196,164,74,0.65);
+      animation: ann-pulse 2s ease-out infinite;
     }
     @keyframes ann-pulse {
-      0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.7; }
-      100% { transform: translate(-50%,-50%) scale(4.5); opacity: 0; }
+      0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.75; }
+      100% { transform: translate(-50%,-50%) scale(7);   opacity: 0; }
     }
     /* ── Annotation card ── */
     .ann-card {
@@ -152,7 +153,10 @@
 <div class="zoom-hint" id="zoom-hint">Scroll to zoom · Drag to pan</div>
 <script>
   const viewer = OpenSeadragon({ id: 'osd-viewer', tileSources: 'tiles/champlain.dzi', showNavigationControl: false, animationTime: 0.4, blendTime: 0.2, constrainDuringPan: true, maxZoomPixelRatio: 4, minZoomLevel: 0.5, visibilityRatio: 1, zoomInButton: 'btn-zoom-in', zoomOutButton: 'btn-zoom-out', homeButton: 'btn-home', background: '#111820' });
-  viewer.addHandler('open', function() { document.getElementById('loading').classList.add('done'); });
+  viewer.addHandler('open', function() {
+    document.getElementById('loading').classList.add('done');
+    viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom();
+  });
   const panel = document.getElementById('side-panel'), wrap = document.getElementById('viewer-wrap'), toggleBtn = document.getElementById('panel-toggle');
   const isMobile = () => window.innerWidth <= 768;
   let panelVisible = !isMobile();
