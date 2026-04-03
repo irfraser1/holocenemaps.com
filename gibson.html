@@ -320,20 +320,32 @@
       100% { left: 100%; }
     }
 
+    .drawer-handle {
+      display: none;
+      width: 36px;
+      height: 4px;
+      background: rgba(196,164,74,0.3);
+      border-radius: 2px;
+      margin: 0 auto 1.75rem;
+    }
+
     @media (max-width: 768px) {
-      :root { --panel-width: 100vw; }
       .viewer-wrap { right: 0 !important; }
       .side-panel {
         top: auto;
         bottom: 0;
+        left: 0;
+        right: 0;
         width: 100%;
-        height: 45vh;
+        height: 70vh;
         border-left: none;
         border-top: 1px solid var(--gold-dim);
+        border-radius: 12px 12px 0 0;
         transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
-      .side-panel.hidden { transform: translateY(100%); }
-      .side-panel.visible { transform: translateY(0); }
+      .side-panel.open { transform: translateY(0); }
+      .drawer-handle { display: block; }
     }
   </style>
 </head>
@@ -367,6 +379,7 @@
 
 <!-- SIDE PANEL -->
 <div class="side-panel" id="side-panel">
+  <div class="drawer-handle"></div>
   <span class="panel-eyebrow">Act III · 1763</span>
   <p class="panel-cartographer">John Gibson · The Gentleman's Magazine</p>
   <h1 class="panel-title">The British Governments in North America, Laid Down Agreeable to the Proclamation of October 7, 1763</h1>
@@ -434,14 +447,23 @@
   const panel = document.getElementById('side-panel');
   const wrap = document.getElementById('viewer-wrap');
   const toggleBtn = document.getElementById('panel-toggle');
-  let panelVisible = true;
+  const isMobile = () => window.innerWidth <= 768;
+  let panelVisible = !isMobile();
 
-  toggleBtn.addEventListener('click', function() {
-    panelVisible = !panelVisible;
-    panel.classList.toggle('hidden', !panelVisible);
-    wrap.classList.toggle('panel-hidden', !panelVisible);
+  function syncPanel() {
+    if (isMobile()) {
+      panel.classList.toggle('open', panelVisible);
+    } else {
+      panel.classList.toggle('hidden', !panelVisible);
+      wrap.classList.toggle('panel-hidden', !panelVisible);
+    }
     toggleBtn.textContent = panelVisible ? 'Hide' : 'Info';
-  });
+  }
+
+  toggleBtn.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
+  wrap.addEventListener('click', function() { if (isMobile() && panelVisible) { panelVisible = false; syncPanel(); } });
+  window.addEventListener('resize', function() { panelVisible = !isMobile(); syncPanel(); });
+  syncPanel();
 
   // Fade zoom hint after 4s
   setTimeout(function() {

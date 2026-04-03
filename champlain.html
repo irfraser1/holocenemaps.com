@@ -52,6 +52,13 @@
     .loading-bar-track { width: 120px; height: 1px; background: rgba(196,164,74,0.2); position: relative; overflow: hidden; }
     .loading-bar-fill { position: absolute; left: -100%; top: 0; bottom: 0; width: 100%; background: var(--gold-light); animation: loadbar 1.4s ease-in-out infinite; }
     @keyframes loadbar { 0% { left: -100%; } 50% { left: 0%; } 100% { left: 100%; } }
+    .drawer-handle { display: none; width: 36px; height: 4px; background: rgba(196,164,74,0.3); border-radius: 2px; margin: 0 auto 1.75rem; }
+    @media (max-width: 768px) {
+      .viewer-wrap { right: 0 !important; }
+      .side-panel { top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 70vh; border-left: none; border-top: 1px solid var(--gold-dim); border-radius: 12px 12px 0 0; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); }
+      .side-panel.open { transform: translateY(0); }
+      .drawer-handle { display: block; }
+    }
   </style>
 </head>
 <body>
@@ -74,6 +81,7 @@
 </div>
 <div class="viewer-wrap" id="viewer-wrap"><div id="osd-viewer"></div></div>
 <div class="side-panel" id="side-panel">
+  <div class="drawer-handle"></div>
   <span class="panel-eyebrow">Act I · 1719</span>
   <p class="panel-cartographer">Henri Abraham Chatelain</p>
   <h1 class="panel-title">Carte de la Nouvelle France, ou se voit le cours des grandes rivières</h1>
@@ -97,8 +105,17 @@
   const viewer = OpenSeadragon({ id: 'osd-viewer', tileSources: 'tiles/champlain.dzi', showNavigationControl: false, animationTime: 0.4, blendTime: 0.2, constrainDuringPan: true, maxZoomPixelRatio: 4, minZoomLevel: 0.5, visibilityRatio: 0.8, zoomInButton: 'btn-zoom-in', zoomOutButton: 'btn-zoom-out', homeButton: 'btn-home', background: '#111820' });
   viewer.addHandler('open', function() { document.getElementById('loading').classList.add('done'); });
   const panel = document.getElementById('side-panel'), wrap = document.getElementById('viewer-wrap'), toggleBtn = document.getElementById('panel-toggle');
-  let panelVisible = true;
-  toggleBtn.addEventListener('click', function() { panelVisible = !panelVisible; panel.classList.toggle('hidden', !panelVisible); wrap.classList.toggle('panel-hidden', !panelVisible); toggleBtn.textContent = panelVisible ? 'Hide' : 'Info'; });
+  const isMobile = () => window.innerWidth <= 768;
+  let panelVisible = !isMobile();
+  function syncPanel() {
+    if (isMobile()) { panel.classList.toggle('open', panelVisible); }
+    else { panel.classList.toggle('hidden', !panelVisible); wrap.classList.toggle('panel-hidden', !panelVisible); }
+    toggleBtn.textContent = panelVisible ? 'Hide' : 'Info';
+  }
+  toggleBtn.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
+  wrap.addEventListener('click', function() { if (isMobile() && panelVisible) { panelVisible = false; syncPanel(); } });
+  window.addEventListener('resize', function() { panelVisible = !isMobile(); syncPanel(); });
+  syncPanel();
   setTimeout(function() { document.getElementById('zoom-hint').classList.add('fade'); }, 4000);
 </script>
 </body>
