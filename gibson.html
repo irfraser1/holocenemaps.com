@@ -276,6 +276,7 @@
     }
 
     .zoom-hint.fade { opacity: 0; }
+    .openseadragon-canvas { outline: none; }
 
     /* ── LOADING ── */
     .loading-overlay {
@@ -448,6 +449,7 @@
     const loading = document.getElementById('loading');
     loading.classList.add('done');
     viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom();
+    viewer.viewport.goHome(true);
   });
 
   // Panel toggle
@@ -480,7 +482,7 @@
   setTimeout(function() {
     document.getElementById('zoom-hint').classList.add('fade');
   }, 4000);
-  setTimeout(function() { if (!isMobile()) { panelVisible = false; syncPanel(); } }, 4000);
+  setTimeout(function() { if (!isMobile()) { panelVisible = false; syncPanel(); setTimeout(function() { viewer.viewport.goHome(); }, 400); } }, 4000);
 </script>
 
 </body>

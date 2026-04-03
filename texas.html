@@ -49,6 +49,7 @@
     .panel-nav-btn:hover { background: rgba(196,164,74,0.1); }
     .zoom-hint { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); font-family: 'Cormorant SC', serif; font-size: 0.55rem; letter-spacing: 0.25em; color: rgba(245,240,232,0.2); pointer-events: none; transition: opacity 1s ease; white-space: nowrap; }
     .zoom-hint.fade { opacity: 0; }
+    .openseadragon-canvas { outline: none; }
     .loading-overlay { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; background: var(--navy); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; z-index: 200; transition: opacity 0.6s ease; }
     .loading-overlay.done { opacity: 0; pointer-events: none; }
     .loading-label { font-family: 'Cormorant SC', serif; font-size: 0.65rem; letter-spacing: 0.3em; color: var(--gold-light); opacity: 0.7; }
@@ -109,7 +110,7 @@
 <div class="zoom-hint" id="zoom-hint">Scroll to zoom · Drag to pan</div>
 <script>
   const viewer = OpenSeadragon({ id: 'osd-viewer', tileSources: 'tiles/texas.dzi', showNavigationControl: false, animationTime: 0.4, blendTime: 0.2, constrainDuringPan: true, maxZoomPixelRatio: 4, minZoomLevel: 0.5, visibilityRatio: 0.9, zoomInButton: 'btn-zoom-in', zoomOutButton: 'btn-zoom-out', homeButton: 'btn-home', background: '#111820' });
-  viewer.addHandler('open', function() { document.getElementById('loading').classList.add('done'); viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom(); });
+  viewer.addHandler('open', function() { document.getElementById('loading').classList.add('done'); viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom(); viewer.viewport.goHome(true); });
   const panel = document.getElementById('side-panel'), wrap = document.getElementById('viewer-wrap'), toggleBtn = document.getElementById('panel-toggle'), tab = document.getElementById('panel-tab');
   const isMobile = () => window.innerWidth <= 768;
   let panelVisible = !isMobile();
@@ -124,7 +125,7 @@
   window.addEventListener('resize', function() { panelVisible = !isMobile(); syncPanel(); });
   syncPanel();
   setTimeout(function() { document.getElementById('zoom-hint').classList.add('fade'); }, 4000);
-  setTimeout(function() { if (!isMobile()) { panelVisible = false; syncPanel(); } }, 4000);
+  setTimeout(function() { if (!isMobile()) { panelVisible = false; syncPanel(); setTimeout(function() { viewer.viewport.goHome(); }, 400); } }, 4000);
 </script>
 </body>
 </html>
