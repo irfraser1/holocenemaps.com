@@ -53,6 +53,55 @@
     .loading-bar-fill { position: absolute; left: -100%; top: 0; bottom: 0; width: 100%; background: var(--gold-light); animation: loadbar 1.4s ease-in-out infinite; }
     @keyframes loadbar { 0% { left: -100%; } 50% { left: 0%; } 100% { left: 100%; } }
     .drawer-handle { display: none; width: 36px; height: 4px; background: rgba(196,164,74,0.3); border-radius: 2px; margin: 0 auto 1.75rem; }
+
+    /* ── Annotation hotspots ── */
+    .ann-dot {
+      width: 28px; height: 28px;
+      cursor: pointer; background: none; border: none; padding: 0;
+      position: relative; outline: none;
+    }
+    .ann-dot-inner {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px; height: 10px;
+      background: var(--gold-light); border-radius: 50%;
+      box-shadow: 0 0 8px rgba(196,164,74,0.6);
+      z-index: 1; transition: transform 0.2s;
+    }
+    .ann-dot:hover .ann-dot-inner,
+    .ann-dot.active .ann-dot-inner { transform: translate(-50%, -50%) scale(1.4); }
+    .ann-dot-ring {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(196,164,74,0.55);
+      animation: ann-pulse 2.4s ease-out infinite;
+    }
+    @keyframes ann-pulse {
+      0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.7; }
+      100% { transform: translate(-50%,-50%) scale(4.5); opacity: 0; }
+    }
+    /* ── Annotation card ── */
+    .ann-card {
+      position: fixed; z-index: 300;
+      background: rgba(13,18,26,0.97);
+      border: 1px solid rgba(196,164,74,0.4);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      padding: 1.2rem 1.4rem; width: 276px;
+      opacity: 0; transform: translateY(-6px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      pointer-events: auto;
+    }
+    .ann-card.visible { opacity: 1; transform: translateY(0); }
+    .ann-card-title {
+      font-family: 'Cormorant SC', serif;
+      font-size: 0.6rem; letter-spacing: 0.22em;
+      color: var(--gold-light); margin-bottom: 0.6rem;
+    }
+    .ann-card-body {
+      font-size: 0.82rem; color: var(--text-secondary); line-height: 1.8;
+    }
+
     @media (max-width: 768px) {
       .viewer-wrap { right: 0 !important; }
       .side-panel { top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 70vh; border-left: none; border-top: 1px solid var(--gold-dim); border-radius: 12px 12px 0 0; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); }
@@ -117,6 +166,92 @@
   window.addEventListener('resize', function() { panelVisible = !isMobile(); syncPanel(); });
   syncPanel();
   setTimeout(function() { document.getElementById('zoom-hint').classList.add('fade'); }, 4000);
+
+  // ── Annotations ──────────────────────────────────────────
+  const ANNOTATIONS = [
+    {
+      x: 3100, y: 3600,
+      title: 'Mississippi Delta Inset',
+      body: "D'Iberville's 1699 reconnaissance voyage up the Mississippi's mouth provided the intelligence behind this detailed inset — the first systematic French survey of the Gulf Coast approach. It translates his expedition journals into cartographic form, marking the strategic site that would become the entry point to French Louisiana."
+    },
+    {
+      x: 8200, y: 12800,
+      title: 'La Louissiane — John Law\'s Empire',
+      body: "The vast territory labeled La Louissiane encompasses the entire Mississippi watershed, cartographically embodying the fantasy John Law sold to European investors during the 1719 Mississippi Bubble. Published at the very peak of the speculation, this map was the promotional image of an empire that existed largely on paper."
+    },
+    {
+      x: 20800, y: 17200,
+      title: 'Québec Panoramic Inset',
+      body: "The panoramic view of Québec documents the city as it appeared in the aftermath of the failed 1690 English assault led by William Phips — a siege the French repelled with a famous ultimatum from Frontenac. The inset celebrates the colonial capital's impregnability at the precise moment French North American ambitions reached their peak."
+    },
+    {
+      x: 13800, y: 6200,
+      title: 'The Great Lakes',
+      body: "The remarkable accuracy of the Great Lakes here — particularly Superior and Michigan — derives from Jesuit missionary reports accumulated over decades of interior travel since the 1640s. No European survey expedition had reached these waters; the cartography is entirely built from indigenous geographic knowledge relayed through mission correspondences."
+    },
+    {
+      x: 10200, y: 15800,
+      title: 'Indigenous Peoples & Cave Dwellers',
+      body: "Scattered across the interior are ethnographic annotations recording indigenous communities in terms that blended geographic fact with European fantasy, including references to cave-dwelling peoples in the southern interior. These notations reflect Jesuit field reports filtered through an Amsterdam publisher's imagination of the New World."
+    },
+    {
+      x: 24600, y: 9200,
+      title: 'Atlantic Sea Monsters & Ships',
+      body: "The decorated Atlantic carries the standard visual vocabulary of the edges of European geographic knowledge — ships in full sail and sea creatures marking the open ocean. These conventions, inherited from sixteenth-century cartography, signaled to readers that beyond this point reliable intelligence gave way to speculation and myth."
+    }
+  ];
+
+  var activeCard = null;
+
+  function closeCard() {
+    if (activeCard) { activeCard.remove(); activeCard = null; }
+    document.querySelectorAll('.ann-dot.active').forEach(function(d) { d.classList.remove('active'); });
+  }
+
+  function showCard(ann, dotEl) {
+    if (dotEl.classList.contains('active')) { closeCard(); return; }
+    closeCard();
+    dotEl.classList.add('active');
+
+    var card = document.createElement('div');
+    card.className = 'ann-card';
+    card.innerHTML =
+      '<p class="ann-card-title">' + ann.title + '</p>' +
+      '<p class="ann-card-body">' + ann.body + '</p>';
+    document.body.appendChild(card);
+
+    var r   = dotEl.getBoundingClientRect();
+    var cx  = r.left + r.width / 2;
+    card.style.left = Math.max(8, Math.min(cx - 138, window.innerWidth - 284)) + 'px';
+    card.style.top  = (r.top - 8) + 'px';
+
+    requestAnimationFrame(function() {
+      if (card.getBoundingClientRect().top < 60) {
+        card.style.top = (r.bottom + 8) + 'px';
+      }
+      card.classList.add('visible');
+    });
+
+    activeCard = card;
+  }
+
+  viewer.addHandler('open', function() {
+    ANNOTATIONS.forEach(function(ann, i) {
+      var vp  = viewer.viewport.imageToViewportCoordinates(ann.x, ann.y);
+      var btn = document.createElement('button');
+      btn.className = 'ann-dot';
+      btn.setAttribute('aria-label', ann.title);
+      btn.innerHTML =
+        '<span class="ann-dot-ring" style="animation-delay:' + (i * 0.38) + 's"></span>' +
+        '<span class="ann-dot-inner"></span>';
+      btn.addEventListener('click', function(e) { e.stopPropagation(); showCard(ann, btn); });
+      viewer.addOverlay({ element: btn, location: vp, placement: OpenSeadragon.Placement.CENTER });
+    });
+  });
+
+  viewer.addHandler('canvas-click',  function() { closeCard(); });
+  viewer.addHandler('canvas-drag',   function() { closeCard(); });
+  viewer.addHandler('canvas-scroll', function() { closeCard(); });
 </script>
 </body>
 </html>
