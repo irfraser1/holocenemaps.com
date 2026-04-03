@@ -501,6 +501,7 @@
   .map-entry {
     display: grid;
     grid-template-columns: 1fr 2fr;
+    align-items: start;
     gap: 0;
     margin-bottom: 1px;
     border: 1px solid var(--border);
@@ -524,7 +525,7 @@
     position: relative;
     overflow: hidden;
     background: var(--navy);
-    min-height: 320px;
+    height: 320px;
   }
 
   .map-image-container img {
@@ -642,6 +643,7 @@
     margin-bottom: 2rem;
     opacity: 0.8;
     transition: opacity 0.2s;
+    text-decoration: none;
   }
 
   .map-further-toggle:hover { opacity: 1; }
@@ -1221,7 +1223,7 @@
     .act-card:last-child { border-bottom: none; }
     .collection-section { padding: 3rem 1.25rem; }
     .map-entry { grid-template-columns: 1fr; }
-    .map-image-container { min-height: 260px; }
+    .map-image-container { height: 260px; }
     .map-details { padding: 1.5rem; }
     .map-title { font-size: 1.2rem; }
     .map-meta { flex-wrap: wrap; gap: 1rem; }
@@ -1338,19 +1340,14 @@
     <div class="map-entry">
       <div class="map-image-container">
         <a href="champlain.html"><img src="https://holocenemaps.com/chatelain-1719.jpg" alt="Chatelain 1719"></a>
-        <span class="act-tag">Act I · 1719</span><a href="champlain.html" class="detail-link">View Detail →</a>
+        <span class="act-tag">Act I · 1719</span>
       </div>
       <div class="map-details">
         <p class="map-cartographer">Henri Abraham Chatelain</p>
         <h3 class="map-title">Carte de la Nouvelle France, ou se voit le cours des grandes rivières</h3>
         <p class="map-date">1719 · Amsterdam</p>
         <p class="map-narrative">This map was produced in 1719 by Henri Chatelain in his <em>Atlas Historique</em>, a commercial atlas aimed at educated European readers. Drawing on De l'Isle's authoritative 1718 cartography, it presents French territorial claims over the Mississippi basin and Great Lakes at the precise moment the Mississippi Bubble was at its peak.</p>
-        <button class="map-further-toggle" data-target="further-chatelain">+ Further Description</button>
-        <div class="map-further" id="further-chatelain">
-          <p class="map-narrative">Henri Chatelain was born in 1684 to a French Huguenot family driven into exile in Amsterdam after Louis XIV made Protestantism illegal, forcing hundreds of thousands from France. This stands in stark contrast to De l'Isle, who served as Premier Géographe du Roi — Geographer Royal to Louis XV — working at the very heart of French royal power. That the most authoritative French imperial map of the period and Chatelain's lavish elaboration of it were produced by men at opposite ends of French society remains one of the more remarkable footnotes of the era.</p>
-          <p class="map-narrative">While not a deliberate investment instrument, it was published for an audience gripped by Louisiana fever and the promise of vast economic opportunity in the French interior. Its rich decoration made French imperial ambition feel vivid, real, and vast to the European readership consuming it.</p>
-          <a href="champlain.html" class="detail-link">View in Detail →</a>
-        </div>
+        <a href="champlain.html" class="map-further-toggle">Further Description →</a>
       </div>
     </div>
 
@@ -1358,18 +1355,14 @@
     <div class="map-entry">
       <div class="map-image-container">
         <a href="bowen.html"><img src="https://holocenemaps.com/bowen-1740.jpg" alt="Bowen Atlantic World c.1740"></a>
-        <span class="act-tag">Act II · c. 1740</span><a href="bowen.html" class="detail-link">View Detail →</a>
+        <span class="act-tag">Act II · c. 1740</span>
       </div>
       <div class="map-details">
         <p class="map-cartographer">Emanuel Bowen</p>
         <h3 class="map-title">A Map of the King of Great Britain's Dominions in Europe, Africa, and America</h3>
-        <p class="map-date">c. 1740 · London</p><a href="bowen.html" class="detail-link">View in Detail →</a>
+        <p class="map-date">c. 1740 · London</p>
         <p class="map-narrative">Emanuel Bowen produced this map on the eve of the French and Indian War, making British imperial claim its explicit subject. Yellow outlining traces the dominions of the King of Great Britain across three continents — Europe, Africa, and America — presenting the Atlantic not as an ocean dividing possessions but as a British medium connecting them.</p>
-        <button class="map-further-toggle" data-target="further-bowen">+ Further Description</button>
-        <div class="map-further" id="further-bowen">
-          <p class="map-narrative">Bowen's position in the cartographic world of the period was without parallel: he held the appointment of Engraver of Maps simultaneously to George II of Great Britain and to Louis XV of France, the two monarchs whose empires were on the verge of open war. That a single craftsman could serve the royal geographies of both crowns speaks to the intimacy of the European cartographic trade and the degree to which maps were understood as instruments of prestige rather than military intelligence.</p>
-          <p class="map-narrative">The map captures the British empire at a moment of maximum confidence before the test of the coming conflict. Within two decades, the world it depicts — balanced between French and British power, with the interior of North America still marked by French territorial claims — would be fundamentally redrawn. This is the document of the last moment before that transformation.</p>
-        </div>
+        <a href="bowen.html" class="map-further-toggle">Further Description →</a>
       </div>
     </div>
 
@@ -1377,18 +1370,14 @@
     <div class="map-entry">
       <div class="map-image-container">
         <a href="gibson.html"><img src="https://holocenemaps.com/gibson-1763.jpg" alt="Gibson Proclamation Map 1763"></a>
-        <span class="act-tag">Act III · 1763</span><a href="gibson.html" class="detail-link">View Detail →</a>
+        <span class="act-tag">Act III · 1763</span>
       </div>
       <div class="map-details">
         <p class="map-cartographer">John Gibson · The Gentleman's Magazine</p>
         <h3 class="map-title">The British Governments in North America, Laid Down Agreeable to the Proclamation of October 7, 1763</h3>
-        <p class="map-date">1763 · London</p><a href="gibson.html" class="detail-link">View in Detail →</a>
+        <p class="map-date">1763 · London</p>
         <p class="map-narrative">Published to accompany the Royal Proclamation of October 7, 1763, this map codifies Britain's victory over France in the most direct cartographic terms. New administrative boundaries carve the former French territories into provinces, and a vast expanse labeled <em>Lands Reserved for the Indians</em> marks the Proclamation Line — the boundary beyond which colonial settlement was forbidden.</p>
-        <button class="map-further-toggle" data-target="further-gibson">+ Further Description</button>
-        <div class="map-further" id="further-gibson">
-          <p class="map-narrative">The map appeared in <em>The Gentleman's Magazine</em>, the most widely read periodical in the English-speaking world, reaching a readership of merchants, lawyers, and educated professionals who had followed the Seven Years' War with intense interest. Gibson's clean, functional style was suited to its purpose: this was not a decorative object but an instrument of public information, explaining the geography of a new political order to the citizens who would have to live under it.</p>
-          <p class="map-narrative">History would render the Proclamation Line almost immediately obsolete. Colonial settlers crossed it from the moment it was drawn, and the resentments generated by British attempts to enforce it — and to tax the colonists to pay for its administration — became a central grievance of the revolution that would undo this entire cartographic settlement within a generation. The map documents a British triumph at the precise moment its consequences were being set in motion.</p>
-        </div>
+        <a href="gibson.html" class="map-further-toggle">Further Description →</a>
       </div>
     </div>
 
@@ -1407,12 +1396,13 @@
     <div class="map-entry">
       <div class="map-image-container">
         <a href="nyc.html"><img src="https://holocenemaps.com/nyc-eres-1939.jpg" alt="Richard Edes Harrison New York City 1939"></a>
-        <span class="act-tag">Fortune · 1939</span><a href="nyc.html" class="detail-link">View Detail →</a>
+        <span class="act-tag">Fortune · 1939</span>
       </div>
       <div class="map-details">
         <p class="map-cartographer">Richard Edes Harrison</p>
         <h3 class="map-title">The City of New York</h3>
-        <p class="map-date">July 1939 · Fortune Magazine</p><a href="nyc.html" class="detail-link">View in Detail →</a>
+        <p class="map-date">July 1939 · Fortune Magazine</p>
+        <a href="nyc.html" class="map-further-toggle">Further Description →</a>
       </div>
     </div>
 
@@ -1420,12 +1410,13 @@
     <div class="map-entry">
       <div class="map-image-container">
         <a href="texas.html"><img src="https://holocenemaps.com/texas-1909.jpg" alt="Texas 1909"></a>
-        <span class="act-tag">Texas · 1909</span><a href="texas.html" class="detail-link">View Detail →</a>
+        <span class="act-tag">Texas · 1909</span>
       </div>
       <div class="map-details">
         <p class="map-cartographer">Poole Brothers · The Texas Realty Journal</p>
         <h3 class="map-title">Iron Mountain Route to All Parts of Texas</h3>
-        <p class="map-date">1909 · Houston, Texas</p><a href="texas.html" class="detail-link">View in Detail →</a>
+        <p class="map-date">1909 · Houston, Texas</p>
+        <a href="texas.html" class="map-further-toggle">Further Description →</a>
       </div>
     </div>
 
@@ -1548,15 +1539,6 @@
     observer.observe(card);
   });
 
-  // Further Description toggles
-  document.querySelectorAll('.map-further-toggle').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var target = document.getElementById(btn.dataset.target);
-      var opening = !target.classList.contains('open');
-      target.classList.toggle('open', opening);
-      btn.textContent = opening ? '− Less' : '+ Further Description';
-    });
-  });
 
 
 
