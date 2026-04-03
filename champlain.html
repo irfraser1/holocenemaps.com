@@ -248,7 +248,9 @@
       btn.innerHTML =
         '<span class="ann-dot-ring" style="animation-delay:' + (i * 0.38) + 's"></span>' +
         '<span class="ann-dot-inner"></span>';
-      btn.addEventListener('click', function(e) { e.stopPropagation(); showCard(ann, btn); });
+      btn.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
+      btn.addEventListener('pointerup',   function(e) { e.stopPropagation(); });
+      btn.addEventListener('click',       function(e) { e.stopPropagation(); showCard(ann, btn); });
       viewer.addOverlay({ element: btn, location: vp, placement: OpenSeadragon.Placement.CENTER });
     });
   });
