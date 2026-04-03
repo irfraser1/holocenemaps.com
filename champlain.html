@@ -212,31 +212,53 @@
     document.querySelectorAll('.ann-dot.active').forEach(function(d) { d.classList.remove('active'); });
   }
 
-  function showCard(ann, dotEl) {
-    if (dotEl.classList.contains('active')) { closeCard(); return; }
-    closeCard();
-    dotEl.classList.add('active');
-
+  function placeCard(ann, dotEl) {
+    if (!dotEl.classList.contains('active')) return;
     var card = document.createElement('div');
     card.className = 'ann-card';
     card.innerHTML =
       '<p class="ann-card-title">' + ann.title + '</p>' +
       '<p class="ann-card-body">' + ann.body + '</p>';
     document.body.appendChild(card);
-
-    var r   = dotEl.getBoundingClientRect();
-    var cx  = r.left + r.width / 2;
-    card.style.left = Math.max(8, Math.min(cx - 138, window.innerWidth - 284)) + 'px';
-    card.style.top  = (r.top - 8) + 'px';
-
-    requestAnimationFrame(function() {
-      if (card.getBoundingClientRect().top < 60) {
-        card.style.top = (r.bottom + 8) + 'px';
-      }
-      card.classList.add('visible');
-    });
-
     activeCard = card;
+
+    var r    = dotEl.getBoundingClientRect();
+    var vwr  = document.getElementById('viewer-wrap').getBoundingClientRect();
+    var cardW = 276, cardH = card.offsetHeight || 160;
+    var dotCX = r.left + r.width  / 2;
+    var dotCY = r.top  + r.height / 2;
+
+    // Prefer right of dot; flip left if too close to right edge
+    var left = (dotCX + 28 + cardW <= vwr.right - 8)
+      ? dotCX + 28
+      : dotCX - 28 - cardW;
+
+    var top = Math.max(
+      vwr.top + 8,
+      Math.min(dotCY - cardH / 2, vwr.bottom - cardH - 8)
+    );
+
+    card.style.left = left + 'px';
+    card.style.top  = top  + 'px';
+    requestAnimationFrame(function() { card.classList.add('visible'); });
+  }
+
+  function showCard(ann, dotEl) {
+    if (dotEl.classList.contains('active')) { closeCard(); return; }
+    closeCard();
+    dotEl.classList.add('active');
+
+    // Zoom into the annotation area, then place the card
+    var vp = viewer.viewport.imageToViewportCoordinates(ann.x, ann.y);
+    var targetZoom = Math.min(
+      viewer.viewport.getHomeZoom() * 3,
+      viewer.viewport.getMaxZoom() * 0.5
+    );
+    viewer.viewport.panTo(vp);
+    viewer.viewport.zoomTo(targetZoom, vp);
+    viewer.addOnceHandler('animation-finish', function() {
+      placeCard(ann, dotEl);
+    });
   }
 
   viewer.addHandler('open', function() {
