@@ -152,7 +152,7 @@
 </div>
 <div class="zoom-hint" id="zoom-hint">Scroll to zoom · Drag to pan</div>
 <script>
-  const viewer = OpenSeadragon({ id: 'osd-viewer', tileSources: 'tiles/champlain.dzi', showNavigationControl: false, animationTime: 0.4, blendTime: 0.2, constrainDuringPan: true, maxZoomPixelRatio: 4, minZoomLevel: 0.5, visibilityRatio: 1, zoomInButton: 'btn-zoom-in', zoomOutButton: 'btn-zoom-out', homeButton: 'btn-home', background: '#111820' });
+  const viewer = OpenSeadragon({ id: 'osd-viewer', tileSources: 'tiles/champlain.dzi', showNavigationControl: false, animationTime: 0.4, blendTime: 0.2, constrainDuringPan: true, maxZoomPixelRatio: 4, minZoomLevel: 0.5, visibilityRatio: 0.9, zoomInButton: 'btn-zoom-in', zoomOutButton: 'btn-zoom-out', homeButton: 'btn-home', background: '#111820' });
   viewer.addHandler('open', function() {
     document.getElementById('loading').classList.add('done');
     viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom();
