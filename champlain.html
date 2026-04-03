@@ -161,23 +161,24 @@
   const viewer = OpenSeadragon({ id: 'osd-viewer', tileSources: 'tiles/champlain.dzi', showNavigationControl: false, animationTime: 0.4, blendTime: 0.2, constrainDuringPan: true, maxZoomPixelRatio: 4, minZoomLevel: 0.5, visibilityRatio: 0.9, zoomInButton: 'btn-zoom-in', zoomOutButton: 'btn-zoom-out', homeButton: 'btn-home', background: '#111820' });
   viewer.addHandler('open', function() {
     document.getElementById('loading').classList.add('done');
-    viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom();
-    setTimeout(function() { viewer.viewport.goHome(true); }, 100);
+    setTimeout(function() { viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom(); viewer.viewport.goHome(true); }, 100);
   });
   const panel = document.getElementById('side-panel'), wrap = document.getElementById('viewer-wrap'), toggleBtn = document.getElementById('panel-toggle'), tab = document.getElementById('panel-tab');
   const isMobile = () => window.innerWidth <= 768;
   let panelVisible = !isMobile();
+  let autoCollapsed = false;
   function syncPanel() {
+    if (autoCollapsed && !isMobile() && panelVisible) { return; }
     if (isMobile()) { panel.classList.toggle('open', panelVisible); }
     else { panel.classList.toggle('hidden', !panelVisible); wrap.classList.toggle('panel-hidden', !panelVisible); tab.classList.toggle('panel-hidden', !panelVisible); tab.textContent = panelVisible ? '›' : '‹'; }
     toggleBtn.textContent = panelVisible ? 'Hide' : 'Info';
   }
-  tab.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
-  toggleBtn.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
+  tab.addEventListener('click', function() { autoCollapsed = false; panelVisible = !panelVisible; syncPanel(); });
+  toggleBtn.addEventListener('click', function() { autoCollapsed = false; panelVisible = !panelVisible; syncPanel(); });
   wrap.addEventListener('click', function() { if (isMobile() && panelVisible) { panelVisible = false; syncPanel(); } });
   syncPanel();
   setTimeout(function() { document.getElementById('zoom-hint').classList.add('fade'); }, 4000);
-  setTimeout(function() { if (!isMobile()) { panelVisible = false; syncPanel(); setTimeout(function() { viewer.viewport.goHome(); }, 500); } }, 4000);
+  setTimeout(function() { if (!isMobile()) { panelVisible = false; autoCollapsed = true; syncPanel(); setTimeout(function() { viewer.viewport.goHome(); }, 500); } }, 4000);
 
   // ── Annotations ──────────────────────────────────────────
   const ANNOTATIONS = [
