@@ -441,6 +441,7 @@
   viewer.addHandler('open', function() {
     const loading = document.getElementById('loading');
     loading.classList.add('done');
+    viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom();
   });
 
   // Panel toggle
