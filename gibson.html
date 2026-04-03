@@ -449,7 +449,7 @@
     const loading = document.getElementById('loading');
     loading.classList.add('done');
     viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom();
-    viewer.viewport.goHome(true);
+    setTimeout(function() { viewer.viewport.goHome(true); }, 100);
   });
 
   // Panel toggle
@@ -475,14 +475,13 @@
   tab.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
   toggleBtn.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
   wrap.addEventListener('click', function() { if (isMobile() && panelVisible) { panelVisible = false; syncPanel(); } });
-  window.addEventListener('resize', function() { panelVisible = !isMobile(); syncPanel(); });
   syncPanel();
 
   // Fade zoom hint after 4s
   setTimeout(function() {
     document.getElementById('zoom-hint').classList.add('fade');
   }, 4000);
-  setTimeout(function() { if (!isMobile()) { panelVisible = false; syncPanel(); setTimeout(function() { window.dispatchEvent(new Event('resize')); viewer.viewport.goHome(); }, 400); } }, 4000);
+  setTimeout(function() { if (!isMobile()) { panelVisible = false; syncPanel(); setTimeout(function() { viewer.viewport.goHome(); }, 500); } }, 4000);
 </script>
 
 </body>
