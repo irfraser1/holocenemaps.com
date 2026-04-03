@@ -614,8 +614,37 @@
     color: var(--text-secondary);
     line-height: 1.8;
     max-width: 52ch;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
   }
+
+  .map-further {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.45s ease;
+  }
+
+  .map-further.open { max-height: 800px; }
+
+  .map-further .map-narrative { margin-top: 1em; }
+
+  .map-further-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 2rem;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+  }
+
+  .map-further-toggle:hover { opacity: 1; }
 
   .map-meta {
     display: flex;
@@ -1316,8 +1345,11 @@
         <h3 class="map-title">Carte de la Nouvelle France, ou se voit le cours des grandes rivières</h3>
         <p class="map-date">1719 · Amsterdam</p><a href="champlain.html" class="detail-link">View in Detail →</a>
         <p class="map-narrative">This map was produced in 1719 by Henri Chatelain in his <em>Atlas Historique</em>, a commercial atlas aimed at educated European readers. Drawing on De l'Isle's authoritative 1718 cartography, it presents French territorial claims over the Mississippi basin and Great Lakes at the precise moment the Mississippi Bubble was at its peak.</p>
-        <p class="map-narrative" style="margin-top:1em;">Henri Chatelain was born in 1684 to a French Huguenot family driven into exile in Amsterdam after Louis XIV made Protestantism illegal, forcing hundreds of thousands from France. This stands in stark contrast to De l'Isle, who served as Premier Géographe du Roi — Geographer Royal to Louis XV — working at the very heart of French royal power. That the most authoritative French imperial map of the period and Chatelain's lavish elaboration of it were produced by men at opposite ends of French society remains one of the more remarkable footnotes of the era.</p>
-        <p class="map-narrative" style="margin-top:1em;">While not a deliberate investment instrument, it was published for an audience gripped by Louisiana fever and the promise of vast economic opportunity in the French interior. Its rich decoration made French imperial ambition feel vivid, real, and vast to the European readership consuming it.</p>
+        <button class="map-further-toggle" data-target="further-chatelain">+ Further Description</button>
+        <div class="map-further" id="further-chatelain">
+          <p class="map-narrative">Henri Chatelain was born in 1684 to a French Huguenot family driven into exile in Amsterdam after Louis XIV made Protestantism illegal, forcing hundreds of thousands from France. This stands in stark contrast to De l'Isle, who served as Premier Géographe du Roi — Geographer Royal to Louis XV — working at the very heart of French royal power. That the most authoritative French imperial map of the period and Chatelain's lavish elaboration of it were produced by men at opposite ends of French society remains one of the more remarkable footnotes of the era.</p>
+          <p class="map-narrative">While not a deliberate investment instrument, it was published for an audience gripped by Louisiana fever and the promise of vast economic opportunity in the French interior. Its rich decoration made French imperial ambition feel vivid, real, and vast to the European readership consuming it.</p>
+        </div>
       </div>
     </div>
 
@@ -1331,6 +1363,12 @@
         <p class="map-cartographer">Emanuel Bowen</p>
         <h3 class="map-title">A Map of the King of Great Britain's Dominions in Europe, Africa, and America</h3>
         <p class="map-date">c. 1740 · London</p><a href="bowen.html" class="detail-link">View in Detail →</a>
+        <p class="map-narrative">Emanuel Bowen produced this map on the eve of the French and Indian War, making British imperial claim its explicit subject. Yellow outlining traces the dominions of the King of Great Britain across three continents — Europe, Africa, and America — presenting the Atlantic not as an ocean dividing possessions but as a British medium connecting them.</p>
+        <button class="map-further-toggle" data-target="further-bowen">+ Further Description</button>
+        <div class="map-further" id="further-bowen">
+          <p class="map-narrative">Bowen's position in the cartographic world of the period was without parallel: he held the appointment of Engraver of Maps simultaneously to George II of Great Britain and to Louis XV of France, the two monarchs whose empires were on the verge of open war. That a single craftsman could serve the royal geographies of both crowns speaks to the intimacy of the European cartographic trade and the degree to which maps were understood as instruments of prestige rather than military intelligence.</p>
+          <p class="map-narrative">The map captures the British empire at a moment of maximum confidence before the test of the coming conflict. Within two decades, the world it depicts — balanced between French and British power, with the interior of North America still marked by French territorial claims — would be fundamentally redrawn. This is the document of the last moment before that transformation.</p>
+        </div>
       </div>
     </div>
 
@@ -1344,6 +1382,12 @@
         <p class="map-cartographer">John Gibson · The Gentleman's Magazine</p>
         <h3 class="map-title">The British Governments in North America, Laid Down Agreeable to the Proclamation of October 7, 1763</h3>
         <p class="map-date">1763 · London</p><a href="gibson.html" class="detail-link">View in Detail →</a>
+        <p class="map-narrative">Published to accompany the Royal Proclamation of October 7, 1763, this map codifies Britain's victory over France in the most direct cartographic terms. New administrative boundaries carve the former French territories into provinces, and a vast expanse labeled <em>Lands Reserved for the Indians</em> marks the Proclamation Line — the boundary beyond which colonial settlement was forbidden.</p>
+        <button class="map-further-toggle" data-target="further-gibson">+ Further Description</button>
+        <div class="map-further" id="further-gibson">
+          <p class="map-narrative">The map appeared in <em>The Gentleman's Magazine</em>, the most widely read periodical in the English-speaking world, reaching a readership of merchants, lawyers, and educated professionals who had followed the Seven Years' War with intense interest. Gibson's clean, functional style was suited to its purpose: this was not a decorative object but an instrument of public information, explaining the geography of a new political order to the citizens who would have to live under it.</p>
+          <p class="map-narrative">History would render the Proclamation Line almost immediately obsolete. Colonial settlers crossed it from the moment it was drawn, and the resentments generated by British attempts to enforce it — and to tax the colonists to pay for its administration — became a central grievance of the revolution that would undo this entire cartographic settlement within a generation. The map documents a British triumph at the precise moment its consequences were being set in motion.</p>
+        </div>
       </div>
     </div>
 
@@ -1501,6 +1545,16 @@
     card.style.transitionDelay = `${i * 0.12}s`;
     card.classList.add('animate-on-scroll');
     observer.observe(card);
+  });
+
+  // Further Description toggles
+  document.querySelectorAll('.map-further-toggle').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var target = document.getElementById(btn.dataset.target);
+      var opening = !target.classList.contains('open');
+      target.classList.toggle('open', opening);
+      btn.textContent = opening ? '− Less' : '+ Further Description';
+    });
   });
 
 
