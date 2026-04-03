@@ -31,6 +31,9 @@
     #osd-viewer { width: 100%; height: 100%; }
     .side-panel { position: fixed; top: 52px; right: 0; width: var(--panel-width); bottom: 0; background: var(--navy-mid); border-left: 1px solid var(--gold-dim); overflow-y: auto; padding: 2.5rem 2rem; transition: transform 0.35s ease; z-index: 50; }
     .side-panel.hidden { transform: translateX(100%); }
+    .panel-tab { position: fixed; top: 50%; right: var(--panel-width); transform: translateY(-50%); width: 20px; height: 52px; background: var(--navy-mid); border: 1px solid var(--gold-dim); border-right: none; border-radius: 3px 0 0 3px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 60; color: var(--gold-light); font-size: 0.8rem; transition: right 0.35s ease, background 0.15s; }
+    .panel-tab:hover { background: rgba(196,164,74,0.2); }
+    .panel-tab.panel-hidden { right: 0; }
     .panel-eyebrow { font-family: 'Cormorant SC', serif; font-size: 0.58rem; letter-spacing: 0.35em; color: var(--gold-light); margin-bottom: 1rem; display: block; }
     .panel-cartographer { font-family: 'Cormorant SC', serif; font-size: 0.75rem; letter-spacing: 0.15em; color: var(--gold-light); margin-bottom: 0.5rem; }
     .panel-title { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 400; color: var(--cream); line-height: 1.25; margin-bottom: 0.4rem; }
@@ -58,6 +61,7 @@
       .side-panel { top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: 70vh; border-left: none; border-top: 1px solid var(--gold-dim); border-radius: 12px 12px 0 0; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); }
       .side-panel.open { transform: translateY(0); }
       .drawer-handle { display: block; }
+      .panel-tab { display: none; }
     }
   </style>
 </head>
@@ -100,23 +104,26 @@
     <a href="index.html" class="panel-nav-btn">Collection</a>
   </div>
 </div>
+<button class="panel-tab" id="panel-tab">›</button>
 <div class="zoom-hint" id="zoom-hint">Scroll to zoom · Drag to pan</div>
 <script>
   const viewer = OpenSeadragon({ id: 'osd-viewer', tileSources: 'tiles/nyc.dzi', showNavigationControl: false, animationTime: 0.4, blendTime: 0.2, constrainDuringPan: true, maxZoomPixelRatio: 4, minZoomLevel: 0.5, visibilityRatio: 0.9, zoomInButton: 'btn-zoom-in', zoomOutButton: 'btn-zoom-out', homeButton: 'btn-home', background: '#111820' });
   viewer.addHandler('open', function() { document.getElementById('loading').classList.add('done'); viewer.viewport.minZoomLevel = viewer.viewport.getHomeZoom(); });
-  const panel = document.getElementById('side-panel'), wrap = document.getElementById('viewer-wrap'), toggleBtn = document.getElementById('panel-toggle');
+  const panel = document.getElementById('side-panel'), wrap = document.getElementById('viewer-wrap'), toggleBtn = document.getElementById('panel-toggle'), tab = document.getElementById('panel-tab');
   const isMobile = () => window.innerWidth <= 768;
   let panelVisible = !isMobile();
   function syncPanel() {
     if (isMobile()) { panel.classList.toggle('open', panelVisible); }
-    else { panel.classList.toggle('hidden', !panelVisible); wrap.classList.toggle('panel-hidden', !panelVisible); }
+    else { panel.classList.toggle('hidden', !panelVisible); wrap.classList.toggle('panel-hidden', !panelVisible); tab.classList.toggle('panel-hidden', !panelVisible); tab.textContent = panelVisible ? '›' : '‹'; }
     toggleBtn.textContent = panelVisible ? 'Hide' : 'Info';
   }
+  tab.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
   toggleBtn.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
   wrap.addEventListener('click', function() { if (isMobile() && panelVisible) { panelVisible = false; syncPanel(); } });
   window.addEventListener('resize', function() { panelVisible = !isMobile(); syncPanel(); });
   syncPanel();
   setTimeout(function() { document.getElementById('zoom-hint').classList.add('fade'); }, 4000);
+  setTimeout(function() { if (!isMobile()) { panelVisible = false; syncPanel(); } }, 4000);
 </script>
 </body>
 </html>

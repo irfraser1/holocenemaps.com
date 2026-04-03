@@ -155,6 +155,10 @@
       transform: translateX(100%);
     }
 
+    .panel-tab { position: fixed; top: 50%; right: var(--panel-width); transform: translateY(-50%); width: 20px; height: 52px; background: var(--navy-mid); border: 1px solid var(--gold-dim); border-right: none; border-radius: 3px 0 0 3px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 60; color: var(--gold-light); font-size: 0.8rem; transition: right 0.35s ease, background 0.15s; }
+    .panel-tab:hover { background: rgba(196,164,74,0.2); }
+    .panel-tab.panel-hidden { right: 0; }
+
     .panel-eyebrow {
       font-family: 'Cormorant SC', serif;
       font-size: 0.58rem;
@@ -346,6 +350,7 @@
       }
       .side-panel.open { transform: translateY(0); }
       .drawer-handle { display: block; }
+      .panel-tab { display: none; }
     }
   </style>
 </head>
@@ -419,6 +424,7 @@
 </div>
 
 <!-- ZOOM HINT -->
+<button class="panel-tab" id="panel-tab">›</button>
 <div class="zoom-hint" id="zoom-hint">Scroll to zoom · Drag to pan</div>
 
 <script>
@@ -448,6 +454,7 @@
   const panel = document.getElementById('side-panel');
   const wrap = document.getElementById('viewer-wrap');
   const toggleBtn = document.getElementById('panel-toggle');
+  const tab = document.getElementById('panel-tab');
   const isMobile = () => window.innerWidth <= 768;
   let panelVisible = !isMobile();
 
@@ -457,10 +464,13 @@
     } else {
       panel.classList.toggle('hidden', !panelVisible);
       wrap.classList.toggle('panel-hidden', !panelVisible);
+      tab.classList.toggle('panel-hidden', !panelVisible);
+      tab.textContent = panelVisible ? '›' : '‹';
     }
     toggleBtn.textContent = panelVisible ? 'Hide' : 'Info';
   }
 
+  tab.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
   toggleBtn.addEventListener('click', function() { panelVisible = !panelVisible; syncPanel(); });
   wrap.addEventListener('click', function() { if (isMobile() && panelVisible) { panelVisible = false; syncPanel(); } });
   window.addEventListener('resize', function() { panelVisible = !isMobile(); syncPanel(); });
@@ -470,6 +480,7 @@
   setTimeout(function() {
     document.getElementById('zoom-hint').classList.add('fade');
   }, 4000);
+  setTimeout(function() { if (!isMobile()) { panelVisible = false; syncPanel(); } }, 4000);
 </script>
 
 </body>
