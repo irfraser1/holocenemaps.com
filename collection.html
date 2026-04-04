@@ -257,13 +257,14 @@
 
   /* THESIS PANEL */
   .thesis-panel {
-    background: #12100c;
-    border-bottom: 1px solid #2a2318;
+    background: #f5edda;
+    border-top: 2px solid var(--gold);
+    border-bottom: 1px solid var(--border);
     overflow: hidden;
     transition: max-height 0.3s ease;
     max-height: 200px;
   }
-  .thesis-panel.collapsed { max-height: 0; }
+  .thesis-panel.collapsed { max-height: 0; border-top-width: 0; }
   .thesis-inner {
     padding: 12px 28px;
     display: flex; align-items: flex-start; gap: 14px;
@@ -271,41 +272,44 @@
   .thesis-label {
     font-family: 'Spectral', serif; font-size: 10px;
     letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--gold); opacity: 0.7; white-space: nowrap;
+    color: var(--gold); white-space: nowrap;
     padding-top: 2px; flex-shrink: 0;
   }
   .thesis-text {
     font-family: 'Cormorant Garamond', serif; font-size: 13px;
-    color: rgba(245,240,232,0.6); line-height: 1.6; flex: 1;
+    color: #3a2e1a; line-height: 1.6; flex: 1;
   }
   .thesis-text.editing { display: none; }
   #thesis-edit-input {
-    flex: 1; background: rgba(255,255,255,0.05);
-    border: 1px solid #c4a44a40; padding: 6px 10px;
+    flex: 1; background: #fff;
+    border: 1px solid var(--border); padding: 6px 10px;
     font-family: 'Cormorant Garamond', serif; font-size: 13px;
-    color: rgba(245,240,232,0.85); outline: none; resize: none;
+    color: var(--navy); outline: none; resize: none;
     line-height: 1.6; width: 100%; display: none;
   }
-  #thesis-edit-input:focus { border-color: #c4a44a80; }
+  #thesis-edit-input:focus { border-color: var(--gold); }
   #thesis-edit-input.editing { display: block; }
   .thesis-actions { display: flex; gap: 8px; flex-shrink: 0; padding-top: 2px; }
   .thesis-btn {
     font-family: 'Spectral', serif; font-size: 10px;
     letter-spacing: 0.08em; text-transform: uppercase;
-    background: transparent; border: 1px solid #c4a44a30;
-    color: #c4a44a80; cursor: pointer; padding: 3px 9px;
-    white-space: nowrap; transition: border-color 0.15s, color 0.15s;
+    background: transparent; border: 1px solid #c4a44a60;
+    color: var(--gold); cursor: pointer; padding: 3px 9px;
+    white-space: nowrap; transition: border-color 0.15s, background 0.15s;
   }
-  .thesis-btn:hover { border-color: #c4a44a70; color: #c4a44a; }
+  .thesis-btn:hover { border-color: var(--gold); background: #c4a44a15; }
   .thesis-btn.save { background: #c4a44a15; }
+  .thesis-tab {
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 4px 28px;
+  }
   .thesis-toggle {
     font-family: 'Spectral', serif; font-size: 10px;
     letter-spacing: 0.08em; text-transform: uppercase;
     background: transparent; border: none;
-    color: #c4a44a50; cursor: pointer; padding: 0;
-    white-space: nowrap;
+    color: var(--gold); cursor: pointer; padding: 0; opacity: 0.6;
   }
-  .thesis-toggle:hover { color: #c4a44a90; }
+  .thesis-toggle:hover { opacity: 1; }
 
   /* THUMBNAIL */
   .card-thumb {
@@ -373,9 +377,11 @@
         <button class="thesis-btn" id="thesis-edit-btn" onclick="startEditThesis()">Edit</button>
         <button class="thesis-btn save" id="thesis-save-btn" style="display:none" onclick="updateThesis()">Save</button>
         <button class="thesis-btn" id="thesis-cancel-btn" style="display:none" onclick="cancelEditThesis()">Cancel</button>
-        <button class="thesis-toggle" onclick="toggleThesisPanel()">▲ Hide</button>
       </div>
     </div>
+  </div>
+  <div class="thesis-tab">
+    <button class="thesis-toggle" id="thesis-toggle-btn" onclick="toggleThesisPanel()">▲ Hide Thesis</button>
   </div>
 
   <div class="controls">
@@ -587,10 +593,8 @@ function renderThesisPanel() {
 }
 
 function toggleThesisPanel() {
-  const panel = document.getElementById('thesis-panel');
-  const toggle = panel.querySelector('.thesis-toggle');
-  const collapsed = panel.classList.toggle('collapsed');
-  toggle.textContent = collapsed ? '▼ Thesis' : '▲ Hide';
+  const collapsed = document.getElementById('thesis-panel').classList.toggle('collapsed');
+  document.getElementById('thesis-toggle-btn').textContent = collapsed ? '▼ Show Thesis' : '▲ Hide Thesis';
 }
 
 function startEditThesis() {
