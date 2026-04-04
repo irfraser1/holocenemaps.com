@@ -257,16 +257,15 @@
 
   /* THESIS PANEL */
   .thesis-panel {
-    background: #f5edda;
-    border-top: 2px solid var(--gold);
-    border-bottom: 1px solid var(--border);
+    background: #F2E8D0;
+    border-bottom: 2px solid var(--border);
     overflow: hidden;
     transition: max-height 0.3s ease;
     max-height: 200px;
   }
-  .thesis-panel.collapsed { max-height: 0; border-top-width: 0; }
+  .thesis-panel.collapsed { max-height: 0; }
   .thesis-inner {
-    padding: 12px 28px;
+    padding: 14px 28px;
     display: flex; align-items: flex-start; gap: 14px;
   }
   .thesis-label {
@@ -277,7 +276,7 @@
   }
   .thesis-text {
     font-family: 'Cormorant Garamond', serif; font-size: 13px;
-    color: #3a2e1a; line-height: 1.6; flex: 1;
+    color: #2a1f0e; line-height: 1.6; flex: 1;
   }
   .thesis-text.editing { display: none; }
   #thesis-edit-input {
@@ -293,23 +292,18 @@
   .thesis-btn {
     font-family: 'Spectral', serif; font-size: 10px;
     letter-spacing: 0.08em; text-transform: uppercase;
-    background: transparent; border: 1px solid #c4a44a60;
+    background: transparent; border: 1px solid #8B691460;
     color: var(--gold); cursor: pointer; padding: 3px 9px;
     white-space: nowrap; transition: border-color 0.15s, background 0.15s;
   }
-  .thesis-btn:hover { border-color: var(--gold); background: #c4a44a15; }
-  .thesis-btn.save { background: #c4a44a15; }
-  .thesis-tab {
-    background: var(--bg); border-bottom: 1px solid var(--border);
-    padding: 4px 28px;
+  .thesis-btn:hover { border-color: var(--gold); background: rgba(139,105,20,0.1); }
+  .thesis-btn.save { background: rgba(139,105,20,0.08); }
+  .btn-thesis-toggle {
+    background: transparent; color: #aaa; border: 1px solid #444;
+    padding: 7px 12px; font-family: 'Spectral', serif; font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
   }
-  .thesis-toggle {
-    font-family: 'Spectral', serif; font-size: 10px;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    background: transparent; border: none;
-    color: var(--gold); cursor: pointer; padding: 0; opacity: 0.6;
-  }
-  .thesis-toggle:hover { opacity: 1; }
+  .btn-thesis-toggle:hover { color: var(--cream); border-color: #888; }
 
   /* THUMBNAIL */
   .card-thumb {
@@ -361,6 +355,7 @@
         <div class="header-title">Imperial North America, 1680–1780</div>
       </div>
       <div class="header-right">
+        <button class="btn-thesis-toggle" id="thesis-toggle-btn" onclick="toggleThesisPanel()">Thesis ▲</button>
         <button class="btn-add" onclick="openAdd()">+ Add Map</button>
         <button class="btn-signout" onclick="signOut()">Sign Out</button>
       </div>
@@ -380,10 +375,6 @@
       </div>
     </div>
   </div>
-  <div class="thesis-tab">
-    <button class="thesis-toggle" id="thesis-toggle-btn" onclick="toggleThesisPanel()">▲ Hide Thesis</button>
-  </div>
-
   <div class="controls">
     <input class="search-input" type="text" placeholder="Search maps…" id="search-input" oninput="renderList()">
     <button class="filter-btn all active" id="f-all" onclick="setActFilter(0)">All Acts</button>
@@ -594,7 +585,7 @@ function renderThesisPanel() {
 
 function toggleThesisPanel() {
   const collapsed = document.getElementById('thesis-panel').classList.toggle('collapsed');
-  document.getElementById('thesis-toggle-btn').textContent = collapsed ? '▼ Show Thesis' : '▲ Hide Thesis';
+  document.getElementById('thesis-toggle-btn').textContent = collapsed ? 'Thesis ▼' : 'Thesis ▲';
 }
 
 function startEditThesis() {
