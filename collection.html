@@ -255,6 +255,58 @@
   }
   .evaluate-link:hover { opacity: 0.7; }
 
+  /* THESIS PANEL */
+  .thesis-panel {
+    background: #12100c;
+    border-bottom: 1px solid #2a2318;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    max-height: 200px;
+  }
+  .thesis-panel.collapsed { max-height: 0; }
+  .thesis-inner {
+    padding: 12px 28px;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .thesis-label {
+    font-family: 'Spectral', serif; font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gold); opacity: 0.7; white-space: nowrap;
+    padding-top: 2px; flex-shrink: 0;
+  }
+  .thesis-text {
+    font-family: 'Cormorant Garamond', serif; font-size: 13px;
+    color: rgba(245,240,232,0.6); line-height: 1.6; flex: 1;
+  }
+  .thesis-text.editing { display: none; }
+  #thesis-edit-input {
+    flex: 1; background: rgba(255,255,255,0.05);
+    border: 1px solid #c4a44a40; padding: 6px 10px;
+    font-family: 'Cormorant Garamond', serif; font-size: 13px;
+    color: rgba(245,240,232,0.85); outline: none; resize: none;
+    line-height: 1.6; width: 100%; display: none;
+  }
+  #thesis-edit-input:focus { border-color: #c4a44a80; }
+  #thesis-edit-input.editing { display: block; }
+  .thesis-actions { display: flex; gap: 8px; flex-shrink: 0; padding-top: 2px; }
+  .thesis-btn {
+    font-family: 'Spectral', serif; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    background: transparent; border: 1px solid #c4a44a30;
+    color: #c4a44a80; cursor: pointer; padding: 3px 9px;
+    white-space: nowrap; transition: border-color 0.15s, color 0.15s;
+  }
+  .thesis-btn:hover { border-color: #c4a44a70; color: #c4a44a; }
+  .thesis-btn.save { background: #c4a44a15; }
+  .thesis-toggle {
+    font-family: 'Spectral', serif; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    background: transparent; border: none;
+    color: #c4a44a50; cursor: pointer; padding: 0;
+    white-space: nowrap;
+  }
+  .thesis-toggle:hover { color: #c4a44a90; }
+
   /* THUMBNAIL */
   .card-thumb {
     width: 80px;
@@ -311,6 +363,20 @@
     </div>
     <div class="stats-row" id="stats-row"></div>
   </header>
+
+  <div class="thesis-panel" id="thesis-panel">
+    <div class="thesis-inner">
+      <span class="thesis-label">Thesis</span>
+      <span class="thesis-text" id="thesis-display"></span>
+      <textarea id="thesis-edit-input" rows="2"></textarea>
+      <div class="thesis-actions">
+        <button class="thesis-btn" id="thesis-edit-btn" onclick="startEditThesis()">Edit</button>
+        <button class="thesis-btn save" id="thesis-save-btn" style="display:none" onclick="updateThesis()">Save</button>
+        <button class="thesis-btn" id="thesis-cancel-btn" style="display:none" onclick="cancelEditThesis()">Cancel</button>
+        <button class="thesis-toggle" onclick="toggleThesisPanel()">▲ Hide</button>
+      </div>
+    </div>
+  </div>
 
   <div class="controls">
     <input class="search-input" type="text" placeholder="Search maps…" id="search-input" oninput="renderList()">
@@ -493,6 +559,7 @@ async function checkProfile() {
   const { data } = await db.from('profiles').select('thesis').eq('user_id', user.id).single();
   if (data?.thesis) {
     userThesis = data.thesis;
+    renderThesisPanel();
     await loadMaps();
   } else {
     document.getElementById('onboarding-modal').style.display = 'flex';
@@ -509,8 +576,53 @@ async function saveThesis() {
   const { error } = await db.from('profiles').upsert({ user_id: user.id, thesis });
   if (error) { errEl.textContent = error.message; btn.textContent = 'Start Building'; return; }
   userThesis = thesis;
+  renderThesisPanel();
   document.getElementById('onboarding-modal').style.display = 'none';
   await loadMaps();
+}
+
+function renderThesisPanel() {
+  document.getElementById('thesis-display').textContent = userThesis;
+  document.getElementById('thesis-edit-input').value = userThesis;
+}
+
+function toggleThesisPanel() {
+  const panel = document.getElementById('thesis-panel');
+  const toggle = panel.querySelector('.thesis-toggle');
+  const collapsed = panel.classList.toggle('collapsed');
+  toggle.textContent = collapsed ? '▼ Thesis' : '▲ Hide';
+}
+
+function startEditThesis() {
+  document.getElementById('thesis-display').classList.add('editing');
+  document.getElementById('thesis-edit-input').classList.add('editing');
+  document.getElementById('thesis-edit-btn').style.display = 'none';
+  document.getElementById('thesis-save-btn').style.display = '';
+  document.getElementById('thesis-cancel-btn').style.display = '';
+  document.getElementById('thesis-edit-input').focus();
+}
+
+function cancelEditThesis() {
+  document.getElementById('thesis-edit-input').value = userThesis;
+  document.getElementById('thesis-display').classList.remove('editing');
+  document.getElementById('thesis-edit-input').classList.remove('editing');
+  document.getElementById('thesis-edit-btn').style.display = '';
+  document.getElementById('thesis-save-btn').style.display = 'none';
+  document.getElementById('thesis-cancel-btn').style.display = 'none';
+}
+
+async function updateThesis() {
+  const thesis = document.getElementById('thesis-edit-input').value.trim();
+  if (!thesis) return;
+  const btn = document.getElementById('thesis-save-btn');
+  btn.textContent = 'Saving…';
+  const { data: { user } } = await db.auth.getUser();
+  const { error } = await db.from('profiles').upsert({ user_id: user.id, thesis });
+  if (error) { btn.textContent = 'Save'; return; }
+  userThesis = thesis;
+  renderThesisPanel();
+  cancelEditThesis();
+  btn.textContent = 'Save';
 }
 
 // AI EVALUATION
