@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Holocene Maps — Collection</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Spectral:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1A1410;
+    --cream: #F5F0E8;
+    --gold: #8B6914;
+    --blue: #2C4A6E;
+    --green: #3D6B4F;
+    --border: #D4C9B0;
+    --bg: #EDE8DC;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Cormorant Garamond', Georgia, serif; background: var(--cream); color: var(--navy); min-height: 100vh; }
+
+  /* AUTH */
+  #auth-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--navy);
+  }
+  .auth-box {
+    background: var(--cream);
+    border: 2px solid var(--gold);
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+  .auth-box h1 { font-size: 24px; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .auth-box p { font-family: 'Spectral', serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 32px; }
+  .auth-box input {
+    width: 100%; padding: 10px 12px; margin-bottom: 12px;
+    border: 1px solid var(--border); background: #fff;
+    font-family: 'Cormorant Garamond', serif; font-size: 15px;
+    color: var(--navy); outline: none;
+  }
+  .auth-box input:focus { border-color: var(--gold); }
+  .btn-primary {
+    width: 100%; padding: 11px; background: var(--navy); color: var(--cream);
+    border: none; font-family: 'Spectral', serif; font-size: 12px;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600;
+    cursor: pointer; margin-top: 4px;
+  }
+  .btn-primary:hover { background: var(--gold); }
+  .auth-toggle { margin-top: 20px; font-family: 'Spectral', serif; font-size: 12px; color: #666; }
+  .auth-toggle a { color: var(--gold); cursor: pointer; text-decoration: underline; }
+  .auth-error { color: #c00; font-size: 12px; font-family: 'Spectral', serif; margin-top: 8px; }
+
+  /* APP */
+  #app-screen { display: none; }
+
+  header {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 20px 28px;
+    border-bottom: 3px solid var(--gold);
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .header-title { font-size: 20px; font-weight: 700; letter-spacing: 0.04em; }
+  .header-sub { font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .btn-add {
+    background: var(--gold); color: #fff; border: none;
+    padding: 8px 16px; font-family: 'Spectral', serif; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-signout {
+    background: transparent; color: #aaa; border: 1px solid #444;
+    padding: 7px 12px; font-family: 'Spectral', serif; font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+  }
+  .btn-signout:hover { color: var(--cream); border-color: #888; }
+
+  .stats-row { display: flex; gap: 20px; margin-top: 14px; flex-wrap: wrap; }
+  .stat { font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #888; }
+  .stat-num { display: block; font-size: 16px; font-weight: 700; color: var(--cream); line-height: 1.2; }
+
+  /* CONTROLS */
+  .controls {
+    padding: 14px 28px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  }
+  .search-input {
+    background: #fff; border: 1px solid var(--border);
+    padding: 6px 12px; font-family: 'Cormorant Garamond', serif;
+    font-size: 14px; color: var(--navy); outline: none; width: 200px;
+  }
+  .search-input:focus { border-color: var(--gold); }
+  .filter-btn {
+    padding: 5px 12px; font-family: 'Spectral', serif; font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    border: 1px solid var(--border); background: #fff; color: #666;
+  }
+  .filter-btn.active { font-weight: 700; }
+  .filter-btn.act1.active { border: 2px solid #8B6914; color: #8B6914; background: #8B691410; }
+  .filter-btn.act2.active { border: 2px solid #2C4A6E; color: #2C4A6E; background: #2C4A6E10; }
+  .filter-btn.act3.active { border: 2px solid #3D6B4F; color: #3D6B4F; background: #3D6B4F10; }
+  .filter-btn.all.active { border: 2px solid var(--navy); color: var(--navy); background: #1A141010; }
+  .divider { width: 1px; height: 20px; background: var(--border); }
+  select.filter-select {
+    background: #fff; border: 1px solid var(--border);
+    padding: 6px 10px; font-family: 'Cormorant Garamond', serif;
+    font-size: 13px; color: var(--navy); outline: none;
+  }
+
+  /* LIST */
+  .list { padding: 20px 28px 60px; display: flex; flex-direction: column; gap: 8px; }
+  .empty { text-align: center; padding: 60px 20px; color: #999; font-style: italic; font-size: 15px; }
+
+  /* CARD */
+  .card { background: #fff; border: 1px solid var(--border); overflow: hidden; }
+  .card-header {
+    padding: 14px 16px; display: flex; align-items: flex-start;
+    gap: 12px; cursor: pointer; user-select: none;
+  }
+  .card-header:hover { background: #faf8f4; }
+  .priority-stars { font-size: 12px; margin-top: 2px; flex-shrink: 0; color: var(--gold); letter-spacing: -1px; }
+  .card-meta { flex: 1; min-width: 0; }
+  .card-title { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .card-sub { font-family: 'Spectral', serif; font-size: 12px; color: #888; margin-top: 3px; }
+  .badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block; padding: 2px 8px;
+    font-family: 'Spectral', serif; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+  }
+  .badge-act { border: 1px solid; }
+  .badge-act1 { border-color: #8B6914; color: #8B6914; }
+  .badge-act2 { border-color: #2C4A6E; color: #2C4A6E; }
+  .badge-act3 { border-color: #3D6B4F; color: #3D6B4F; }
+  .badge-status { color: #fff; }
+  .s-owned { background: #3D6B4F; }
+  .s-negotiating { background: #8B6914; }
+  .s-target { background: #2C4A6E; }
+  .s-watching { background: #666; }
+  .s-passed { background: #aaa; }
+  .chevron { font-size: 14px; color: #bbb; margin-top: 2px; }
+
+  .card-body { padding: 0 16px 14px; border-top: 1px solid #F0EBE0; }
+  .card-notes { font-size: 13px; color: #444; line-height: 1.6; margin: 10px 0 8px; font-style: italic; }
+  .card-url { font-family: 'Spectral', serif; font-size: 12px; color: var(--blue); word-break: break-all; display: block; margin-bottom: 10px; }
+  .card-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-action {
+    padding: 4px 12px; font-family: 'Spectral', serif; font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; color: #555;
+  }
+  .btn-action:hover { background: var(--bg); }
+  .btn-danger { border-color: #e0b0b0; color: #c00; }
+  .btn-danger:hover { background: #fff0f0; }
+
+  /* MODAL */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal {
+    background: var(--cream); border: 2px solid var(--navy);
+    padding: 28px; width: 100%; max-width: 520px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .field-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field.full { grid-column: 1 / -1; }
+  label.lbl {
+    font-family: 'Spectral', serif; font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #666; font-weight: 600;
+  }
+  .field input, .field select, .field textarea {
+    background: #fff; border: 1px solid var(--border);
+    padding: 7px 10px; font-family: 'Cormorant Garamond', serif;
+    font-size: 14px; color: var(--navy); outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold); }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .star-picker { display: flex; gap: 6px; margin-top: 2px; }
+  .star-btn {
+    background: none; border: none; font-size: 20px; cursor: pointer;
+    color: #ddd; padding: 0; line-height: 1;
+  }
+  .star-btn.on { color: var(--gold); }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .btn-cancel {
+    padding: 8px 18px; font-family: 'Spectral', serif; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--border);
+    background: transparent; color: #666; cursor: pointer;
+  }
+  .btn-save {
+    padding: 8px 22px; font-family: 'Spectral', serif; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; border: none;
+    background: var(--navy); color: var(--cream); cursor: pointer; font-weight: 700;
+  }
+  .btn-save:hover { background: var(--gold); }
+  .loading { text-align: center; padding: 40px; color: #999; font-style: italic; }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <p>Holocene Maps</p>
+    <h1>Collection</h1>
+    <div style="height:1px;background:var(--gold);margin:24px 0;"></div>
+    <div id="auth-login">
+      <input type="email" id="email" placeholder="Email address" autocomplete="email">
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+      <button class="btn-primary" onclick="signIn()">Sign In</button>
+      <div class="auth-error" id="auth-error"></div>
+      <div class="auth-toggle">No account? <a onclick="showSignup()">Create one</a></div>
+    </div>
+    <div id="auth-signup" style="display:none">
+      <input type="email" id="su-email" placeholder="Email address">
+      <input type="password" id="su-password" placeholder="Password (min 6 chars)">
+      <button class="btn-primary" onclick="signUp()">Create Account</button>
+      <div class="auth-error" id="su-error"></div>
+      <div class="auth-toggle">Have an account? <a onclick="showLogin()">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen">
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="header-sub">Holocene Maps · Acquisition Tracker</div>
+        <div class="header-title">Imperial North America, 1680–1780</div>
+      </div>
+      <div class="header-right">
+        <button class="btn-add" onclick="openAdd()">+ Add Map</button>
+        <button class="btn-signout" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+    <div class="stats-row" id="stats-row"></div>
+  </header>
+
+  <div class="controls">
+    <input class="search-input" type="text" placeholder="Search maps…" id="search-input" oninput="renderList()">
+    <button class="filter-btn all active" id="f-all" onclick="setActFilter(0)">All Acts</button>
+    <button class="filter-btn act1" id="f-1" onclick="setActFilter(1)">Act I</button>
+    <button class="filter-btn act2" id="f-2" onclick="setActFilter(2)">Act II</button>
+    <button class="filter-btn act3" id="f-3" onclick="setActFilter(3)">Act III</button>
+    <div class="divider"></div>
+    <select class="filter-select" id="status-filter" onchange="renderList()">
+      <option value="">All Status</option>
+      <option value="owned">Owned</option>
+      <option value="negotiating">Negotiating</option>
+      <option value="target">Target</option>
+      <option value="watching">Watching</option>
+      <option value="passed">Passed</option>
+    </select>
+    <select class="filter-select" id="sort-select" onchange="renderList()">
+      <option value="created">Date Added</option>
+      <option value="priority">Priority</option>
+      <option value="act">Act</option>
+      <option value="year">Year</option>
+    </select>
+  </div>
+
+  <div class="list" id="map-list"><div class="loading">Loading collection…</div></div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="modal" style="display:none" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Add Map</div>
+    <div class="field-group">
+      <div class="field full">
+        <label class="lbl">Title / Description</label>
+        <input type="text" id="f-title" placeholder="e.g. De l'Isle — Carte de la Louisiane">
+      </div>
+      <div class="field">
+        <label class="lbl">Year</label>
+        <input type="text" id="f-year" placeholder="1718">
+      </div>
+      <div class="field">
+        <label class="lbl">Cartographer</label>
+        <input type="text" id="f-cartographer" placeholder="De l'Isle">
+      </div>
+      <div class="field">
+        <label class="lbl">Act</label>
+        <select id="f-act">
+          <option value="1">Act I — French Dominance (1688–1719)</option>
+          <option value="2">Act II — Imperial Contest (1720–1754)</option>
+          <option value="3">Act III — British Resolution (1763–1777)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="lbl">Status</label>
+        <select id="f-status">
+          <option value="owned">Owned</option>
+          <option value="negotiating">Negotiating</option>
+          <option value="target">Target</option>
+          <option value="watching">Watching</option>
+          <option value="passed">Passed</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="lbl">Priority</label>
+        <div class="star-picker" id="star-picker"></div>
+      </div>
+      <div class="field">
+        <label class="lbl">Dealer / Source</label>
+        <input type="text" id="f-dealer" placeholder="Barry Ruderman">
+      </div>
+      <div class="field">
+        <label class="lbl">Price / Ask</label>
+        <input type="text" id="f-price" placeholder="$3,500">
+      </div>
+      <div class="field full">
+        <label class="lbl">Listing URL</label>
+        <input type="url" id="f-url" placeholder="https://www.raremaps.com/gallery/detail/…">
+      </div>
+      <div class="field full">
+        <label class="lbl">Notes</label>
+        <textarea id="f-notes" placeholder="State, condition, negotiation context, narrative fit…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" id="save-btn" onclick="saveMap()">Add Map</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://irfuhohbabtywbuchwpb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZnVob2hiYWJ0eXdidWNod3BiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3MDYwOTMsImV4cCI6MjA1OTI4MjA5M30.8aefXCBpPmBhiE6yYT5XxfBzOvimMoH8mPVp8XhkNdA';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let maps = [];
+let actFilter = 0;
+let editingId = null;
+let starValue = 3;
+let expandedId = null;
+
+// STAR PICKER
+function renderStars(val) {
+  starValue = val;
+  const el = document.getElementById('star-picker');
+  el.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'star-btn' + (i <= val ? ' on' : '');
+    btn.textContent = '★';
+    btn.type = 'button';
+    btn.onclick = () => renderStars(i);
+    el.appendChild(btn);
+  }
+}
+renderStars(3);
+
+// AUTH
+async function signIn() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) { document.getElementById('auth-error').textContent = error.message; return; }
+  showApp();
+}
+
+async function signUp() {
+  const email = document.getElementById('su-email').value;
+  const password = document.getElementById('su-password').value;
+  const { error } = await db.auth.signUp({ email, password });
+  if (error) { document.getElementById('su-error').textContent = error.message; return; }
+  document.getElementById('su-error').style.color = 'green';
+  document.getElementById('su-error').textContent = 'Check your email to confirm, then sign in.';
+}
+
+async function signOut() {
+  await db.auth.signOut();
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  maps = [];
+}
+
+function showSignup() {
+  document.getElementById('auth-login').style.display = 'none';
+  document.getElementById('auth-signup').style.display = 'block';
+}
+function showLogin() {
+  document.getElementById('auth-signup').style.display = 'none';
+  document.getElementById('auth-login').style.display = 'block';
+}
+
+async function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  await loadMaps();
+}
+
+// CHECK SESSION ON LOAD
+db.auth.getSession().then(({ data: { session } }) => {
+  if (session) showApp();
+});
+
+// DATA
+async function loadMaps() {
+  const { data, error } = await db.from('maps').select('*').order('created_at', { ascending: false });
+  if (!error) { maps = data || []; renderAll(); }
+}
+
+async function saveMap() {
+  const btn = document.getElementById('save-btn');
+  btn.textContent = 'Saving…';
+  const { data: { user } } = await db.auth.getUser();
+  const payload = {
+    user_id: user.id,
+    title: document.getElementById('f-title').value.trim(),
+    year: document.getElementById('f-year').value.trim(),
+    cartographer: document.getElementById('f-cartographer').value.trim(),
+    act: parseInt(document.getElementById('f-act').value),
+    status: document.getElementById('f-status').value,
+    priority: starValue,
+    dealer: document.getElementById('f-dealer').value.trim(),
+    price: document.getElementById('f-price').value.trim(),
+    url: document.getElementById('f-url').value.trim(),
+    notes: document.getElementById('f-notes').value.trim(),
+  };
+  if (!payload.title) { btn.textContent = editingId ? 'Update' : 'Add Map'; return; }
+
+  if (editingId) {
+    await db.from('maps').update(payload).eq('id', editingId);
+  } else {
+    await db.from('maps').insert(payload);
+  }
+  closeModal();
+  await loadMaps();
+}
+
+async function deleteMap(id) {
+  if (!confirm('Remove this map from your collection?')) return;
+  await db.from('maps').delete().eq('id', id);
+  maps = maps.filter(m => m.id !== id);
+  renderAll();
+}
+
+// FILTERS
+function setActFilter(n) {
+  actFilter = n;
+  ['all','1','2','3'].forEach(id => {
+    const el = document.getElementById('f-'+id);
+    el.classList.remove('active');
+  });
+  document.getElementById('f-' + (n === 0 ? 'all' : n)).classList.add('active');
+  renderList();
+}
+
+function getFiltered() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const s = document.getElementById('status-filter').value;
+  const sort = document.getElementById('sort-select').value;
+  let result = maps.filter(m => {
+    if (actFilter && m.act !== actFilter) return false;
+    if (s && m.status !== s) return false;
+    if (q) return [m.title, m.cartographer, m.dealer, m.notes, m.year].some(f => f?.toLowerCase().includes(q));
+    return true;
+  });
+  if (sort === 'priority') result.sort((a,b) => (b.priority||0) - (a.priority||0));
+  else if (sort === 'act') result.sort((a,b) => a.act - b.act);
+  else if (sort === 'year') result.sort((a,b) => (a.year||'').localeCompare(b.year||''));
+  return result;
+}
+
+// RENDER
+function stars(n) { return '★'.repeat(n||0) + '☆'.repeat(5-(n||0)); }
+
+function actLabel(n) { return ['','Act I','Act II','Act III'][n] || ''; }
+function actClass(n) { return ['','act1','act2','act3'][n] || ''; }
+function statusLabel(s) { return {owned:'Owned',negotiating:'Negotiating',target:'Target',watching:'Watching',passed:'Passed'}[s] || s; }
+
+function renderStats() {
+  const counts = {owned:0,negotiating:0,target:0,watching:0,passed:0};
+  maps.forEach(m => { if (counts[m.status] !== undefined) counts[m.status]++; });
+  document.getElementById('stats-row').innerHTML = Object.entries(counts).map(([k,v]) =>
+    `<div class="stat"><span class="stat-num">${v}</span>${statusLabel(k)}</div>`
+  ).join('') + `<div class="stat"><span class="stat-num">${maps.length}</span>Total</div>`;
+}
+
+function renderList() {
+  const filtered = getFiltered();
+  const el = document.getElementById('map-list');
+  if (!filtered.length) { el.innerHTML = '<div class="empty">No maps match your filters.</div>'; return; }
+  el.innerHTML = filtered.map(m => {
+    const expanded = expandedId === m.id;
+    return `<div class="card" id="card-${m.id}">
+      <div class="card-header" onclick="toggleCard('${m.id}')">
+        <div class="priority-stars">${stars(m.priority)}</div>
+        <div class="card-meta">
+          <div class="card-title">${m.title}${m.year ? ` (${m.year})` : ''}</div>
+          ${m.dealer ? `<div class="card-sub">${m.dealer}${m.price ? ' · ' + m.price : ''}</div>` : ''}
+          <div class="badges">
+            <span class="badge badge-act ${actClass(m.act)}">${actLabel(m.act)}</span>
+            <span class="badge badge-status s-${m.status}">${statusLabel(m.status)}</span>
+          </div>
+        </div>
+        <div class="chevron">${expanded ? '▲' : '▼'}</div>
+      </div>
+      ${expanded ? `<div class="card-body">
+        ${m.notes ? `<div class="card-notes">${m.notes}</div>` : ''}
+        ${m.url ? `<a class="card-url" href="${m.url}" target="_blank" rel="noopener">🔗 ${m.url}</a>` : ''}
+        <div class="card-actions">
+          <button class="btn-action" onclick="openEdit('${m.id}')">Edit</button>
+          <button class="btn-action btn-danger" onclick="deleteMap('${m.id}')">Remove</button>
+          ${m.url ? `<button class="btn-action" onclick="window.open('${m.url}','_blank')">Open Listing ↗</button>` : ''}
+        </div>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderAll() { renderStats(); renderList(); }
+
+function toggleCard(id) {
+  expandedId = expandedId === id ? null : id;
+  renderList();
+}
+
+// MODAL
+function openAdd() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Add Map';
+  document.getElementById('save-btn').textContent = 'Add Map';
+  ['title','year','cartographer','dealer','price','url','notes'].forEach(f => document.getElementById('f-'+f).value = '');
+  document.getElementById('f-act').value = '1';
+  document.getElementById('f-status').value = 'watching';
+  renderStars(3);
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function openEdit(id) {
+  const m = maps.find(x => x.id === id);
+  if (!m) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Edit Map';
+  document.getElementById('save-btn').textContent = 'Update';
+  document.getElementById('f-title').value = m.title || '';
+  document.getElementById('f-year').value = m.year || '';
+  document.getElementById('f-cartographer').value = m.cartographer || '';
+  document.getElementById('f-act').value = m.act || 1;
+  document.getElementById('f-status').value = m.status || 'watching';
+  document.getElementById('f-dealer').value = m.dealer || '';
+  document.getElementById('f-price').value = m.price || '';
+  document.getElementById('f-url').value = m.url || '';
+  document.getElementById('f-notes').value = m.notes || '';
+  renderStars(m.priority || 3);
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  document.getElementById('save-btn').textContent = editingId ? 'Update' : 'Add Map';
+  editingId = null;
+}
+
+function overlayClick(e) { if (e.target === e.currentTarget) closeModal(); }
+</script>
+</body>
+</html>
