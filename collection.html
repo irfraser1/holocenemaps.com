@@ -214,6 +214,47 @@
   .btn-save:hover { background: var(--gold); }
   .loading { text-align: center; padding: 40px; color: #999; font-style: italic; }
 
+  /* ONBOARDING */
+  #onboarding-modal {
+    position: fixed; inset: 0;
+    background: var(--navy);
+    z-index: 300;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  #onboarding-box {
+    background: var(--cream);
+    border: 2px solid var(--gold);
+    padding: 48px 40px;
+    width: 100%; max-width: 520px;
+    text-align: center;
+  }
+  .onboarding-eyebrow {
+    font-family: 'Spectral', serif; font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 12px;
+  }
+  .onboarding-title { font-size: 24px; font-weight: 700; letter-spacing: 0.03em; margin-bottom: 20px; }
+  .onboarding-rule { height: 1px; background: var(--gold); margin-bottom: 20px; }
+  .onboarding-sub {
+    font-family: 'Spectral', serif; font-size: 13px;
+    color: #666; line-height: 1.7; margin-bottom: 24px;
+  }
+  #thesis-input {
+    width: 100%; padding: 12px 14px;
+    border: 1px solid var(--border); background: #fff;
+    font-family: 'Cormorant Garamond', serif; font-size: 14px;
+    color: var(--navy); outline: none; resize: vertical;
+    min-height: 120px; line-height: 1.7; margin-bottom: 16px;
+  }
+  #thesis-input:focus { border-color: var(--gold); }
+  .evaluate-link {
+    font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gold); text-decoration: none; cursor: pointer;
+  }
+  .evaluate-link:hover { opacity: 0.7; }
+
   /* THUMBNAIL */
   .card-thumb {
     width: 80px;
@@ -297,6 +338,19 @@
   <div class="list" id="map-list"><div class="loading">Loading collection…</div></div>
 </div>
 
+<!-- ONBOARDING -->
+<div id="onboarding-modal">
+  <div id="onboarding-box">
+    <p class="onboarding-eyebrow">Holocene Maps · Collection</p>
+    <h2 class="onboarding-title">What are you collecting?</h2>
+    <div class="onboarding-rule"></div>
+    <p class="onboarding-sub">Describe your collection focus, interests, and goals. This shapes the AI evaluation of every map you consider adding.</p>
+    <textarea id="thesis-input" placeholder="e.g. I collect 18th century French colonial maps focused on the Mississippi basin and the Franco-British imperial contest…"></textarea>
+    <div class="auth-error" id="onboarding-error"></div>
+    <button class="btn-primary" onclick="saveThesis()">Start Building</button>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="overlay" id="modal" style="display:none" onclick="overlayClick(event)">
   <div class="modal">
@@ -349,7 +403,10 @@
         <input type="url" id="f-url" placeholder="https://www.raremaps.com/gallery/detail/…">
       </div>
       <div class="field full">
-        <label class="lbl">Notes</label>
+        <label class="lbl" style="display:flex;justify-content:space-between;align-items:center;">
+          Notes
+          <a class="evaluate-link" onclick="evaluateMap()">Evaluate →</a>
+        </label>
         <textarea id="f-notes" placeholder="State, condition, negotiation context, narrative fit…"></textarea>
       </div>
     </div>
@@ -372,6 +429,7 @@ let actFilter = 0;
 let editingId = null;
 let starValue = 3;
 let expandedId = null;
+let userThesis = '';
 
 // STAR PICKER
 function renderStars(val) {
@@ -426,7 +484,76 @@ function showLogin() {
 async function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
+  await checkProfile();
+}
+
+// ONBOARDING
+async function checkProfile() {
+  const { data: { user } } = await db.auth.getUser();
+  const { data } = await db.from('profiles').select('thesis').eq('user_id', user.id).single();
+  if (data?.thesis) {
+    userThesis = data.thesis;
+    await loadMaps();
+  } else {
+    document.getElementById('onboarding-modal').style.display = 'flex';
+  }
+}
+
+async function saveThesis() {
+  const thesis = document.getElementById('thesis-input').value.trim();
+  const errEl = document.getElementById('onboarding-error');
+  if (!thesis) { errEl.textContent = 'Please describe your collection focus.'; return; }
+  const btn = document.querySelector('#onboarding-box .btn-primary');
+  btn.textContent = 'Saving…';
+  const { data: { user } } = await db.auth.getUser();
+  const { error } = await db.from('profiles').upsert({ user_id: user.id, thesis });
+  if (error) { errEl.textContent = error.message; btn.textContent = 'Start Building'; return; }
+  userThesis = thesis;
+  document.getElementById('onboarding-modal').style.display = 'none';
   await loadMaps();
+}
+
+// AI EVALUATION
+async function evaluateMap() {
+  if (!userThesis) return;
+  const title = document.getElementById('f-title').value.trim();
+  const year = document.getElementById('f-year').value.trim();
+  const cartographer = document.getElementById('f-cartographer').value.trim();
+  if (!title) return;
+  const notesEl = document.getElementById('f-notes');
+  notesEl.value = 'Evaluating…';
+  notesEl.style.opacity = '0.4';
+  const prompt = `You are an expert antique map advisor. Evaluate this map for fit in a collector's collection in exactly 3 sentences. Mention narrative fit, whether it fills a gap or is redundant, and end with a one-line verdict: buy / watch / pass.
+
+Collection context:
+${userThesis}
+
+Map: ${title}${cartographer ? ', ' + cartographer : ''}${year ? ', ' + year : ''}
+
+3 sentences, no headers, no bullet points.`;
+  try {
+    let CLAUDE_KEY = localStorage.getItem('claude_api_key');
+    if (!CLAUDE_KEY) {
+      CLAUDE_KEY = window.prompt('Enter your Anthropic API key to enable AI evaluation:');
+      if (!CLAUDE_KEY) { notesEl.value = ''; notesEl.style.opacity = '1'; return; }
+      localStorage.setItem('claude_api_key', CLAUDE_KEY);
+    }
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': CLAUDE_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 300, messages: [{ role: 'user', content: prompt }] })
+    });
+    const json = await res.json();
+    notesEl.value = json?.content?.[0]?.text || '';
+  } catch(e) {
+    notesEl.value = '';
+  }
+  notesEl.style.opacity = '1';
 }
 
 // CHECK SESSION ON LOAD
