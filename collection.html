@@ -791,6 +791,9 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
           jsonRes = await res.json();
           if (jsonRes.error) {
              if (jsonRes.error.code === 'invalid_api_key') localStorage.removeItem('ai_api_key');
+             if (jsonRes.error.type === 'insufficient_quota' || jsonRes.error.code === 'insufficient_quota') {
+                 throw new Error("BILLING ERROR: You need to add $5 to platform.openai.com/billing. (Note: Your $20/mo ChatGPT Plus subscription does NOT cover external API keys!)");
+             }
              throw new Error("OpenAI API Error: " + JSON.stringify(jsonRes.error));
           }
           const textResponse = jsonRes.choices[0].message.content;
@@ -813,7 +816,7 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
       if(parsed.evaluation) document.getElementById('f-notes').value = parsed.evaluation;
       
     } catch(e) {
-      alert("⚠️ APP TRAP ⚠️\n" + (e.stack || e.message || String(e)));
+      alert("⚠️ Error ⚠️\n" + (e.message || String(e)));
     }
     overlay.style.display = 'none';
   });
