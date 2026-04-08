@@ -783,7 +783,7 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
                 role: 'user',
                 content: [
                   { type: 'text', text: prompt },
-                  { type: 'image_url', image_url: { url: base64Data } }
+                  { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Data}` } }
                 ]
               }],
               max_tokens: 600
