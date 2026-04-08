@@ -777,6 +777,7 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
             },
             body: JSON.stringify({
               model: 'gpt-4o',
+              response_format: { type: 'json_object' },
               messages: [{
                 role: 'user',
                 content: [
@@ -793,12 +794,15 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
              throw new Error("OpenAI API Error: " + JSON.stringify(jsonRes.error));
           }
           const textResponse = jsonRes.choices[0].message.content;
-          cleanJson = textResponse.replace(/^[\s\S]*?```(?:json)?\n?/, '').replace(/```[\s\S]*$/, '').trim() || textResponse.trim();
+          cleanJson = textResponse; // gpt-4o json_object output is pure json
       }
       
       let parsed = {};
-      try { parsed = JSON.parse(cleanJson); } catch(err) { throw new Error("AI returned invalid JSON formatting."); }
-
+      try { 
+        parsed = JSON.parse(cleanJson); 
+      } catch(err) { 
+        throw new Error("JSON Parse Fail. Raw Output:\n" + String(cleanJson).substring(0, 100)); 
+      }
       
       openAdd();
       if(parsed.title) document.getElementById('f-title').value = parsed.title;
@@ -809,7 +813,7 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
       if(parsed.evaluation) document.getElementById('f-notes').value = parsed.evaluation;
       
     } catch(e) {
-      alert(e.message);
+      alert("⚠️ APP TRAP ⚠️\n" + (e.stack || e.message || String(e)));
     }
     overlay.style.display = 'none';
   });
