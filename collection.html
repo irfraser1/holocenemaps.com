@@ -819,10 +819,11 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
     } catch(e) {
       alert("ERROR: Check the Add Map panel!");
       openAdd();
-      document.getElementById('m-title').textContent = "⚠️ APP TRAP ⚠️";
       document.getElementById('f-notes').value = "FATAL ERROR LOG:\n\n" + (e.message || String(e) || e.stack);
+      try { document.getElementById('modal-title').textContent = "⚠️ APP TRAP ⚠️"; } catch(ignore) {}
+    } finally {
+      overlay.style.display = 'none';
     }
-    overlay.style.display = 'none';
   });
 }
 
