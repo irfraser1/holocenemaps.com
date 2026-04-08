@@ -736,12 +736,12 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': CLAUDE_KEY,
+          'x-api-key': CLAUDE_KEY.trim(),
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
+          model: 'claude-3-5-sonnet-latest',
           max_tokens: 600,
           messages: [{
             role: 'user',
@@ -752,14 +752,21 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
           }]
         })
       });
+      
       const jsonRes = await res.json();
-      if (jsonRes.error) throw new Error(jsonRes.error.message);
+      
+      if (jsonRes.error) {
+         if (jsonRes.error.type === 'authentication_error') {
+             localStorage.removeItem('claude_api_key');
+         }
+         throw new Error("Anthropic API Error: " + JSON.stringify(jsonRes.error));
+      }
       
       const textResponse = jsonRes?.content?.[0]?.text || '{}';
       const cleanJson = textResponse.replace(/^[\s\S]*?```(?:json)?\n?/, '').replace(/```[\s\S]*$/, '').trim() || textResponse.trim();
       
       let parsed = {};
-      try { parsed = JSON.parse(cleanJson); } catch(err) { console.error('JSON parse fail', textResponse); throw new Error("AI returned invalid JSON formatting."); }
+      try { parsed = JSON.parse(cleanJson); } catch(err) { throw new Error("AI returned invalid JSON formatting."); }
       
       openAdd();
       if(parsed.title) document.getElementById('f-title').value = parsed.title;
@@ -770,7 +777,7 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
       if(parsed.evaluation) document.getElementById('f-notes').value = parsed.evaluation;
       
     } catch(e) {
-      alert("Error evaluating image: " + e.message);
+      alert(e.message);
     }
     overlay.style.display = 'none';
   });
