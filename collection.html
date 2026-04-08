@@ -372,6 +372,7 @@
       </div>
       <div class="header-right">
         <button class="btn-thesis-toggle" id="thesis-toggle-btn" onclick="toggleThesisPanel()">Thesis ▲</button>
+        <button class="btn-add" onclick="localStorage.removeItem('ai_api_key'); localStorage.removeItem('claude_api_key'); alert('API Keys Wiped! Click Photo Eval to input the new one.');" style="background:var(--accent);margin-right:8px;">Reset Key</button>
         <button class="btn-add btn-camera" onclick="document.getElementById('camera-input').click()">📷 Photo Eval</button>
         <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoUpload(event)">
         <button class="btn-add" onclick="openAdd()">+ Add Map</button>
@@ -816,7 +817,10 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
       if(parsed.evaluation) document.getElementById('f-notes').value = parsed.evaluation;
       
     } catch(e) {
-      alert("⚠️ Error ⚠️\n" + (e.message || String(e)));
+      alert("ERROR: Check the Add Map panel!");
+      openAdd();
+      document.getElementById('m-title').textContent = "⚠️ APP TRAP ⚠️";
+      document.getElementById('f-notes').value = "FATAL ERROR LOG:\n\n" + (e.message || String(e) || e.stack);
     }
     overlay.style.display = 'none';
   });
