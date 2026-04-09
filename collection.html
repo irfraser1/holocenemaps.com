@@ -644,10 +644,15 @@ async function signIn() {
 async function signUp() {
   const email = document.getElementById('su-email').value;
   const password = document.getElementById('su-password').value;
-  const { error } = await db.auth.signUp({ email, password });
+  const { data, error } = await db.auth.signUp({ email, password });
   if (error) { document.getElementById('su-error').textContent = error.message; return; }
-  document.getElementById('su-error').style.color = 'green';
-  document.getElementById('su-error').textContent = 'Check your email to confirm, then sign in.';
+  // If session exists, email confirmation is off — log them in immediately
+  if (data.session) {
+    showApp();
+  } else {
+    document.getElementById('su-error').style.color = 'green';
+    document.getElementById('su-error').textContent = 'Check your email to confirm, then sign in.';
+  }
 }
 
 async function signOut() {
