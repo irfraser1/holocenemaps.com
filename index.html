@@ -92,7 +92,9 @@
 
     /* ── RESPONSIVE: mobile vs desktop ── */
     .mobile-only { display: block; }
-    .desktop-only { display: none; }
+    .desktop-only { display: none !important; }
+    .desktop-flex { display: none !important; }
+    .hero-left { text-align: center; }
 
     .btn-demo-primary {
       padding: 16px 40px; border: 2px solid var(--gold);
@@ -124,12 +126,13 @@
     .hg-card-trust { display: flex; align-items: center; gap: 6px; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; color: #4ade80; letter-spacing: 0.05em; text-transform: uppercase; }
     .hg-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; box-shadow: 0 0 6px #4ade80; }
 
-    .desktop-cta-group { margin-top: 40px; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+    .desktop-cta-group { margin-top: 40px; display: none; flex-direction: column; gap: 16px; align-items: center; }
 
     @media (min-width: 900px) {
       .mobile-only { display: none !important; }
       .desktop-only { display: block !important; }
       .desktop-flex { display: flex !important; }
+      .desktop-cta-group { display: flex !important; }
       
       #hero {
         display: flex; align-items: center; justify-content: space-between;
