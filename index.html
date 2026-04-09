@@ -160,6 +160,20 @@
 
     .result-divider { height: 1px; background: rgba(201,168,76,0.15); margin-bottom: 24px; }
 
+    .confidence-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 6px; vertical-align: middle;
+    }
+    .confidence-dot.high { background: #4ade80; }
+    .confidence-dot.medium { background: #facc15; }
+    .confidence-dot.low { background: #f87171; }
+
+    .result-uncertainties {
+      font-family: 'Spectral', serif; font-style: italic;
+      font-size: 13px; line-height: 1.6; color: var(--text-muted);
+      margin-bottom: 20px; padding: 12px 16px;
+      background: rgba(201,168,76,0.06); border-left: 2px solid rgba(201,168,76,0.3);
+    }
+
     .result-summary {
       font-family: 'Spectral', serif; font-size: 15px; line-height: 1.75;
       color: var(--cream2); margin-bottom: 36px;
@@ -264,13 +278,14 @@
     <h2 class="result-title" id="result-title">—</h2>
     <div class="result-meta" id="result-meta"></div>
     <div class="result-divider"></div>
+    <div class="result-uncertainties" id="result-uncertainties" style="display:none"></div>
     <p class="result-summary" id="result-summary"></p>
     <div class="result-ctas">
       <button onclick="saveToCollection()" class="btn-cta-primary">Save to My Collection →</button>
       <button class="btn-cta-secondary" onclick="reset()">Scan Another Map</button>
     </div>
   </div>
-  <div class="result-footer">Powered by Holocene Maps · AI-assisted identification · Verify with a specialist before purchasing</div>
+  <div class="result-footer">Our AI does its best, but old maps can be tricky! Double-check details that matter to you. 🗺️</div>
 </div>
 
 <script>
@@ -337,12 +352,22 @@
         // Build result
         document.getElementById('result-title').textContent = data.title || 'Map Identified';
 
-        // Meta chips
+        // Meta chips with confidence dots
         const meta = document.getElementById('result-meta');
+        const conf = data.confidence || {};
         meta.innerHTML = '';
-        if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}</span>`;
-        if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}</span>`;
-        if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}</span>`;
+        if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}<span class="confidence-dot ${conf.year || ''}"></span></span>`;
+        if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}<span class="confidence-dot ${conf.cartographer || ''}"></span></span>`;
+        if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}<span class="confidence-dot ${conf.region || ''}"></span></span>`;
+
+        // Uncertainties
+        const uncEl = document.getElementById('result-uncertainties');
+        if (data.uncertainties) {
+          uncEl.textContent = '💡 ' + data.uncertainties;
+          uncEl.style.display = 'block';
+        } else {
+          uncEl.style.display = 'none';
+        }
 
         // Store for bridge
         currentScanData = data;
