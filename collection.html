@@ -387,6 +387,87 @@
   }
   .card-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .card-thumb-placeholder { color: var(--gold); font-size: 22px; opacity: 0.3; line-height: 1; }
+
+  /* ── MARKET RADAR ── */
+  .tab-nav {
+    display: none; /* desktop only */
+    border-bottom: 1px solid var(--border); margin-bottom: 0;
+  }
+  @media (min-width: 900px) {
+    .tab-nav { display: flex; gap: 0; }
+  }
+  .tab-btn {
+    padding: 12px 24px; background: transparent; border: none;
+    font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600;
+    color: #888; cursor: pointer; border-bottom: 2px solid transparent;
+    letter-spacing: 0.02em; transition: all 0.2s;
+  }
+  .tab-btn:hover { color: var(--navy); }
+  .tab-btn.active { color: var(--navy); border-bottom-color: var(--gold); }
+  .tab-btn .tab-badge {
+    background: var(--gold); color: var(--cream); font-size: 10px;
+    padding: 1px 6px; border-radius: 8px; margin-left: 6px;
+    font-family: 'Spectral', serif; font-weight: 600;
+  }
+
+  .radar-view { display: none; padding: 16px 0; }
+  .radar-view.active { display: block; }
+
+  .radar-card {
+    background: #fff; border: 1px solid var(--border); padding: 20px 24px;
+    margin-bottom: 12px; display: flex; gap: 20px; align-items: flex-start;
+  }
+  .radar-card-body { flex: 1; }
+  .radar-card-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  .radar-card-meta {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .radar-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #f0ece3; padding: 3px 10px; font-family: 'Spectral', serif;
+    font-size: 11px; color: #666; letter-spacing: 0.02em;
+  }
+  .radar-confidence {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Spectral', serif; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .radar-confidence.high { color: #3D6B4F; }
+  .radar-confidence.medium { color: #8B6914; }
+  .radar-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .radar-confidence.high .radar-dot { background: #3D6B4F; }
+  .radar-confidence.medium .radar-dot { background: #8B6914; }
+  .radar-reason {
+    font-family: 'Spectral', serif; font-size: 13px; color: #555;
+    line-height: 1.7; margin-bottom: 12px; font-style: italic;
+  }
+  .radar-actions { display: flex; gap: 10px; align-items: center; }
+  .radar-btn-buy {
+    display: inline-block; padding: 8px 20px; background: var(--navy);
+    color: var(--cream); font-family: 'Spectral', serif; font-size: 12px;
+    text-decoration: none; letter-spacing: 0.06em; transition: opacity 0.2s;
+  }
+  .radar-btn-buy:hover { opacity: 0.8; }
+  .radar-btn-dismiss {
+    background: transparent; border: 1px solid var(--border); padding: 8px 16px;
+    font-family: 'Spectral', serif; font-size: 12px; color: #888;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .radar-btn-dismiss:hover { color: var(--navy); border-color: #888; }
+  .radar-empty {
+    text-align: center; padding: 60px 24px;
+    font-family: 'Spectral', serif; font-size: 15px; color: #888;
+    line-height: 1.8;
+  }
+  .radar-empty-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 20px;
+    color: var(--navy); margin-bottom: 8px;
+  }
 </style>
 </head>
 <body>
@@ -443,6 +524,14 @@
     <div class="stats-row" id="stats-row"></div>
   </header>
 
+  <!-- TAB NAVIGATION (desktop only) -->
+  <div class="tab-nav" id="tab-nav">
+    <button class="tab-btn active" id="tab-collection" onclick="switchTab('collection')">My Collection</button>
+    <button class="tab-btn" id="tab-radar" onclick="switchTab('radar')">Market Radar <span class="tab-badge" id="radar-badge" style="display:none">0</span></button>
+  </div>
+
+  <!-- COLLECTION VIEW -->
+  <div id="collection-view">
   <div class="thesis-panel" id="thesis-panel">
     <div class="thesis-inner">
       <span class="thesis-label">Thesis</span>
@@ -507,6 +596,18 @@
   </div>
 
   <div class="list" id="map-list"><div class="loading">Loading collection…</div></div>
+  </div><!-- /collection-view -->
+
+  <!-- MARKET RADAR VIEW (desktop only) -->
+  <div class="radar-view" id="radar-view">
+    <div id="radar-list">
+      <div class="radar-empty">
+        <div class="radar-empty-title">Scanning the market…</div>
+        Your Market Radar is being calibrated to your collection thesis.<br>
+        Curated listings will appear here when new matches are found.
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ONBOARDING -->
@@ -607,6 +708,8 @@ let editingId = null;
 let starValue = 3;
 let expandedId = null;
 let userThesis = '';
+let radarMatches = [];
+let currentTab = 'collection';
 
 // STAR PICKER
 function renderStars(val) {
@@ -690,6 +793,8 @@ async function showApp() {
       if (notes) document.getElementById('f-notes').value = notes;
     } catch(e) { localStorage.removeItem('pending_scan'); }
   }
+  // Check for Market Radar matches
+  checkRadarBadge();
 }
 
 // ONBOARDING
@@ -1074,6 +1179,103 @@ function closeModal() {
 }
 
 function overlayClick(e) { if (e.target === e.currentTarget) closeModal(); }
+
+// ── MARKET RADAR ──────────────────────────────────────────
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-collection').classList.toggle('active', tab === 'collection');
+  document.getElementById('tab-radar').classList.toggle('active', tab === 'radar');
+  document.getElementById('collection-view').style.display = tab === 'collection' ? '' : 'none';
+  document.getElementById('radar-view').className = tab === 'radar' ? 'radar-view active' : 'radar-view';
+  if (tab === 'radar' && radarMatches.length === 0) loadRadar();
+}
+
+async function loadRadar() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return;
+
+  // Join matches with listings
+  const { data, error } = await db
+    .from('market_matches')
+    .select('*, listing:market_listings(*)')
+    .eq('user_id', user.id)
+    .neq('status', 'dismissed')
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('Radar error:', error); return; }
+  radarMatches = data || [];
+  renderRadar();
+
+  // Update badge
+  const badge = document.getElementById('radar-badge');
+  const newCount = radarMatches.filter(m => m.status === 'new').length;
+  if (newCount > 0) {
+    badge.textContent = newCount;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderRadar() {
+  const el = document.getElementById('radar-list');
+  if (!radarMatches.length) {
+    el.innerHTML = `<div class="radar-empty">
+      <div class="radar-empty-title">No matches yet</div>
+      Your Market Radar is calibrated to your collection thesis.<br>
+      Curated listings will appear here when new matches are found.
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = radarMatches.map(m => {
+    const l = m.listing || {};
+    const meta = l.metadata || {};
+    const confClass = (m.confidence || 'medium');
+    return `<div class="radar-card">
+      <div class="radar-card-body">
+        <div class="radar-card-title">${l.title || 'Unknown'}</div>
+        <div class="radar-card-meta">
+          ${meta.cartographer ? `<span class="radar-chip">${meta.cartographer}</span>` : ''}
+          ${meta.year ? `<span class="radar-chip">c. ${meta.year}</span>` : ''}
+          ${l.price ? `<span class="radar-chip">${l.price}</span>` : ''}
+          ${l.dealer_name ? `<span class="radar-chip">${l.dealer_name}</span>` : ''}
+          <span class="radar-confidence ${confClass}"><span class="radar-dot"></span> ${confClass} match</span>
+        </div>
+        <div class="radar-reason">${m.match_reason || ''}</div>
+        <div class="radar-actions">
+          ${l.dealer_url ? `<a href="${l.dealer_url}" target="_blank" class="radar-btn-buy">View at ${l.dealer_name || 'Dealer'} →</a>` : ''}
+          <button class="radar-btn-dismiss" onclick="dismissRadar('${m.id}')">Dismiss</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function dismissRadar(matchId) {
+  await db.from('market_matches').update({ status: 'dismissed' }).eq('id', matchId);
+  radarMatches = radarMatches.filter(m => m.id !== matchId);
+  renderRadar();
+  // Update badge
+  const badge = document.getElementById('radar-badge');
+  const newCount = radarMatches.filter(m => m.status === 'new').length;
+  if (newCount > 0) { badge.textContent = newCount; badge.style.display = ''; }
+  else { badge.style.display = 'none'; }
+}
+
+// Auto-load radar badge count on app load
+async function checkRadarBadge() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return;
+  const { count } = await db
+    .from('market_matches')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('status', 'new');
+  const badge = document.getElementById('radar-badge');
+  if (count > 0) { badge.textContent = count; badge.style.display = ''; }
+}
 </script>
 </body>
 </html>
