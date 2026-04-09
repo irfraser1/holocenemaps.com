@@ -500,8 +500,9 @@
 </div>
 
 <div id="eval-loading-overlay">
-  <div class="spinner"></div>
+  <div class="spinner" id="eval-spinner"></div>
   <div id="eval-loading-text">Analyzing image & extracting details...</div>
+  <div id="eval-friendly-msg" style="display:none;font-size:1.1rem;text-align:center;padding:0 2rem;line-height:1.6;"></div>
 </div>
 
 <script>
@@ -716,6 +717,14 @@ async function handlePhotoUpload(e) {
   if (!userThesis) { alert("Please define a collection thesis first!"); return; }
 
   const overlay = document.getElementById('eval-loading-overlay');
+  const spinner = document.getElementById('eval-spinner');
+  const loadingText = document.getElementById('eval-loading-text');
+  const friendlyMsg = document.getElementById('eval-friendly-msg');
+  
+  // Reset to loading state
+  spinner.style.display = '';
+  loadingText.style.display = '';
+  friendlyMsg.style.display = 'none';
   overlay.style.display = 'flex';
   document.getElementById('camera-input').value = '';
 
@@ -728,7 +737,16 @@ async function handlePhotoUpload(e) {
       });
 
       const parsed = await res.json();
-      if (parsed.error) throw new Error(parsed.error);
+      
+      if (parsed.error) {
+        // Show friendly message in the overlay instead of an alert
+        spinner.style.display = 'none';
+        loadingText.style.display = 'none';
+        friendlyMsg.textContent = parsed.error;
+        friendlyMsg.style.display = 'block';
+        setTimeout(() => { overlay.style.display = 'none'; friendlyMsg.style.display = 'none'; }, 3500);
+        return;
+      }
 
       openAdd();
       if(parsed.title) document.getElementById('f-title').value = parsed.title;
@@ -739,9 +757,14 @@ async function handlePhotoUpload(e) {
       if(parsed.evaluation) document.getElementById('f-notes').value = parsed.evaluation;
 
     } catch(e) {
-      alert("Eval failed: " + (e.message || String(e)));
+      spinner.style.display = 'none';
+      loadingText.style.display = 'none';
+      friendlyMsg.textContent = 'Something went wrong. Please try again.';
+      friendlyMsg.style.display = 'block';
+      setTimeout(() => { overlay.style.display = 'none'; }, 3000);
     } finally {
-      overlay.style.display = 'none';
+      // Only hide overlay if not showing friendly message
+      if (friendlyMsg.style.display === 'none') overlay.style.display = 'none';
     }
   });
 }
