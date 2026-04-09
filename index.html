@@ -91,10 +91,9 @@
     .demo-link:hover { opacity: 1; }
 
     /* ── RESPONSIVE: mobile vs desktop ── */
-    .mobile-only { display: block; }
-    .desktop-only { display: none !important; }
-    .desktop-flex { display: none !important; }
-    .hero-left { text-align: center; }
+    .mobile-only { display: flex; flex-direction: column; align-items: center; }
+    .desktop-only, .desktop-flex { display: none !important; }
+    .hero-left { text-align: center; display: flex; flex-direction: column; align-items: center; }
 
     .btn-demo-primary {
       padding: 16px 40px; border: 2px solid var(--gold);
