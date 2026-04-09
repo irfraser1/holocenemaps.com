@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Scan a Map — Holocene Maps</title>
+  <meta name="description" content="Point your camera at any antique map and get an instant expert identification. Powered by Holocene Maps.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #12151f;
+      --navy2: #1a1f2e;
+      --navy3: #222840;
+      --gold: #c9a84c;
+      --gold-light: #e8c97a;
+      --cream: #f5f0e8;
+      --cream2: #e8e2d6;
+      --text-muted: rgba(245,240,232,0.5);
+    }
+
+    html, body { height: 100%; background: var(--navy); color: var(--cream); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+    /* ── HERO STATE ── */
+    #hero {
+      min-height: 100dvh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 40px 28px 60px;
+      text-align: center;
+      transition: opacity 0.4s ease;
+    }
+
+    .wordmark {
+      font-family: 'Spectral', serif;
+      font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 18px;
+    }
+
+    .hero-headline {
+      font-family: 'Spectral', serif;
+      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      font-weight: 300; line-height: 1.15;
+      color: var(--cream); margin-bottom: 16px;
+    }
+    .hero-headline em { font-style: italic; color: var(--gold-light); }
+
+    .hero-sub {
+      font-family: 'Spectral', serif;
+      font-size: 15px; line-height: 1.7;
+      color: var(--text-muted); max-width: 300px; margin: 0 auto 48px;
+    }
+
+    .btn-scan {
+      position: relative;
+      width: 140px; height: 140px; border-radius: 50%;
+      border: 2px solid var(--gold);
+      background: transparent;
+      cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-scan::before {
+      content: '';
+      position: absolute; inset: -10px; border-radius: 50%;
+      border: 1px solid rgba(201,168,76,0.2);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.12); opacity: 0; }
+    }
+    .btn-scan:active, .btn-scan:hover { background: rgba(201,168,76,0.08); transform: scale(0.96); }
+    .btn-scan svg { width: 40px; height: 40px; color: var(--gold); }
+    .btn-scan-label {
+      font-family: 'Spectral', serif;
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold); margin-top: 28px;
+    }
+
+    .hint { margin-top: 48px; font-family: 'Spectral', serif; font-size: 12px; color: var(--text-muted); letter-spacing: 0.06em; }
+
+    input[type="file"] { display: none; }
+
+    /* ── LOADING ── */
+    #loading {
+      display: none;
+      position: fixed; inset: 0; z-index: 100;
+      background: var(--navy);
+      flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+    }
+    .spinner {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 2px solid rgba(201,168,76,0.2);
+      border-top-color: var(--gold);
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-text {
+      font-family: 'Spectral', serif; font-style: italic;
+      font-size: 15px; color: var(--text-muted); letter-spacing: 0.06em;
+    }
+
+    /* ── RESULT STATE ── */
+    #result {
+      display: none;
+      min-height: 100dvh;
+      flex-direction: column;
+      animation: fadeUp 0.5s ease forwards;
+    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+    .result-header {
+      background: var(--navy2);
+      border-bottom: 1px solid rgba(201,168,76,0.2);
+      padding: 20px 24px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .result-wordmark { font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+    .btn-back {
+      font-family: 'Inter', sans-serif; font-size: 12px; color: var(--text-muted);
+      background: none; border: none; cursor: pointer; padding: 4px 0;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-back:hover { color: var(--cream); }
+
+    .result-image-wrap {
+      width: 100%; max-height: 240px; overflow: hidden; position: relative;
+      background: var(--navy3);
+    }
+    .result-image-wrap img { width: 100%; height: 240px; object-fit: cover; filter: brightness(0.85); }
+    .result-image-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, var(--navy2) 100%);
+    }
+
+    .result-body { padding: 28px 24px 40px; flex: 1; background: var(--navy2); }
+
+    .result-label {
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold); font-family: 'Inter', sans-serif; font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .result-title {
+      font-family: 'Spectral', serif; font-size: clamp(1.4rem, 5vw, 2rem);
+      font-weight: 400; line-height: 1.2; color: var(--cream); margin-bottom: 20px;
+    }
+
+    .result-meta {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;
+    }
+    .meta-chip {
+      background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25);
+      padding: 5px 12px; border-radius: 20px;
+      font-family: 'Spectral', serif; font-size: 12px; color: var(--cream2);
+    }
+
+    .result-divider { height: 1px; background: rgba(201,168,76,0.15); margin-bottom: 24px; }
+
+    .result-summary {
+      font-family: 'Spectral', serif; font-size: 15px; line-height: 1.75;
+      color: var(--cream2); margin-bottom: 36px;
+    }
+
+    .result-ctas { display: flex; flex-direction: column; gap: 12px; }
+
+    .btn-cta-primary {
+      width: 100%; padding: 15px;
+      background: var(--gold); color: var(--navy);
+      border: none; border-radius: 2px; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+      letter-spacing: 0.06em; text-align: center;
+      text-decoration: none; display: block;
+      transition: background 0.2s;
+    }
+    .btn-cta-primary:hover { background: var(--gold-light); }
+
+    .btn-cta-secondary {
+      width: 100%; padding: 14px;
+      background: transparent; color: var(--text-muted);
+      border: 1px solid rgba(245,240,232,0.15); border-radius: 2px; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      letter-spacing: 0.04em;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-cta-secondary:hover { color: var(--cream); border-color: rgba(245,240,232,0.35); }
+
+    .result-footer {
+      padding: 20px 24px;
+      font-family: 'Spectral', serif; font-style: italic;
+      font-size: 12px; color: var(--text-muted); text-align: center;
+      background: var(--navy);
+    }
+
+    /* ── ERROR message inside loading ── */
+    #friendly-msg { display: none; font-family: 'Spectral', serif; font-style: italic; font-size: 16px; color: var(--cream2); text-align: center; max-width: 280px; line-height: 1.7; }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div id="hero">
+  <div class="wordmark">Holocene Maps</div>
+  <h1 class="hero-headline">Know what<br>you're <em>holding.</em></h1>
+  <p class="hero-sub">Point your camera at any antique or vintage map for an instant expert identification.</p>
+
+  <button class="btn-scan" onclick="document.getElementById('scan-input').click()" aria-label="Scan a map">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+    </svg>
+  </button>
+  <div class="btn-scan-label">Tap to scan</div>
+  <input type="file" id="scan-input" accept="image/*" capture="environment" onchange="handleScan(event)">
+  <p class="hint">No account required · Maps only</p>
+</div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="spinner" id="spin"></div>
+  <div id="loading-text">Identifying your map…</div>
+  <div id="friendly-msg"></div>
+</div>
+
+<!-- RESULT -->
+<div id="result">
+  <div class="result-header">
+    <span class="result-wordmark">Holocene Maps</span>
+    <button class="btn-back" onclick="reset()">← Scan another</button>
+  </div>
+  <div class="result-image-wrap" id="result-image-wrap" style="display:none">
+    <img id="result-img" src="" alt="Scanned map">
+    <div class="result-image-overlay"></div>
+  </div>
+  <div class="result-body">
+    <div class="result-label">Map Identified</div>
+    <h2 class="result-title" id="result-title">—</h2>
+    <div class="result-meta" id="result-meta"></div>
+    <div class="result-divider"></div>
+    <p class="result-summary" id="result-summary"></p>
+    <div class="result-ctas">
+      <a href="/collection.html" class="btn-cta-primary">Save to My Collection →</a>
+      <button class="btn-cta-secondary" onclick="reset()">Scan Another Map</button>
+    </div>
+  </div>
+  <div class="result-footer">Powered by Holocene Maps · AI-assisted identification · Verify with a specialist before purchasing</div>
+</div>
+
+<script>
+  function resizeAndBase64(file, cb) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        const MAX = 1400;
+        if (w > h && w > MAX) { h *= MAX/w; w = MAX; }
+        else if (h > MAX) { w *= MAX/h; h = MAX; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        cb(dataUrl, dataUrl.replace(/^data:image\/jpeg;base64,/, ''));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function showFriendly(msg) {
+    document.getElementById('spin').style.display = 'none';
+    document.getElementById('loading-text').style.display = 'none';
+    const fm = document.getElementById('friendly-msg');
+    fm.textContent = msg;
+    fm.style.display = 'block';
+    setTimeout(reset, 4000);
+  }
+
+  async function handleScan(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Show loading
+    document.getElementById('hero').style.display = 'none';
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('spin').style.display = '';
+    document.getElementById('loading-text').style.display = '';
+    document.getElementById('friendly-msg').style.display = 'none';
+    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('scan-input').value = '';
+
+    resizeAndBase64(file, async (dataUrl, base64) => {
+      try {
+        const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64 }) // no thesis = public mode
+        });
+        const data = await res.json();
+
+        if (data.error) { showFriendly(data.error); return; }
+
+        // Build result
+        document.getElementById('result-title').textContent = data.title || 'Map Identified';
+
+        // Meta chips
+        const meta = document.getElementById('result-meta');
+        meta.innerHTML = '';
+        if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}</span>`;
+        if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}</span>`;
+        if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}</span>`;
+
+        document.getElementById('result-summary').textContent = data.summary || '';
+
+        // Show thumbnail
+        const wrap = document.getElementById('result-image-wrap');
+        const img = document.getElementById('result-img');
+        img.src = dataUrl;
+        wrap.style.display = 'block';
+
+        document.getElementById('loading').style.display = 'none';
+        const resultEl = document.getElementById('result');
+        resultEl.style.display = 'flex';
+        window.scrollTo(0, 0);
+
+      } catch(err) {
+        showFriendly('Something went wrong. Please try again.');
+      }
+    });
+  }
+
+  function reset() {
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('hero').style.display = 'flex';
+    document.getElementById('scan-input').value = '';
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>
