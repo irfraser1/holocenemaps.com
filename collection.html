@@ -674,7 +674,7 @@ function showLogin() {
 async function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
-  const hasPending = !!localStorage.getItem('pending_scan');
+  const hasPending = !!localStorage.getItem('pending_scan') || !!new URLSearchParams(window.location.search).get('thesis');
   await checkProfile(hasPending);
   // Auto-fill Add Map modal if arriving from scan page
   const pending = localStorage.getItem('pending_scan');
@@ -701,8 +701,9 @@ async function checkProfile(skipOnboarding) {
     renderThesisPanel();
     await loadMaps();
   } else if (skipOnboarding) {
-    // New user arriving from scan — auto-create default thesis, skip onboarding
-    const defaultThesis = 'Antique and vintage maps';
+    // New user arriving from scan or theme selection — auto-create thesis
+    const urlThesis = new URLSearchParams(window.location.search).get('thesis');
+    const defaultThesis = urlThesis || 'Antique and vintage maps';
     await db.from('profiles').upsert({ user_id: user.id, thesis: defaultThesis });
     userThesis = defaultThesis;
     renderThesisPanel();
