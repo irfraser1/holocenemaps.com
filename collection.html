@@ -714,15 +714,6 @@ async function handlePhotoUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
   if (!userThesis) { alert("Please define a collection thesis first!"); return; }
-  
-  let API_KEY = localStorage.getItem('ai_api_key');
-  if (!API_KEY) {
-    API_KEY = window.prompt('Enter your API Key (Anthropic or OpenAI ChatGPT):');
-    if (!API_KEY) return;
-    localStorage.setItem('ai_api_key', API_KEY.trim());
-  } else {
-    API_KEY = API_KEY.trim();
-  }
 
   const overlay = document.getElementById('eval-loading-overlay');
   overlay.style.display = 'flex';
@@ -730,84 +721,15 @@ async function handlePhotoUpload(e) {
 
   resizeImageToCanvasAndBase64(file, async (base64Data) => {
     try {
-      const prompt = `You are an expert antique map advisor. I have taken a photo of a map (or its dealer tag).
-Extract the details into a strict JSON object with EXACTLY these keys: "title", "year", "cartographer", "dealer", "price". If a detail is missing, make the value "". 
-Then, based on my collection thesis: "${userThesis}", add an "evaluation" key to the JSON containing exactly 3 sentences evaluating if I should buy/watch/pass and why.
-Return ONLY valid JSON. Do not return any markdown formatting or backticks around the json.`;
+      const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64Data, thesis: userThesis })
+      });
 
-      let jsonRes, cleanJson;
+      const parsed = await res.json();
+      if (parsed.error) throw new Error(parsed.error);
 
-      if (API_KEY.startsWith('sk-ant')) {
-          // ANTHROPIC CLAUDE
-          const res = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': API_KEY,
-              'anthropic-version': '2023-06-01',
-              'anthropic-dangerous-direct-browser-access': 'true',
-            },
-            body: JSON.stringify({
-              model: 'claude-3-5-sonnet-latest',
-              max_tokens: 600,
-              messages: [{
-                role: 'user',
-                content: [
-                  { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Data.replace(/^data:image\/jpeg;base64,/, '') } },
-                  { type: 'text', text: prompt }
-                ]
-              }]
-            })
-          });
-          jsonRes = await res.json();
-          if (jsonRes.error) {
-             if (jsonRes.error.type === 'authentication_error') localStorage.removeItem('ai_api_key');
-             throw new Error("Anthropic API Error: " + JSON.stringify(jsonRes.error));
-          }
-          const textResponse = jsonRes?.content?.[0]?.text || '{}';
-          cleanJson = textResponse.replace(/^[\s\S]*?```(?:json)?\n?/, '').replace(/```[\s\S]*$/, '').trim() || textResponse.trim();
-
-      } else {
-          // OPENAI CHATGPT
-          // gpt-4o natively supports vision and strict JSON parsing
-          const res = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${API_KEY}`
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o',
-              response_format: { type: 'json_object' },
-              messages: [{
-                role: 'user',
-                content: [
-                  { type: 'text', text: prompt },
-                  { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Data}` } }
-                ]
-              }],
-              max_tokens: 600
-            })
-          });
-          jsonRes = await res.json();
-          if (jsonRes.error) {
-             if (jsonRes.error.code === 'invalid_api_key') localStorage.removeItem('ai_api_key');
-             if (jsonRes.error.type === 'insufficient_quota' || jsonRes.error.code === 'insufficient_quota') {
-                 throw new Error("BILLING ERROR: You need to add $5 to platform.openai.com/billing. (Note: Your $20/mo ChatGPT Plus subscription does NOT cover external API keys!)");
-             }
-             throw new Error("OpenAI API Error: " + JSON.stringify(jsonRes.error));
-          }
-          const textResponse = jsonRes.choices[0].message.content;
-          cleanJson = textResponse; // gpt-4o json_object output is pure json
-      }
-      
-      let parsed = {};
-      try { 
-        parsed = JSON.parse(cleanJson); 
-      } catch(err) { 
-        throw new Error("JSON Parse Fail. Raw Output:\n" + String(cleanJson).substring(0, 100)); 
-      }
-      
       openAdd();
       if(parsed.title) document.getElementById('f-title').value = parsed.title;
       if(parsed.year) document.getElementById('f-year').value = parsed.year;
@@ -815,12 +737,9 @@ Return ONLY valid JSON. Do not return any markdown formatting or backticks aroun
       if(parsed.dealer) document.getElementById('f-dealer').value = parsed.dealer;
       if(parsed.price) document.getElementById('f-price').value = parsed.price;
       if(parsed.evaluation) document.getElementById('f-notes').value = parsed.evaluation;
-      
+
     } catch(e) {
-      alert("ERROR: Check the Add Map panel!");
-      openAdd();
-      document.getElementById('f-notes').value = "FATAL ERROR LOG:\n\n" + (e.message || String(e) || e.stack);
-      try { document.getElementById('modal-title').textContent = "⚠️ APP TRAP ⚠️"; } catch(ignore) {}
+      alert("Eval failed: " + (e.message || String(e)));
     } finally {
       overlay.style.display = 'none';
     }
