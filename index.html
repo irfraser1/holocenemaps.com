@@ -90,6 +90,36 @@
     }
     .demo-link:hover { opacity: 1; }
 
+    /* ── RESPONSIVE: mobile vs desktop ── */
+    .mobile-only { display: block; }
+    .desktop-only { display: none; }
+
+    .btn-demo-primary {
+      padding: 16px 40px; border: 2px solid var(--gold);
+      background: rgba(201,168,76,0.08); color: var(--gold);
+      font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
+      letter-spacing: 0.06em; border-radius: 2px; cursor: pointer;
+      transition: all 0.2s; margin-bottom: 16px;
+    }
+    .btn-demo-primary:hover { background: rgba(201,168,76,0.18); }
+
+    .btn-upload-secondary {
+      padding: 12px 28px; border: 1px solid rgba(245,240,232,0.15);
+      background: transparent; color: var(--text-muted);
+      font-family: 'Inter', sans-serif; font-size: 12px;
+      border-radius: 2px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-upload-secondary:hover { color: var(--cream); border-color: rgba(245,240,232,0.35); }
+
+    @media (min-width: 768px) {
+      .mobile-only { display: none !important; }
+      .desktop-only { display: block !important; }
+      #hero { padding: 80px 40px 60px; }
+      .hero-sub { max-width: 460px; }
+      .value-grid { flex-direction: row; max-width: 900px; }
+      .value-card { flex: 1; }
+    }
+
     input[type="file"] { display: none; }
 
     /* ── LOADING ── */
@@ -328,16 +358,27 @@
   <h1 class="hero-headline">The Intelligence Engine<br>for <em>Collectors.</em></h1>
   <p class="hero-sub">Point your camera at any antique map for an instant expert identification.</p>
 
-  <button class="btn-scan" onclick="document.getElementById('scan-input').click()" aria-label="Scan a map">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
-    </svg>
-  </button>
-  <div class="btn-scan-label">Tap to scan</div>
-  <input type="file" id="scan-input" accept="image/*" capture="environment" onchange="handleScan(event)">
-  <p class="hint">No account required · Maps only</p>
-  <button class="demo-link" onclick="runDemo()">No map handy? See it in action →</button>
+  <!-- MOBILE: camera scan -->
+  <div class="mobile-only">
+    <button class="btn-scan" onclick="document.getElementById('scan-input').click()" aria-label="Scan a map">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+      </svg>
+    </button>
+    <div class="btn-scan-label">Tap to scan</div>
+    <input type="file" id="scan-input" accept="image/*" capture="environment" onchange="handleScan(event)">
+    <p class="hint">No account required · Maps only</p>
+    <button class="demo-link" onclick="runDemo()">No map handy? See it in action →</button>
+  </div>
+
+  <!-- DESKTOP: demo-first -->
+  <div class="desktop-only" style="margin-top: 48px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <button class="btn-demo-primary" onclick="runDemo()">Watch AI Identify a Map →</button>
+    <button class="btn-upload-secondary" onclick="document.getElementById('upload-input').click()">Or upload a map photo</button>
+    <input type="file" id="upload-input" accept="image/*" onchange="handleScan(event)" style="display:none">
+    <p class="hint" style="margin-top: 24px;">No account required · Maps only</p>
+  </div>
 </div>
 
 <!-- VALUE PROP -->
