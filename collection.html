@@ -681,7 +681,7 @@ async function showApp() {
       if (scan.title) document.getElementById('f-title').value = scan.title;
       if (scan.year) document.getElementById('f-year').value = scan.year;
       if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
-      const notes = [scan.region, scan.summary].filter(Boolean).join('\n\n');
+      const notes = [scan.region, scan.summary, '---', '📷 Re-scan from your collection for a personalized buy/watch/pass evaluation based on your thesis.'].filter(Boolean).join('\n\n');
       if (notes) document.getElementById('f-notes').value = notes;
     } catch(e) { localStorage.removeItem('pending_scan'); }
   }
