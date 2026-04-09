@@ -82,6 +82,14 @@
 
     .hint { margin-top: 48px; font-family: 'Spectral', serif; font-size: 12px; color: var(--text-muted); letter-spacing: 0.06em; }
 
+    .demo-link {
+      margin-top: 16px; background: none; border: none; cursor: pointer;
+      font-family: 'Spectral', serif; font-style: italic; font-size: 12px;
+      color: var(--gold); letter-spacing: 0.04em;
+      text-decoration: none; opacity: 0.7; transition: opacity 0.2s;
+    }
+    .demo-link:hover { opacity: 1; }
+
     input[type="file"] { display: none; }
 
     /* ── LOADING ── */
@@ -318,7 +326,7 @@
 <!-- HERO -->
 <div id="hero">
   <h1 class="hero-headline">Know what<br>you're <em>holding.</em></h1>
-  <p class="hero-sub">Point your camera at any antique or vintage map for an instant expert identification.</p>
+  <p class="hero-sub">The Intelligence Engine for Collectors</p>
 
   <button class="btn-scan" onclick="document.getElementById('scan-input').click()" aria-label="Scan a map">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -329,6 +337,7 @@
   <div class="btn-scan-label">Tap to scan</div>
   <input type="file" id="scan-input" accept="image/*" capture="environment" onchange="handleScan(event)">
   <p class="hint">No account required · Maps only</p>
+  <button class="demo-link" onclick="runDemo()">No map handy? See it in action →</button>
 </div>
 
 <!-- VALUE PROP -->
@@ -408,6 +417,58 @@
 
 <script>
   let currentScanData = {};
+
+  async function runDemo() {
+    // Show loading
+    document.getElementById('hero').style.display = 'none';
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('spin').style.display = '';
+    document.getElementById('loading-text').style.display = '';
+    document.getElementById('friendly-msg').style.display = 'none';
+    document.getElementById('loading').style.display = 'flex';
+
+    // Fetch a pre-loaded map image
+    const res = await fetch('/chatelain-1719.jpg');
+    const blob = await res.blob();
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target.result;
+      const base64 = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+      try {
+        const apiRes = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64 })
+        });
+        const data = await apiRes.json();
+        if (data.error) { showFriendly(data.error); return; }
+
+        document.getElementById('result-title').textContent = data.title || 'Map Identified';
+        const meta = document.getElementById('result-meta');
+        const conf = data.confidence || {};
+        meta.innerHTML = '';
+        if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}<span class="confidence-dot ${conf.year || ''}"></span></span>`;
+        if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}<span class="confidence-dot ${conf.cartographer || ''}"></span></span>`;
+        if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}<span class="confidence-dot ${conf.region || ''}"></span></span>`;
+
+        const uncEl = document.getElementById('result-uncertainties');
+        if (data.uncertainties) { uncEl.textContent = '💡 ' + data.uncertainties; uncEl.style.display = 'block'; }
+        else { uncEl.style.display = 'none'; }
+
+        currentScanData = data;
+        document.getElementById('result-summary').textContent = data.summary || '';
+
+        const wrap = document.getElementById('result-image-wrap');
+        document.getElementById('result-img').src = dataUrl;
+        wrap.style.display = 'block';
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('result').style.display = 'flex';
+        window.scrollTo(0, 0);
+      } catch(err) { showFriendly('Something went wrong. Please try again.'); }
+    };
+    reader.readAsDataURL(blob);
+  }
 
   function saveToCollection() {
     localStorage.setItem('pending_scan', JSON.stringify(currentScanData));
