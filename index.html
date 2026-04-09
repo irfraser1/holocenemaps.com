@@ -111,12 +111,36 @@
     }
     .btn-upload-secondary:hover { color: var(--cream); border-color: rgba(245,240,232,0.35); }
 
-    @media (min-width: 768px) {
+    .hero-right { position: relative; width: 440px; }
+    .hg-img { width: 100%; border-radius: 4px; border: 1px solid rgba(201,168,76,0.3); box-shadow: 0 24px 48px rgba(0,0,0,0.6); }
+    .hg-card-pop {
+      position: absolute; bottom: -24px; left: -32px; background: var(--navy);
+      border: 1px solid rgba(201,168,76,0.3); padding: 16px 20px; border-radius: 4px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.8); text-align: left;
+    }
+    .hg-card-title { font-family: 'Spectral', serif; font-size: 16px; color: var(--cream); margin-bottom: 8px; }
+    .hg-card-meta { display: flex; gap: 8px; margin-bottom: 12px; }
+    .hg-card-chip { background: rgba(245,240,232,0.06); padding: 4px 8px; border-radius: 2px; font-family: 'Inter', sans-serif; font-size: 11px; color: var(--text-muted); }
+    .hg-card-trust { display: flex; align-items: center; gap: 6px; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; color: #4ade80; letter-spacing: 0.05em; text-transform: uppercase; }
+    .hg-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; box-shadow: 0 0 6px #4ade80; }
+
+    .desktop-cta-group { margin-top: 40px; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+
+    @media (min-width: 900px) {
       .mobile-only { display: none !important; }
       .desktop-only { display: block !important; }
-      #hero { padding: 80px 40px 60px; }
-      .hero-sub { max-width: 460px; }
-      .value-grid { flex-direction: row; max-width: 900px; }
+      .desktop-flex { display: flex !important; }
+      
+      #hero {
+        display: flex; align-items: center; justify-content: space-between;
+        max-width: 1100px; margin: 0 auto; padding: 100px 40px 80px; text-align: left;
+      }
+      .hero-left { max-width: 480px; }
+      .hero-headline { text-align: left; margin-bottom: 24px; font-size: clamp(3rem, 4vw, 4rem); line-height: 1.1; }
+      .hero-sub { text-align: left; max-width: 100%; margin: 0; }
+      .desktop-cta-group { align-items: flex-start; }
+
+      .value-grid { flex-direction: row; max-width: 1100px; }
       .value-card { flex: 1; }
     }
 
@@ -289,7 +313,10 @@
       background: rgba(245,240,232,0.03); border: 1px solid rgba(201,168,76,0.12);
       border-radius: 6px;
     }
-    .value-card-icon { font-size: 24px; margin-bottom: 12px; }
+    .value-card-icon {
+      font-family: 'Spectral', serif; font-size: 24px; color: var(--gold);
+      margin-bottom: 16px; font-style: italic; opacity: 0.9;
+    }
     .value-card-title {
       font-family: 'Spectral', serif; font-size: 15px; font-weight: 600;
       color: var(--gold-light); margin-bottom: 6px;
@@ -355,29 +382,46 @@
 
 <!-- HERO -->
 <div id="hero">
-  <h1 class="hero-headline">The Intelligence Engine<br>for <em>Collectors.</em></h1>
-  <p class="hero-sub">Point your camera at any antique map for an instant expert identification.</p>
+  <div class="hero-left">
+    <h1 class="hero-headline">The Intelligence Engine<br>for <em>Collectors.</em></h1>
+    <p class="hero-sub mobile-only">Point your camera at any antique map for an instant expert identification.</p>
+    <p class="hero-sub desktop-only">Upload a photograph of any antique map to instantly identify the cartographer, date, and region. Receive curated evaluations perfectly aligned with your collecting goals.</p>
 
-  <!-- MOBILE: camera scan -->
-  <div class="mobile-only">
-    <button class="btn-scan" onclick="document.getElementById('scan-input').click()" aria-label="Scan a map">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
-      </svg>
-    </button>
-    <div class="btn-scan-label">Tap to scan</div>
-    <input type="file" id="scan-input" accept="image/*" capture="environment" onchange="handleScan(event)">
-    <p class="hint">No account required · Maps only</p>
-    <button class="demo-link" onclick="runDemo()">No map handy? See it in action →</button>
+    <!-- MOBILE: camera scan -->
+    <div class="mobile-only">
+      <button class="btn-scan" onclick="document.getElementById('scan-input').click()" aria-label="Scan a map">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+        </svg>
+      </button>
+      <div class="btn-scan-label">Tap to scan</div>
+      <input type="file" id="scan-input" accept="image/*" capture="environment" onchange="handleScan(event)">
+      <p class="hint">No account required · Maps only</p>
+      <button class="demo-link" onclick="runDemo()">No map handy? See it in action →</button>
+    </div>
+
+    <!-- DESKTOP: demo-first -->
+    <div class="desktop-flex desktop-only desktop-cta-group">
+      <button class="btn-demo-primary" onclick="runDemo()">Watch AI Identify a Map →</button>
+      <button class="btn-upload-secondary" onclick="document.getElementById('upload-input').click()">Or upload a map photo</button>
+      <input type="file" id="upload-input" accept="image/*" onchange="handleScan(event)" style="display:none">
+      <p class="hint">No account required · Secure & private</p>
+    </div>
   </div>
 
-  <!-- DESKTOP: demo-first -->
-  <div class="desktop-only" style="margin-top: 48px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-    <button class="btn-demo-primary" onclick="runDemo()">Watch AI Identify a Map →</button>
-    <button class="btn-upload-secondary" onclick="document.getElementById('upload-input').click()">Or upload a map photo</button>
-    <input type="file" id="upload-input" accept="image/*" onchange="handleScan(event)" style="display:none">
-    <p class="hint" style="margin-top: 24px;">No account required · Maps only</p>
+  <div class="hero-right desktop-only">
+    <div class="hero-graphic">
+      <img src="/chatelain-1719.jpg" alt="Map Preview" class="hg-img" />
+      <div class="hg-card-pop">
+         <div class="hg-card-title">Carte de la Nouvelle France</div>
+         <div class="hg-card-meta">
+           <span class="hg-card-chip">c. 1719</span>
+           <span class="hg-card-chip">Chatelain</span>
+         </div>
+         <div class="hg-card-trust"><div class="hg-dot"></div> High Confidence Match</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -388,17 +432,17 @@
   <h2 class="value-headline">The collector's edge,<br>in your pocket.</h2>
   <div class="value-grid">
     <div class="value-card">
-      <div class="value-card-icon">📸</div>
+      <div class="value-card-icon">I.</div>
       <div class="value-card-title">Instant Identification</div>
-      <div class="value-card-desc">Point your camera at any antique map. Our AI identifies the title, cartographer, date, and region in seconds — with confidence scoring.</div>
+      <div class="value-card-desc">Upload or photograph any antique map. Our AI identifies the title, cartographer, date, and region in seconds — with confidence scoring.</div>
     </div>
     <div class="value-card">
-      <div class="value-card-icon">🎯</div>
+      <div class="value-card-icon">II.</div>
       <div class="value-card-title">Personalized Evaluations</div>
       <div class="value-card-desc">Tell us your collecting thesis and get tailored buy, watch, or pass recommendations based on your goals — not generic advice.</div>
     </div>
     <div class="value-card">
-      <div class="value-card-icon">📋</div>
+      <div class="value-card-icon">III.</div>
       <div class="value-card-title">Track Everything</div>
       <div class="value-card-desc">Organize your owned maps, targets, and watchlist in one place. Never lose track of a map across dealers, shows, and auctions.</div>
     </div>
