@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Holocene Maps</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=Spectral:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --cream-dark: #ede6d6;
+    --ink: #1a1712;
+    --navy: #1c2b3a;
+    --navy-mid: #2d4459;
+    --gold: #8b6914;
+    --gold-light: #c4a44a;
+    --rust: #7a3b2e;
+    --border: rgba(139, 105, 20, 0.25);
+    --text-secondary: #5a4e3c;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--cream);
+    color: var(--ink);
+    font-family: 'Spectral', Georgia, serif;
+    font-weight: 300;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Grain texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* ─── NAVIGATION ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 3rem;
+    background: rgba(245, 240, 232, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-brand {
+    font-family: 'Cormorant SC', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    color: var(--navy);
+    text-decoration: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.75rem;
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+
+  .nav-links a:hover { color: var(--navy); }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--navy);
+    padding-top: 4.5rem;
+  }
+
+  /* Slideshow panels */
+  .hero-slides {
+    position: absolute;
+    inset: 0;
+    display: flex;
+  }
+
+  .hero-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 2.5s ease;
+  }
+
+  .hero-slide.active { opacity: 1; }
+
+  .hero-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .hero-slide.active img {
+    animation: none;
+  }
+
+  /* Dark overlay so text reads cleanly */
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(28, 43, 58, 0.35) 0%,
+      rgba(28, 43, 58, 0.65) 50%,
+      rgba(28, 43, 58, 0.80) 100%
+    );
+    z-index: 1;
+  }
+
+  /* Text sits above overlay */
+  .hero-text {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    max-width: 860px;
+    opacity: 0;
+    transform: translateY(24px);
+    animation: fadeUp 1.4s ease 0.6s forwards;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Brand-level: Holocene Maps */
+  .hero-brand {
+    font-family: 'Cormorant SC', serif;
+    font-size: clamp(3rem, 6vw, 6rem);
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    color: var(--cream);
+    line-height: 1;
+    margin-bottom: 0.6rem;
+  }
+
+  .hero-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+    font-style: italic;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+    margin-bottom: 2.8rem;
+  }
+
+  /* Divider */
+  .hero-divider {
+    width: 60px;
+    height: 1px;
+    background: var(--gold-light);
+    margin: 0 auto 2.8rem;
+    opacity: 0.6;
+  }
+
+  /* Collection-level intro */
+  .hero-eyebrow {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.32em;
+    color: var(--gold-light);
+    margin-bottom: 1rem;
+    opacity: 0.85;
+  }
+
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.6rem, 3vw, 2.6rem);
+    font-weight: 300;
+    line-height: 1.2;
+    color: var(--cream);
+    margin-bottom: 1.4rem;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--gold-light);
+  }
+
+  .hero-subtitle {
+    font-family: 'Spectral', serif;
+    font-size: clamp(0.88rem, 1.3vw, 1rem);
+    font-style: italic;
+    color: rgba(245, 240, 232, 0.72);
+    margin-bottom: 2.5rem;
+    line-height: 1.8;
+    max-width: 52ch;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    color: var(--cream);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(196, 164, 74, 0.5);
+    padding-bottom: 0.3rem;
+    transition: color 0.3s, border-color 0.3s;
+    width: fit-content;
+  }
+
+  .hero-cta:hover { color: var(--gold-light); border-color: var(--gold-light); }
+  .hero-cta::after { content: '→'; font-size: 0.9rem; }
+
+  /* Slide caption bottom-right */
+  .hero-caption {
+    position: absolute;
+    bottom: 2rem;
+    right: 2.5rem;
+    z-index: 2;
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: rgba(245, 240, 232, 0.4);
+    text-align: right;
+    transition: opacity 0.6s;
+  }
+
+  /* Slide dots */
+  .hero-dots {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .hero-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(245, 240, 232, 0.3);
+    transition: background 0.4s;
+    cursor: pointer;
+  }
+
+  .hero-dot.active { background: var(--gold-light); }
+
+  /* ─── THESIS BAND ─── */
+  .thesis-band {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 4rem 3rem;
+    display: flex;
+    align-items: center;
+    gap: 4rem;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .thesis-band::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold-light), transparent);
+  }
+
+  .thesis-band::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold-light), transparent);
+  }
+
+  .thesis-label {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    color: var(--gold-light);
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    flex-shrink: 0;
+    opacity: 0.8;
+  }
+
+  .thesis-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.65;
+    color: rgba(245, 240, 232, 0.9);
+    max-width: 75ch;
+  }
+
+  .thesis-text strong {
+    font-style: normal;
+    font-weight: 500;
+    color: var(--gold-light);
+  }
+
+  /* ─── HOLOCENE INTRO ─── */
+  .holocene-intro {
+    background: var(--cream-dark);
+    padding: 7rem 3rem 3rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .holocene-intro::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold-light), transparent);
+  }
+
+  .holocene-intro-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 4rem;
+    align-items: start;
+  }
+
+  .holocene-intro-label {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    opacity: 0.7;
+    padding-top: 0.4rem;
+  }
+
+  .holocene-intro-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+  }
+
+  .holocene-intro-body p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+    font-weight: 300;
+    line-height: 1.8;
+    color: var(--ink);
+  }
+
+  .holocene-intro-body p:first-child {
+    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+    color: var(--ink);
+  }
+
+  .holocene-intro-body p:last-child {
+    font-style: normal;
+    color: var(--ink);
+    font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+    border-left: none;
+    padding-left: 0;
+    margin-top: 0;
+  }
+
+  /* ─── THREE ACTS ─── */
+  .acts-section {
+    padding: 7rem 3rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 300;
+    color: var(--navy);
+  }
+
+  .section-rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--border), transparent);
+  }
+
+  .acts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+
+  .act-card {
+    padding: 3rem 2.5rem;
+    border-right: 1px solid var(--border);
+    position: relative;
+    transition: background 0.4s;
+  }
+
+  .act-card:last-child { border-right: none; }
+  .act-card:hover { background: rgba(28, 43, 58, 0.03); }
+
+  .act-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 4rem;
+    font-weight: 300;
+    color: var(--border);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .act-period {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  .act-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--navy);
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+
+  .act-desc {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 2rem;
+  }
+
+  .act-tone {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--gold);
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    margin-top: auto;
+  }
+
+  /* ─── COLLECTION ─── */
+  .collection-section {
+    background: var(--cream-dark);
+    padding: 3rem 3rem 7rem;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .collection-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .map-entry {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    align-items: stretch;
+    height: 380px;
+    gap: 0;
+    margin-bottom: -1px;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    transition: box-shadow 0.3s;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s ease, transform 0.6s ease, box-shadow 0.3s;
+  }
+
+  .map-entry.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .map-entry:hover {
+    box-shadow: 0 4px 32px rgba(28, 43, 58, 0.1);
+  }
+
+  .map-image-container {
+    position: relative;
+    overflow: hidden;
+    background: var(--navy);
+    height: 380px;
+  }
+
+  .map-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+  }
+
+  .map-entry:hover .map-image-container img {
+    transform: scale(1.03);
+  }
+
+  .map-placeholder {
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: var(--navy);
+    color: rgba(245, 240, 232, 0.2);
+  }
+
+  .map-placeholder-glyph {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3rem;
+    opacity: 0.3;
+  }
+
+  .map-placeholder-text {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    opacity: 0.4;
+  }
+
+  .detail-link { display: inline-block; margin-top: 0.5rem; font-family: 'Cormorant SC', serif; font-size: 0.6rem; letter-spacing: 0.2em; color: #c4a44a; text-decoration: none; opacity: 0.8; transition: opacity 0.2s; } .detail-link:hover { opacity: 1; } .act-tag {
+    position: absolute;
+    top: 1.25rem;
+    left: 1.25rem;
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    padding: 0.35rem 0.75rem;
+    background: rgba(28, 43, 58, 0.85);
+    color: var(--gold-light);
+    backdrop-filter: blur(4px);
+  }
+
+  .map-details {
+    overflow: hidden;
+    padding: 2.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .map-cartographer {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+
+  .map-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+  }
+
+  .map-date {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .map-narrative {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    max-width: 52ch;
+    margin-bottom: 1rem;
+  }
+
+  .map-further {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.45s ease;
+  }
+
+  .map-further.open { max-height: 800px; }
+
+  .map-further .map-narrative { margin-top: 1em; }
+
+  .map-further-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 2rem;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    text-decoration: none;
+  }
+
+  .map-further-toggle:hover { opacity: 1; }
+
+  .map-meta {
+    display: flex;
+    gap: 2.5rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border);
+    padding-top: 1.25rem;
+  }
+
+  .map-meta-item span {
+    font-family: 'Cormorant SC', serif;
+    letter-spacing: 0.1em;
+    font-size: 0.65rem;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  /* ─── ABOUT ─── */
+  .about-section {
+    padding: 7rem 3rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 6rem;
+    align-items: start;
+  }
+
+  .about-left {
+    position: sticky;
+    top: 7rem;
+  }
+
+  .about-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.8rem;
+    font-weight: 300;
+    line-height: 1.15;
+    color: var(--navy);
+    margin-bottom: 1.5rem;
+  }
+
+  .about-title em { font-style: italic; color: var(--gold); }
+
+  .about-divider {
+    width: 3rem;
+    height: 1px;
+    background: var(--gold-light);
+    margin-bottom: 1.5rem;
+  }
+
+  .about-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .about-body p {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    line-height: 1.9;
+    margin-bottom: 1.5rem;
+  }
+
+  .about-body p:last-child { margin-bottom: 0; }
+
+  /* ─── CONTACT / ENQUIRY ─── */
+  .enquiry-section {
+    background: var(--navy);
+    padding: 5rem 3rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .enquiry-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold-light), transparent);
+  }
+
+  .enquiry-inner {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .enquiry-eyebrow {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    color: var(--gold-light);
+    margin-bottom: 1.5rem;
+  }
+
+  .enquiry-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.5rem;
+    font-weight: 300;
+    color: var(--cream);
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+
+  .enquiry-text {
+    font-size: 0.9rem;
+    color: rgba(245, 240, 232, 0.6);
+    line-height: 1.8;
+    margin-bottom: 2.5rem;
+  }
+
+  .enquiry-link {
+    display: inline-block;
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.25em;
+    color: var(--navy);
+    background: var(--gold-light);
+    padding: 1rem 2.5rem;
+    text-decoration: none;
+    transition: background 0.3s, transform 0.2s;
+  }
+
+  .enquiry-link:hover {
+    background: var(--gold);
+    transform: translateY(-1px);
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--ink);
+    padding: 2.5rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-brand {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    color: rgba(245, 240, 232, 0.4);
+  }
+
+  .footer-copy {
+    font-size: 0.72rem;
+    color: rgba(245, 240, 232, 0.25);
+  }
+
+  /* ─── SCROLL ANIMATION ─── */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .animate-on-scroll.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Stagger children */
+  .acts-grid .act-card:nth-child(1) { transition-delay: 0s; }
+  .acts-grid .act-card:nth-child(2) { transition-delay: 0.12s; }
+  .acts-grid .act-card:nth-child(3) { transition-delay: 0.24s; }
+
+
+  /* ─── LIGHTBOX ─── */
+  #lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 8, 6, 0.96);
+    z-index: 500;
+    cursor: zoom-out;
+    overflow: hidden;
+  }
+  #lightbox.open { display: flex; align-items: center; justify-content: center; }
+  #lightbox-img {
+    max-width: 95vw;
+    max-height: 95vh;
+    object-fit: contain;
+    transform-origin: center center;
+    transition: transform 0.15s ease;
+    cursor: grab;
+    user-select: none;
+    border: 1px solid rgba(196, 164, 74, 0.2);
+  }
+  #lightbox-img.dragging { cursor: grabbing; transition: none; }
+  #lightbox-close {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 40px;
+    height: 40px;
+    background: rgba(245, 240, 232, 0.1);
+    border: 1px solid rgba(245, 240, 232, 0.2);
+    border-radius: 50%;
+    color: var(--cream);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    z-index: 501;
+  }
+  #lightbox-close:hover { background: rgba(245, 240, 232, 0.2); }
+  #lightbox-hint {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: rgba(245, 240, 232, 0.35);
+    pointer-events: none;
+  }
+  #lightbox-zoom {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    gap: 8px;
+    z-index: 501;
+  }
+  #lightbox-zoom button {
+    width: 36px;
+    height: 36px;
+    background: rgba(245, 240, 232, 0.1);
+    border: 1px solid rgba(245, 240, 232, 0.2);
+    border-radius: 50%;
+    color: rgba(245, 240, 232, 0.7);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  #lightbox-zoom button:hover { background: rgba(245, 240, 232, 0.2); }
+  .map-image-container img { cursor: zoom-in; }
+
+
+
+  /* ─── TIMELINE ─── */
+  #timeline {
+    position: relative;
+    height: 100vh;
+    background: #0a0d11;
+    overflow: hidden;
+    cursor: zoom-in;
+  }
+
+  .tl-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .tl-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: scale(1.05);
+    transition: opacity 750ms cubic-bezier(0.4,0,0.2,1),
+                transform 750ms cubic-bezier(0.4,0,0.2,1);
+    will-change: opacity, transform;
+    z-index: 1;
+  }
+
+  .tl-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+
+  .tl-slide.active {
+    opacity: 1;
+    transform: scale(1);
+    z-index: 2;
+  }
+
+  .tl-slide.leaving {
+    opacity: 0;
+    transform: scale(1.05);
+    z-index: 1;
+  }
+
+  /* Gradient vignette over the map */
+  .tl-stage::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to top,  rgba(10,13,17,0.95) 0%,  rgba(10,13,17,0.45) 32%, transparent 58%),
+      linear-gradient(to right, rgba(10,13,17,0.5) 0%, transparent 42%);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Act badge */
+  .tl-act-badge {
+    position: absolute;
+    top: 2rem;
+    left: 2.5rem;
+    z-index: 10;
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.3em;
+    color: var(--gold-light);
+    padding: 0.4rem 1rem;
+    border: 1px solid rgba(196,164,74,0.3);
+    background: rgba(10,13,17,0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Caption */
+  .tl-caption {
+    position: absolute;
+    bottom: 10rem;
+    left: 2.5rem;
+    z-index: 10;
+    max-width: 460px;
+    padding: 1.75rem 2rem 1.75rem 1.75rem;
+    background: rgba(10,13,17,0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-left: 2px solid rgba(196,164,74,0.55);
+    pointer-events: none;
+  }
+
+  .tl-cap-cartographer,
+  .tl-cap-title,
+  .tl-cap-date,
+  .tl-cap-narrative {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+
+  .tl-cap-cartographer {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.28em;
+    color: var(--gold-light);
+    margin-bottom: 0.5rem;
+    transition-delay: 0.08s;
+  }
+
+  .tl-cap-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.2rem, 2vw, 1.75rem);
+    font-weight: 300;
+    color: var(--cream);
+    line-height: 1.2;
+    margin-bottom: 0.3rem;
+    transition-delay: 0.16s;
+  }
+
+  .tl-cap-date {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 0.88rem;
+    color: rgba(196,164,74,0.85);
+    margin-bottom: 1rem;
+    transition-delay: 0.24s;
+  }
+
+  .tl-cap-narrative {
+    font-size: 0.83rem;
+    color: rgba(245,240,232,0.65);
+    line-height: 1.9;
+    transition-delay: 0.32s;
+  }
+
+  .tl-caption.visible .tl-cap-cartographer,
+  .tl-caption.visible .tl-cap-title,
+  .tl-caption.visible .tl-cap-date,
+  .tl-caption.visible .tl-cap-narrative {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Nav arrows */
+  .tl-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: rgba(10,13,17,0.5);
+    border: 1px solid rgba(196,164,74,0.25);
+    color: var(--gold-light);
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 0;
+    line-height: 1;
+  }
+
+  .tl-nav:hover {
+    background: rgba(28,43,58,0.9);
+    border-color: rgba(196,164,74,0.6);
+  }
+
+  .tl-nav:disabled { opacity: 0.2; cursor: default; pointer-events: none; }
+  .tl-nav-prev { left: 1.5rem; }
+  .tl-nav-next { right: 1.5rem; }
+
+  /* Scrubber */
+  .tl-scrubber {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    z-index: 10;
+    padding: 0 3.5rem 2rem;
+    cursor: default;
+  }
+
+  .tl-year-nodes {
+    position: relative;
+    height: 44px;
+    margin-bottom: 6px;
+  }
+
+  .tl-year-node {
+    position: absolute;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .tl-year-node-label {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.14em;
+    color: rgba(196,164,74,0.4);
+    transition: color 0.35s, font-size 0.35s;
+    white-space: nowrap;
+  }
+
+  .tl-year-node-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(196,164,74,0.25);
+    border: 1px solid rgba(196,164,74,0.45);
+    transition: background 0.35s, transform 0.35s, border-color 0.35s, box-shadow 0.35s;
+    display: block;
+  }
+
+  .tl-year-node.active .tl-year-node-label {
+    color: var(--gold-light);
+    font-size: 0.7rem;
+  }
+
+  .tl-year-node.active .tl-year-node-dot {
+    background: var(--gold-light);
+    border-color: var(--gold-light);
+    transform: scale(1.7);
+    box-shadow: 0 0 8px rgba(196,164,74,0.7);
+  }
+
+  .tl-track {
+    position: relative;
+    height: 2px;
+    background: rgba(245,240,232,0.1);
+    cursor: pointer;
+    margin-bottom: 0.75rem;
+  }
+
+  .tl-track-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(to right, rgba(139,105,20,0.6), var(--gold-light));
+    pointer-events: none;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .tl-handle {
+    position: absolute;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    background: var(--navy);
+    border: 2px solid var(--gold-light);
+    transform: translate(-50%, -50%) rotate(45deg);
+    cursor: grab;
+    transition: left 0.4s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s ease;
+    box-shadow: 0 0 0 3px rgba(196,164,74,0.12);
+    z-index: 5;
+  }
+
+  .tl-handle:hover {
+    box-shadow: 0 0 0 6px rgba(196,164,74,0.18), 0 0 18px rgba(196,164,74,0.4);
+  }
+
+  .tl-handle.dragging {
+    cursor: grabbing;
+    box-shadow: 0 0 0 8px rgba(196,164,74,0.22), 0 0 24px rgba(196,164,74,0.5);
+  }
+
+  .tl-track-ends {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .tl-track-ends span {
+    font-family: 'Cormorant SC', serif;
+    font-size: 0.52rem;
+    letter-spacing: 0.18em;
+    color: rgba(245,240,232,0.15);
+  }
+
+  @media (max-width: 768px) {
+    .tl-caption {
+      bottom: 10.5rem;
+      left: 1rem;
+      right: 1rem;
+      max-width: none;
+      padding: 1.25rem 1.5rem;
+    }
+    .tl-cap-narrative { display: none; }
+    .tl-act-badge { top: 1rem; left: 1rem; }
+    .tl-scrubber { padding: 0 1.5rem 1.5rem; }
+    .tl-nav-prev { left: 0.5rem; }
+    .tl-nav-next { right: 0.5rem; }
+  }
+
+  /* ─── MOBILE ─── */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.25rem; }
+    .nav-links { gap: 1.25rem; }
+    .hero { min-height: 100svh; }
+    .hero-text { padding: 2rem 1.5rem 5rem; }
+    .hero-brand { font-size: 2.6rem; }
+    .hero-title { font-size: 1.5rem; }
+    .hero-subtitle { font-size: 0.88rem; max-width: 100%; }
+    .holocene-intro { padding: 4rem 1.5rem 1.5rem; }
+    .holocene-intro-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .holocene-intro-label { writing-mode: horizontal-tb; transform: none; }
+    .thesis-band { padding: 2.5rem 1.5rem; gap: 1.5rem; flex-direction: column; }
+    .thesis-label { writing-mode: horizontal-tb; transform: none; font-size: 0.6rem; }
+    .acts-section { padding: 3rem 1.25rem; }
+    .acts-grid { grid-template-columns: 1fr; }
+    .act-card { border-right: none; border-bottom: 1px solid var(--border); }
+    .act-card:last-child { border-bottom: none; }
+    .collection-section { padding: 3rem 1.25rem; }
+    .map-entry { grid-template-columns: 1fr; }
+    .map-image-container { height: 260px; }
+    .map-details { padding: 1.5rem; }
+    .map-title { font-size: 1.2rem; }
+    .map-meta { flex-wrap: wrap; gap: 1rem; }
+    .about-section { grid-template-columns: 1fr; gap: 2rem; padding: 3rem 1.25rem; }
+    .about-left { position: static; }
+    footer { flex-direction: column; gap: 0.5rem; text-align: center; padding: 1.5rem; }
+    #lightbox-hint { display: none; }
+  }
+
+
+  .nav-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    opacity: 0.8;
+  }
+  @media (max-width: 768px) {
+    .nav-tagline { display: none; }
+  }
+
+
+  .nav-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    opacity: 0.8;
+  }
+  @media (max-width: 768px) {
+    .nav-tagline { display: none; }
+  }
+
+
+
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav>
+  <a href="#" class="nav-brand">Holocene Maps <span class="nav-tagline">· A Collection for the Human Era</span></a>
+  <ul class="nav-links">
+    <li><a href="#collection">Collection</a></li>
+    <li><a href="#timeline">Timeline</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+
+  <!-- Map slideshow background -->
+  <div class="hero-slides">
+    <div class="hero-slide active" data-caption="Chatelain · Carte de la Nouvelle France · 1719">
+      <img src="https://holocenemaps.com/chatelain-1719.jpg" alt="Chatelain, Carte de la Nouvelle France, 1719">
+    </div>
+    <div class="hero-slide" data-caption="Bowen · Atlantic World · c.1740">
+      <img src="https://holocenemaps.com/bowen-1740.jpg" alt="Bowen, Atlantic World, c.1740">
+    </div>
+    <div class="hero-slide" data-caption="Gibson · Proclamation Map · 1763">
+      <img src="https://holocenemaps.com/gibson-1763.jpg" alt="Gibson, Proclamation Map, 1763">
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="hero-overlay"></div>
+
+  <!-- Text -->
+  <div class="hero-text">
+
+    <!-- Brand level -->
+    <h1 class="hero-brand">Holocene Maps</h1>
+    <p class="hero-tagline">A Collection for the Human Era</p>
+
+  </div>
+
+  <!-- Slide indicator dots -->
+  <div class="hero-dots">
+    <div class="hero-dot active" onclick="goToSlide(0)"></div>
+    <div class="hero-dot" onclick="goToSlide(1)"></div>
+    <div class="hero-dot" onclick="goToSlide(2)"></div>
+  </div>
+
+  <!-- Map caption -->
+  <div class="hero-caption" id="heroCaption">Chatelain · Carte de la Nouvelle France · 1719</div>
+
+</section>
+
+<!-- HOLOCENE INTRO -->
+<section class="holocene-intro animate-on-scroll">
+  <div class="holocene-intro-inner">
+    <span class="holocene-intro-label">About</span>
+    <div class="holocene-intro-body">
+      <p>The Holocene, our current geological epoch, began around 12,000 years ago. The stable climate it brought allowed humans to build civilizations and terraform the planet to their own design.</p>
+      <p>These maps illustrate that transformation. They were used by our ancestors to stake claims, assert dominance, and demonstrate power over contested lands — cartography as instrument of empire.</p>
+      <p>This collection focuses on a century of imperial struggle between France and Britain for North America, 1680–1780, from the height of French ambition to its final resolution.</p>
+    </div>
+  </div>
+</section>
+
+<!-- COLLECTION -->
+<section class="collection-section" id="collection">
+  <div class="collection-inner">
+    <div class="section-header animate-on-scroll">
+      <h2 class="section-title">The Maps</h2>
+      <div class="section-rule"></div>
+    </div>
+
+    <!-- MAP 1: Chatelain -->
+    <div class="map-entry">
+      <div class="map-image-container">
+        <a href="chatelain.html"><img src="https://holocenemaps.com/chatelain-1719.jpg" alt="Chatelain 1719"></a>
+        <span class="act-tag">Act I · 1719</span>
+      </div>
+      <div class="map-details">
+        <p class="map-cartographer">Henri Abraham Chatelain</p>
+        <h3 class="map-title">Carte de la Nouvelle France, ou se voit le cours des grandes rivières</h3>
+        <p class="map-date">1719 · Amsterdam</p>
+        <p class="map-narrative">This map was produced in 1719 by Henri Chatelain in his <em>Atlas Historique</em>, a commercial atlas aimed at educated European readers. Drawing on De l'Isle's authoritative 1718 cartography, it presents French territorial claims over the Mississippi basin and Great Lakes at the precise moment the Mississippi Bubble was at its peak.</p>
+        <a href="chatelain.html" class="map-further-toggle">Further Description →</a>
+      </div>
+    </div>
+
+    <!-- MAP 2: Bowen -->
+    <div class="map-entry">
+      <div class="map-image-container">
+        <a href="bowen.html"><img src="https://holocenemaps.com/bowen-1740.jpg" alt="Bowen Atlantic World c.1740"></a>
+        <span class="act-tag">Act II · c. 1740</span>
+      </div>
+      <div class="map-details">
+        <p class="map-cartographer">Emanuel Bowen</p>
+        <h3 class="map-title">A Map of the King of Great Britain's Dominions in Europe, Africa, and America</h3>
+        <p class="map-date">c. 1740 · London</p>
+        <p class="map-narrative">Emanuel Bowen produced this map on the eve of the French and Indian War, making British imperial claim its explicit subject. The Atlantic is framed as a British lake — connecting three continents of empire.</p>
+        <a href="bowen.html" class="map-further-toggle">Further Description →</a>
+      </div>
+    </div>
+
+    <!-- MAP 3: Gibson -->
+    <div class="map-entry">
+      <div class="map-image-container">
+        <a href="gibson.html"><img src="https://holocenemaps.com/gibson-1763.jpg" alt="Gibson Proclamation Map 1763"></a>
+        <span class="act-tag">Act III · 1763</span>
+      </div>
+      <div class="map-details">
+        <p class="map-cartographer">John Gibson · The Gentleman's Magazine</p>
+        <h3 class="map-title">The British Governments in North America, Laid Down Agreeable to the Proclamation of October 7, 1763</h3>
+        <p class="map-date">1763 · London</p>
+        <p class="map-narrative">Published to accompany the Royal Proclamation of October 7, 1763, this map codifies Britain's victory over France. New boundaries carve former French territories into provinces, and the Proclamation Line marks the limit of colonial settlement.</p>
+        <a href="gibson.html" class="map-further-toggle">Further Description →</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ADDITIONAL MAPS -->
+<section class="collection-section" id="additional" style="padding-top: 0;">
+  <div class="collection-inner">
+    <div class="section-header animate-on-scroll">
+      <h2 class="section-title">Also in the Collection</h2>
+      <div class="section-rule"></div>
+    </div>
+
+    <!-- NYC Edes 1939 -->
+    <div class="map-entry">
+      <div class="map-image-container">
+        <a href="nyc.html"><img src="https://holocenemaps.com/nyc-eres-1939.jpg" alt="Richard Edes Harrison New York City 1939"></a>
+        <span class="act-tag">Fortune · 1939</span>
+      </div>
+      <div class="map-details">
+        <p class="map-cartographer">Richard Edes Harrison</p>
+        <h3 class="map-title">The City of New York</h3>
+        <p class="map-date">July 1939 · Fortune Magazine</p>
+        <a href="nyc.html" class="map-further-toggle">Further Description →</a>
+      </div>
+    </div>
+
+    <!-- Texas 1909 -->
+    <div class="map-entry">
+      <div class="map-image-container">
+        <a href="texas.html"><img src="https://holocenemaps.com/texas-1909.jpg" alt="Texas 1909"></a>
+        <span class="act-tag">Texas · 1909</span>
+      </div>
+      <div class="map-details">
+        <p class="map-cartographer">Poole Brothers · The Texas Realty Journal</p>
+        <h3 class="map-title">Iron Mountain Route to All Parts of Texas</h3>
+        <p class="map-date">1909 · Houston, Texas</p>
+        <a href="texas.html" class="map-further-toggle">Further Description →</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+
+<!-- TIMELINE -->
+<section id="timeline">
+
+  <!-- Full-bleed map stage -->
+  <div class="tl-stage" id="tl-stage">
+    <div class="tl-slide active" data-index="0">
+      <img src="https://holocenemaps.com/chatelain-1719.jpg" alt="Chatelain · Nouvelle France · 1719">
+    </div>
+    <div class="tl-slide" data-index="1">
+      <img src="https://holocenemaps.com/bowen-1740.jpg" alt="Bowen · Atlantic World · c.1740">
+    </div>
+    <div class="tl-slide" data-index="2">
+      <img src="https://holocenemaps.com/gibson-1763.jpg" alt="Gibson · Proclamation Map · 1763">
+    </div>
+    <div class="tl-slide" data-index="3">
+      <img src="https://holocenemaps.com/texas-1909.jpg" alt="Texas · Iron Mountain Route · 1909">
+    </div>
+    <div class="tl-slide" data-index="4">
+      <img src="https://holocenemaps.com/nyc-eres-1939.jpg" alt="Harrison · New York City · 1939">
+    </div>
+  </div>
+
+  <!-- Act badge -->
+  <div class="tl-act-badge" id="tl-act-badge"></div>
+
+  <!-- Caption overlay -->
+  <div class="tl-caption" id="tl-caption">
+    <p class="tl-cap-cartographer" id="tl-cap-cart"></p>
+    <h3 class="tl-cap-title" id="tl-cap-title"></h3>
+    <p class="tl-cap-date" id="tl-cap-date"></p>
+    <p class="tl-cap-narrative" id="tl-cap-narrative"></p>
+  </div>
+
+  <!-- Prev / Next arrows -->
+  <button class="tl-nav tl-nav-prev" id="tl-prev" aria-label="Previous map">&#8592;</button>
+  <button class="tl-nav tl-nav-next" id="tl-next" aria-label="Next map">&#8594;</button>
+
+  <!-- Year scrubber -->
+  <div class="tl-scrubber">
+    <div class="tl-year-nodes" id="tl-year-nodes"></div>
+    <div class="tl-track" id="tl-track">
+      <div class="tl-track-fill" id="tl-track-fill"></div>
+      <div class="tl-handle" id="tl-handle"></div>
+    </div>
+    <div class="tl-track-ends">
+      <span>1719</span>
+      <span>1939</span>
+    </div>
+  </div>
+
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-brand">Holocene Maps</span>
+  <span class="footer-copy">A cartographic history project · holocenemaps.com</span>
+</footer>
+
+<script>
+  // ─── HERO SLIDESHOW ───
+  (function() {
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots   = document.querySelectorAll('.hero-dot');
+    const caption = document.getElementById('heroCaption');
+    let current = 0;
+    let timer;
+
+    function goToSlide(n) {
+      slides[current].classList.remove('active');
+      dots[current].classList.remove('active');
+      current = (n + slides.length) % slides.length;
+      slides[current].classList.add('active');
+      dots[current].classList.add('active');
+      // Reset zoom animation
+      const img = slides[current].querySelector('img');
+      img.style.animation = 'none';
+      img.offsetHeight; // reflow
+      img.style.animation = '';
+      // Update caption
+      caption.textContent = slides[current].dataset.caption;
+      resetTimer();
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      timer = setInterval(() => goToSlide(current + 1), 7000);
+    }
+
+    // Expose for dot clicks
+    window.goToSlide = goToSlide;
+
+    resetTimer();
+  })();
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.animate-on-scroll, .map-entry').forEach(el => {
+    observer.observe(el);
+  });
+
+  // Staggered act cards
+  document.querySelectorAll('.act-card').forEach((card, i) => {
+    card.style.transitionDelay = `${i * 0.12}s`;
+    card.classList.add('animate-on-scroll');
+    observer.observe(card);
+  });
+
+
+
+
+  // ─── LIGHTBOX ───
+  document.addEventListener('DOMContentLoaded', function() {
+    var lightbox = document.getElementById('lightbox');
+    var lightboxImg = document.getElementById('lightbox-img');
+    var scale = 1, posX = 0, posY = 0;
+    var isDragging = false, startX, startY, lastTouchDist = null;
+
+    function updateTransform() {
+      lightboxImg.style.transform = 'translate(' + posX + 'px, ' + posY + 'px) scale(' + scale + ')';
+    }
+    function clampScale(s) { return Math.min(Math.max(s, 0.5), 8); }
+
+    function openLightbox(src, alt) {
+      lightboxImg.src = src;
+      lightboxImg.alt = alt;
+      scale = 1; posX = 0; posY = 0;
+      updateTransform();
+      lightbox.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    window.openLightbox = openLightbox;
+
+    function closeLightbox() {
+      lightbox.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.map-image-container img').forEach(function(img) {
+      img.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openLightbox(img.src, img.alt);
+      });
+    });
+
+    document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', function(e) { if (e.target === lightbox) closeLightbox(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLightbox(); });
+
+    lightbox.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      scale = clampScale(scale * (e.deltaY > 0 ? 0.9 : 1.1));
+      updateTransform();
+    }, { passive: false });
+
+    lightboxImg.addEventListener('mousedown', function(e) {
+      isDragging = true;
+      startX = e.clientX - posX;
+      startY = e.clientY - posY;
+      lightboxImg.classList.add('dragging');
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      posX = e.clientX - startX;
+      posY = e.clientY - startY;
+      updateTransform();
+    });
+
+    document.addEventListener('mouseup', function() {
+      isDragging = false;
+      lightboxImg.classList.remove('dragging');
+    });
+
+    lightbox.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 2) {
+        lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      } else if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - posX;
+        startY = e.touches[0].clientY - posY;
+      }
+    }, { passive: true });
+
+    lightbox.addEventListener('touchmove', function(e) {
+      if (e.touches.length === 2) {
+        var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        if (lastTouchDist) { scale = clampScale(scale * (dist / lastTouchDist)); updateTransform(); }
+        lastTouchDist = dist;
+      } else if (e.touches.length === 1 && isDragging) {
+        posX = e.touches[0].clientX - startX;
+        posY = e.touches[0].clientY - startY;
+        updateTransform();
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    lightbox.addEventListener('touchend', function() { isDragging = false; lastTouchDist = null; });
+
+    document.getElementById('zoom-in').addEventListener('click', function(e) { e.stopPropagation(); scale = clampScale(scale * 1.3); updateTransform(); });
+    document.getElementById('zoom-out').addEventListener('click', function(e) { e.stopPropagation(); scale = clampScale(scale * 0.77); updateTransform(); });
+    document.getElementById('zoom-reset').addEventListener('click', function(e) { e.stopPropagation(); scale = 1; posX = 0; posY = 0; updateTransform(); });
+  });
+
+
+  // ─── TIMELINE ───
+  (function() {
+    var MAPS = [
+      {
+        year: 1719,
+        act: 'Act I · French Dominance',
+        cartographer: 'Henri Abraham Chatelain',
+        title: 'Carte de la Nouvelle France',
+        date: '1719 · Amsterdam',
+        narrative: 'Produced in 1719 for Chatelain\'s Atlas Historique, this map draws on De l\'Isle\'s authoritative 1718 cartography to present French territorial claims at the precise moment the Mississippi Bubble was at its peak. Published for an audience gripped by Louisiana fever, its rich decoration made French imperial ambition feel vivid, real, and vast to the European readership consuming it.'
+      },
+      {
+        year: 1740,
+        act: 'Act II · The Imperial Contest',
+        cartographer: 'Emanuel Bowen',
+        title: 'A Map of the King of Great Britain\'s Dominions in Europe, Africa, and America',
+        date: 'c. 1740 · London',
+        narrative: 'Produced on the eve of the French and Indian War, this map makes British imperial claim its explicit subject. Yellow outlining identifies territories possessed by the King of Great Britain. The Atlantic is framed as a British lake — a statement of what Britain believed it owned, and was prepared to defend.'
+      },
+      {
+        year: 1763,
+        act: 'Act III · British Resolution',
+        cartographer: 'John Gibson · The Gentleman\'s Magazine',
+        title: 'The British Governments in North America, Agreeable to the Proclamation of October 7, 1763',
+        date: '1763 · London',
+        narrative: 'Published to accompany the Royal Proclamation of 1763, this map codifies Britain\'s victory over France in visual form. The vast territory labeled "LANDS RESERVED for the INDIANS" marks the Proclamation Line — the moment of British resolution, and the seed of the coming revolution.'
+      },
+      {
+        year: 1909,
+        act: 'Texas · Railroad Promotion',
+        cartographer: 'Poole Brothers · The Texas Realty Journal',
+        title: 'Iron Mountain Route to All Parts of Texas',
+        date: '1909 · Houston, Texas',
+        narrative: 'A railroad promotion map advertising round-trip homeseeker rates on the Iron Mountain Route. The map annotates the state by agricultural product and land use — cotton, corn, cattle, oil fields — making it as much an economic argument as a geographic document.'
+      },
+      {
+        year: 1939,
+        act: 'Fortune Magazine · 1939',
+        cartographer: 'Richard Edes Harrison',
+        title: 'The City of New York',
+        date: 'July 1939 · Fortune Magazine',
+        narrative: 'One of the most celebrated American maps of the twentieth century. Harrison\'s oblique aerial projection was revolutionary — presenting the city as if seen from an aircraft at a time when such a view was still extraordinary. It would go on to define wartime cartographic design in American media.'
+      }
+    ];
+
+    var MIN_YEAR = MAPS[0].year, MAX_YEAR = MAPS[MAPS.length - 1].year;
+    function yearToPercent(y) { return (y - MIN_YEAR) / (MAX_YEAR - MIN_YEAR) * 100; }
+
+    var current = 0, transitioning = false;
+    var slides    = document.querySelectorAll('#tl-stage .tl-slide');
+    var actBadge  = document.getElementById('tl-act-badge');
+    var caption   = document.getElementById('tl-caption');
+    var capCart   = document.getElementById('tl-cap-cart');
+    var capTitle  = document.getElementById('tl-cap-title');
+    var capDate   = document.getElementById('tl-cap-date');
+    var capNarr   = document.getElementById('tl-cap-narrative');
+    var prevBtn   = document.getElementById('tl-prev');
+    var nextBtn   = document.getElementById('tl-next');
+    var yearNodes = document.getElementById('tl-year-nodes');
+    var track     = document.getElementById('tl-track');
+    var trackFill = document.getElementById('tl-track-fill');
+    var handle    = document.getElementById('tl-handle');
+
+    // Build proportionally-spaced year nodes
+    MAPS.forEach(function(m, i) {
+      var node = document.createElement('button');
+      node.className = 'tl-year-node' + (i === 0 ? ' active' : '');
+      node.style.left = yearToPercent(m.year) + '%';
+      node.setAttribute('aria-label', 'Go to ' + m.year);
+      node.innerHTML =
+        '<span class="tl-year-node-label">' + m.year + '</span>' +
+        '<span class="tl-year-node-dot"></span>';
+      node.addEventListener('click', function() { goTo(i); });
+      yearNodes.appendChild(node);
+    });
+
+    function updateScrubber(idx, animate) {
+      var pct = yearToPercent(MAPS[idx].year);
+      if (!animate) {
+        trackFill.style.transition = 'none';
+        handle.style.transition = 'none';
+        void handle.offsetWidth;
+      }
+      trackFill.style.width = pct + '%';
+      handle.style.left = pct + '%';
+      if (!animate) {
+        requestAnimationFrame(function() {
+          trackFill.style.transition = '';
+          handle.style.transition = '';
+        });
+      }
+      document.querySelectorAll('.tl-year-node').forEach(function(n, i) {
+        n.classList.toggle('active', i === idx);
+      });
+      prevBtn.disabled = idx === 0;
+      nextBtn.disabled = idx === MAPS.length - 1;
+    }
+
+    function updateCaption(idx) {
+      var m = MAPS[idx];
+      caption.classList.remove('visible');
+      setTimeout(function() {
+        actBadge.textContent = m.act;
+        capCart.textContent  = m.cartographer;
+        capTitle.textContent = m.title;
+        capDate.textContent  = m.date;
+        capNarr.textContent  = m.narrative;
+        requestAnimationFrame(function() { caption.classList.add('visible'); });
+      }, 100);
+    }
+
+    function goTo(idx) {
+      if (idx < 0 || idx >= MAPS.length || idx === current || transitioning) return;
+      transitioning = true;
+      var prev = current;
+      current = idx;
+
+      slides[prev].classList.remove('active');
+      slides[prev].classList.add('leaving');
+      slides[current].classList.add('active');
+
+      setTimeout(function() {
+        slides[prev].classList.remove('leaving');
+        transitioning = false;
+      }, 780);
+
+      updateScrubber(idx, true);
+      updateCaption(idx);
+    }
+
+    prevBtn.addEventListener('click', function() { goTo(current - 1); });
+    nextBtn.addEventListener('click', function() { goTo(current + 1); });
+
+    // Keyboard nav (only when timeline in view)
+    document.addEventListener('keydown', function(e) {
+      var r = document.getElementById('timeline').getBoundingClientRect();
+      if (r.top > window.innerHeight || r.bottom < 0) return;
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); goTo(current - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); goTo(current + 1); }
+    });
+
+    // Stage click → lightbox
+    document.getElementById('tl-stage').addEventListener('click', function() {
+      var img = slides[current] && slides[current].querySelector('img');
+      if (img && window.openLightbox) window.openLightbox(img.src, img.alt);
+    });
+
+    // ── Drag ──
+    var dragging = false;
+
+    function pctFromX(clientX) {
+      var r = track.getBoundingClientRect();
+      return Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    }
+
+    function nearestIdx(pct) {
+      var year = MIN_YEAR + pct * (MAX_YEAR - MIN_YEAR);
+      var nearest = 0, best = Infinity;
+      MAPS.forEach(function(m, i) {
+        var d = Math.abs(m.year - year);
+        if (d < best) { best = d; nearest = i; }
+      });
+      return nearest;
+    }
+
+    function dragMove(clientX) {
+      var pct = pctFromX(clientX) * 100;
+      handle.style.transition = 'box-shadow 0.2s';
+      handle.style.left = pct + '%';
+      trackFill.style.transition = 'none';
+      trackFill.style.width = pct + '%';
+      var near = nearestIdx(pct / 100);
+      document.querySelectorAll('.tl-year-node').forEach(function(n, i) {
+        n.classList.toggle('active', i === near);
+      });
+    }
+
+    function dragEnd(clientX) {
+      dragging = false;
+      handle.classList.remove('dragging');
+      handle.style.transition = '';
+      trackFill.style.transition = '';
+      goTo(nearestIdx(pctFromX(clientX)));
+    }
+
+    handle.addEventListener('mousedown', function(e) {
+      dragging = true; handle.classList.add('dragging'); e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) { if (dragging) dragMove(e.clientX); });
+    document.addEventListener('mouseup',   function(e) { if (dragging) dragEnd(e.clientX); });
+
+    track.addEventListener('click', function(e) {
+      if (e.target === handle) return;
+      goTo(nearestIdx(pctFromX(e.clientX)));
+    });
+
+    handle.addEventListener('touchstart', function() {
+      dragging = true; handle.classList.add('dragging');
+    }, { passive: true });
+    document.addEventListener('touchmove', function(e) {
+      if (dragging) dragMove(e.touches[0].clientX);
+    }, { passive: true });
+    document.addEventListener('touchend', function(e) {
+      if (dragging) dragEnd(e.changedTouches[0].clientX);
+    });
+
+    // Init
+    updateScrubber(0, false);
+    updateCaption(0);
+  })();
+
+</script>
+
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button id="lightbox-close">✕</button>
+  <img id="lightbox-img" src="" alt="">
+  <div id="lightbox-hint">Scroll to zoom · Drag to pan · Click outside to close</div>
+  <div id="lightbox-zoom">
+    <button id="zoom-out">−</button>
+    <button id="zoom-reset">⊙</button>
+    <button id="zoom-in">+</button>
+  </div>
+</div>
+
+</body>
+</html>
