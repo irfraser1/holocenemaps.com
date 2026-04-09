@@ -601,6 +601,20 @@ async function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
   await checkProfile();
+  // Auto-fill Add Map modal if arriving from scan page
+  const pending = localStorage.getItem('pending_scan');
+  if (pending) {
+    try {
+      const scan = JSON.parse(pending);
+      localStorage.removeItem('pending_scan');
+      openAdd();
+      if (scan.title) document.getElementById('f-title').value = scan.title;
+      if (scan.year) document.getElementById('f-year').value = scan.year;
+      if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
+      const notes = [scan.region, scan.summary].filter(Boolean).join('\n\n');
+      if (notes) document.getElementById('f-notes').value = notes;
+    } catch(e) { localStorage.removeItem('pending_scan'); }
+  }
 }
 
 // ONBOARDING

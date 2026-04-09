@@ -242,7 +242,7 @@
     <div class="result-divider"></div>
     <p class="result-summary" id="result-summary"></p>
     <div class="result-ctas">
-      <a href="/collection.html" class="btn-cta-primary">Save to My Collection →</a>
+      <button onclick="saveToCollection()" class="btn-cta-primary">Save to My Collection →</button>
       <button class="btn-cta-secondary" onclick="reset()">Scan Another Map</button>
     </div>
   </div>
@@ -250,6 +250,13 @@
 </div>
 
 <script>
+  let currentScanData = {};
+
+  function saveToCollection() {
+    localStorage.setItem('pending_scan', JSON.stringify(currentScanData));
+    window.location.href = '/collection.html';
+  }
+
   function resizeAndBase64(file, cb) {
     const reader = new FileReader();
     reader.onload = e => {
@@ -312,6 +319,9 @@
         if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}</span>`;
         if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}</span>`;
         if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}</span>`;
+
+        // Store for bridge
+        currentScanData = data;
 
         document.getElementById('result-summary').textContent = data.summary || '';
 
