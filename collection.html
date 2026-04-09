@@ -241,6 +241,47 @@
   .btn-camera { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
   .btn-camera:hover { background: rgba(139,105,20,0.1); color: var(--gold); }
 
+  /* WELCOME CARD */
+  #welcome-card {
+    padding: 16px 20px 0;
+  }
+  .welcome-inner {
+    background: linear-gradient(135deg, #1e2435 0%, #242a3d 100%);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 8px; padding: 20px; margin-bottom: 4px;
+  }
+  .welcome-header {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px;
+  }
+  .welcome-emoji { font-size: 28px; line-height: 1; }
+  .welcome-title {
+    font-family: 'Spectral', serif; font-size: 16px; font-weight: 600;
+    color: var(--cream); margin-bottom: 2px;
+  }
+  .welcome-sub {
+    font-family: 'Spectral', serif; font-size: 12px; color: rgba(245,240,232,0.5);
+  }
+  .welcome-dismiss {
+    margin-left: auto; background: none; border: none; color: rgba(245,240,232,0.3);
+    font-size: 16px; cursor: pointer; padding: 0 4px;
+  }
+  .welcome-dismiss:hover { color: var(--cream); }
+  .welcome-actions { display: flex; flex-direction: column; gap: 10px; }
+  .welcome-action {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: rgba(245,240,232,0.04); border: 1px solid rgba(245,240,232,0.08);
+    border-radius: 6px; padding: 14px 16px; cursor: pointer;
+    text-align: left; transition: background 0.2s, border-color 0.2s;
+  }
+  .welcome-action:hover { background: rgba(201,168,76,0.08); border-color: rgba(201,168,76,0.25); }
+  .wa-icon { font-size: 20px; line-height: 1; margin-top: 1px; }
+  .wa-text {
+    font-family: 'Spectral', serif; font-size: 13px; color: var(--cream);
+    line-height: 1.5;
+  }
+  .wa-text strong { color: var(--gold); }
+  .wa-text br + * { color: rgba(245,240,232,0.5); }
+
   /* ONBOARDING */
   #onboarding-modal {
     position: fixed; inset: 0;
@@ -435,6 +476,34 @@
       <option value="act">Act</option>
       <option value="year">Year</option>
     </select>
+  </div>
+
+  <!-- WELCOME CARD -->
+  <div id="welcome-card" style="display:none">
+    <div class="welcome-inner">
+      <div class="welcome-header">
+        <span class="welcome-emoji">🗺️</span>
+        <div>
+          <div class="welcome-title">Welcome to your collection!</div>
+          <div class="welcome-sub">Here are a few things to try:</div>
+        </div>
+        <button class="welcome-dismiss" onclick="dismissWelcome()" title="Dismiss">✕</button>
+      </div>
+      <div class="welcome-actions">
+        <button class="welcome-action" onclick="startEditThesis()">
+          <span class="wa-icon">📋</span>
+          <span class="wa-text"><strong>Define your focus</strong><br>Tell us what you collect so our AI can tailor evaluations to you</span>
+        </button>
+        <button class="welcome-action" onclick="document.getElementById('camera-input').click()">
+          <span class="wa-icon">📷</span>
+          <span class="wa-text"><strong>Scan another map</strong><br>Point your camera at any map for an instant identification</span>
+        </button>
+        <button class="welcome-action" onclick="alert('Use the status badges — Owned, Target, Watching, Negotiating — to track maps across dealers and shows.')">
+          <span class="wa-icon">🎯</span>
+          <span class="wa-text"><strong>Track your targets</strong><br>Use statuses to organize maps you own, want, or are watching</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="list" id="map-list"><div class="loading">Loading collection…</div></div>
@@ -939,7 +1008,22 @@ function renderList() {
   }).join('');
 }
 
-function renderAll() { renderStats(); renderList(); }
+function renderAll() {
+  renderStats();
+  renderList();
+  // Show welcome card for new users (≤3 maps, not previously dismissed)
+  const wc = document.getElementById('welcome-card');
+  if (wc && maps.length <= 3 && !localStorage.getItem('welcome_dismissed')) {
+    wc.style.display = 'block';
+  } else if (wc) {
+    wc.style.display = 'none';
+  }
+}
+
+function dismissWelcome() {
+  localStorage.setItem('welcome_dismissed', '1');
+  document.getElementById('welcome-card').style.display = 'none';
+}
 
 function toggleCard(id) {
   expandedId = expandedId === id ? null : id;
