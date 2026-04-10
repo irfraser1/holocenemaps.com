@@ -677,9 +677,8 @@
     document.getElementById('spin').style.display = 'none';
     document.getElementById('loading-text').style.display = 'none';
     const fm = document.getElementById('friendly-msg');
-    fm.textContent = msg;
+    fm.innerHTML = msg + '<br><br><button onclick="reset()" style="padding:8px 16px; margin-top:20px; background:var(--gold); color:var(--navy); border:none; border-radius:4px; font-family:\'Inter\', sans-serif; cursor:pointer;">Dismiss</button>';
     fm.style.display = 'block';
-    setTimeout(reset, 4000);
   }
 
   async function handleScan(e) {
