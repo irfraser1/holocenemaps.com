@@ -1,5 +1,5 @@
 // Supabase Edge Function: evaluate-text
-// Deploy with: supabase functions deploy evaluate-text
+// Deploy with: supabase functions deploy evaluate-text --no-verify-jwt
 // This handles thesis-based text re-evaluation (no image required)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -25,8 +25,8 @@ serve(async (req) => {
       });
     }
 
-    const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_KEY) {
+    const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_KEY) {
       return new Response(JSON.stringify({ error: "API key not configured." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
@@ -56,21 +56,22 @@ Provide a concise 3-sentence evaluation:
 
 Be direct. No headers, no bullet points, just 3 flowing sentences.`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 300, temperature: 0.7 },
-        }),
-      }
-    );
+    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 300,
+        temperature: 0.7,
+      }),
+    });
 
-    const geminiData = await geminiRes.json();
-    const evaluation =
-      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const openaiData = await openaiRes.json();
+    const evaluation = openaiData?.choices?.[0]?.message?.content || "";
 
     return new Response(
       JSON.stringify({ evaluation, title: mapTitle }),

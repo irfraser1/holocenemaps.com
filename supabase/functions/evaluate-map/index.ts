@@ -101,7 +101,7 @@ Return ONLY valid JSON, no markdown fences, no extra text.`;
               { type: "text", text: prompt },
               {
                 type: "image_url",
-                image_url: { url: imageUrl, detail: "low" },
+                image_url: { url: imageUrl, detail: "high" },
               },
             ],
           },
