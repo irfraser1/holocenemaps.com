@@ -272,26 +272,6 @@
     window.location.href = '/collection.html';
   }
 
-  async function resizeAndBase64Safe(file, cb) {
-    try {
-      const bitmap = await createImageBitmap(file, { resizeWidth: 1000, resizeQuality: 'medium' });
-      const canvas = document.createElement('canvas');
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(bitmap, 0, 0);
-      bitmap.close(); // Extremely critical to prevent memory leak
-
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-      canvas.width = 0;
-      canvas.height = 0; // Destroy canvas buffer immediately
-      
-      cb(dataUrl, dataUrl.split(',')[1]);
-    } catch(err) {
-      showFriendly('Failed to compress photo memory. Try taking a lower resolution picture.');
-    }
-  }
-
   function showFriendly(msg) {
     document.getElementById('spin').style.display = 'none';
     document.getElementById('loading-text').style.display = 'none';
@@ -313,57 +293,53 @@
     document.getElementById('loading').style.display = 'flex';
     document.getElementById('scan-input').value = '';
 
-    resizeAndBase64Safe(file, async (dataUrl, base64) => {
-      try {
-        const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64 }) // no thesis = public mode
-        });
-        const data = await res.json();
+    // Stream file directly to server — ZERO client-side memory usage
+    const formData = new FormData();
+    formData.append('image', file);
 
-        if (data.error) { showFriendly(data.error); return; }
+    try {
+      const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
 
-        // Build result
-        document.getElementById('result-title').textContent = data.title || 'Map Identified';
+      if (data.error) { showFriendly(data.error); return; }
 
-        // Meta chips with confidence dots
-        const meta = document.getElementById('result-meta');
-        const conf = data.confidence || {};
-        meta.innerHTML = '';
-        if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}<span class="confidence-dot ${conf.year || ''}"></span></span>`;
-        if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}<span class="confidence-dot ${conf.cartographer || ''}"></span></span>`;
-        if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}<span class="confidence-dot ${conf.region || ''}"></span></span>`;
+      // Build result
+      document.getElementById('result-title').textContent = data.title || 'Map Identified';
 
-        // Uncertainties
-        const uncEl = document.getElementById('result-uncertainties');
-        if (data.uncertainties) {
-          uncEl.textContent = '💡 ' + data.uncertainties;
-          uncEl.style.display = 'block';
-        } else {
-          uncEl.style.display = 'none';
-        }
+      const meta = document.getElementById('result-meta');
+      const conf = data.confidence || {};
+      meta.innerHTML = '';
+      if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}<span class="confidence-dot ${conf.year || ''}"></span></span>`;
+      if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}<span class="confidence-dot ${conf.cartographer || ''}"></span></span>`;
+      if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}<span class="confidence-dot ${conf.region || ''}"></span></span>`;
 
-        // Store for bridge
-        currentScanData = data;
-
-        document.getElementById('result-summary').textContent = data.summary || '';
-
-        // Show thumbnail
-        const wrap = document.getElementById('result-image-wrap');
-        const img = document.getElementById('result-img');
-        img.src = dataUrl;
-        wrap.style.display = 'block';
-
-        document.getElementById('loading').style.display = 'none';
-        const resultEl = document.getElementById('result');
-        resultEl.style.display = 'flex';
-        window.scrollTo(0, 0);
-
-      } catch(err) {
-        showFriendly('Something went wrong. Please try again.');
+      const uncEl = document.getElementById('result-uncertainties');
+      if (data.uncertainties) {
+        uncEl.textContent = '💡 ' + data.uncertainties;
+        uncEl.style.display = 'block';
+      } else {
+        uncEl.style.display = 'none';
       }
-    });
+
+      currentScanData = data;
+      document.getElementById('result-summary').textContent = data.summary || '';
+
+      const wrap = document.getElementById('result-image-wrap');
+      const img = document.getElementById('result-img');
+      img.src = URL.createObjectURL(file);
+      wrap.style.display = 'block';
+
+      document.getElementById('loading').style.display = 'none';
+      const resultEl = document.getElementById('result');
+      resultEl.style.display = 'flex';
+      window.scrollTo(0, 0);
+
+    } catch(err) {
+      showFriendly('Something went wrong. Please try again.');
+    }
   }
 
   function reset() {
