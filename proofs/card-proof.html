@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Card Designer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Spectral:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #2a2a2a; color: #fff; font-family: system-ui; display: flex; min-height: 100vh; }
+
+  .controls {
+    width: 300px; padding: 24px; background: #1a1a1a; overflow-y: auto;
+    border-right: 1px solid #444;
+  }
+  .controls h2 { font-size: 14px; margin-bottom: 16px; color: #ccc; letter-spacing: 0.1em; text-transform: uppercase; }
+  .control-group { margin-bottom: 20px; }
+  .control-group label {
+    display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-bottom: 4px;
+  }
+  .control-group input[type=range] { width: 100%; accent-color: #8b6914; }
+  .control-group .val { color: #8b6914; font-weight: 600; }
+  hr { border: none; border-top: 1px solid #333; margin: 16px 0; }
+  .save-hint { font-size: 11px; color: #666; margin-top: 24px; line-height: 1.6; }
+  .save-hint strong { color: #aaa; }
+
+  .preview {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 32px; padding: 40px;
+  }
+  .card-label { font-size: 11px; color: #666; letter-spacing: 0.15em; text-transform: uppercase; }
+
+  .card {
+    width: 700px; height: 400px;
+    background: #f5f0e6; position: relative; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .text-block { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
+  .line1 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400;
+    color: #3a2a14; text-transform: uppercase;
+  }
+  .line2 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400; font-style: italic;
+    color: #3a2a14;
+  }
+  .line3 {
+    font-family: 'Spectral', serif; font-weight: 300; color: #5a4e3c;
+  }
+  .url {
+    position: absolute; bottom: 10%; left: 10%;
+    font-family: 'Spectral', serif; color: #5a4e3c;
+  }
+  .qr-area { position: absolute; bottom: 8%; right: 8%; text-align: center; }
+  .qr-box { background: #3a2a14; margin-bottom: 4px; }
+  .qr-label { font-family: 'Spectral', serif; color: #5a4e3c; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <h2>Adjust Card</h2>
+
+  <div class="control-group">
+    <label>Text position (top) <span class="val" id="v-top">22</span>%</label>
+    <input type="range" min="8" max="45" value="22" oninput="update()">
+  </div>
+  <div class="control-group">
+    <label>Text position (left) <span class="val" id="v-left">10</span>%</label>
+    <input type="range" min="3" max="30" value="10" oninput="update()">
+  </div>
+
+  <hr>
+  <div class="control-group">
+    <label>"HOLOCENE MAPS" size <span class="val" id="v-s1">42</span>px</label>
+    <input type="range" min="20" max="60" value="42" oninput="update()">
+  </div>
+  <div class="control-group">
+    <label>Letter spacing <span class="val" id="v-ls">0.18</span>em</label>
+    <input type="range" min="5" max="40" value="18" oninput="update()">
+  </div>
+
+  <hr>
+  <div class="control-group">
+    <label>Gap after line 1 <span class="val" id="v-g1">8</span>px</label>
+    <input type="range" min="0" max="30" value="8" oninput="update()">
+  </div>
+  <div class="control-group">
+    <label>"Intelligence Engine" size <span class="val" id="v-s2">24</span>px</label>
+    <input type="range" min="12" max="36" value="24" oninput="update()">
+  </div>
+
+  <hr>
+  <div class="control-group">
+    <label>Gap after line 2 <span class="val" id="v-g2">6</span>px</label>
+    <input type="range" min="0" max="30" value="6" oninput="update()">
+  </div>
+  <div class="control-group">
+    <label>"Antique Map..." size <span class="val" id="v-s3">17</span>px</label>
+    <input type="range" min="10" max="28" value="17" oninput="update()">
+  </div>
+
+  <hr>
+  <div class="control-group">
+    <label>URL size <span class="val" id="v-su">16</span>px</label>
+    <input type="range" min="8" max="22" value="16" oninput="update()">
+  </div>
+  <div class="control-group">
+    <label>QR code size <span class="val" id="v-qr">50</span>px</label>
+    <input type="range" min="25" max="80" value="50" oninput="update()">
+  </div>
+  <div class="control-group">
+    <label>"Identify any map" size <span class="val" id="v-ql">9</span>px</label>
+    <input type="range" min="5" max="16" value="9" oninput="update()">
+  </div>
+
+  <div class="save-hint">
+    <strong>To save:</strong> right-click the card → "Take Screenshot" on Mac, or ⌘+Shift+4 and drag over the card.
+  </div>
+</div>
+
+<div class="preview">
+  <div class="card-label">Front</div>
+  <div class="card" id="card">
+    <div class="text-block" id="text-block">
+      <div class="line1" id="line1">Holocene Maps</div>
+      <div class="line2" id="line2">The Intelligence Engine for Collectors.</div>
+      <div class="line3" id="line3">Antique Map Collection & Acquisition Tracker</div>
+    </div>
+    <div class="url" id="url">www.holocenemaps.com</div>
+    <div class="qr-area">
+      <div class="qr-box" id="qr-box"></div>
+      <div class="qr-label" id="qr-label">Identify any map</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function update() {
+  const sliders = document.querySelectorAll('input[type=range]');
+  const vals = Array.from(sliders).map(s => +s.value);
+
+  // Top position
+  document.getElementById('v-top').textContent = vals[0];
+  document.getElementById('text-block').style.top = vals[0] + '%';
+
+  // Left position
+  document.getElementById('v-left').textContent = vals[1];
+  document.getElementById('text-block').style.left = vals[1] + '%';
+
+  // Line 1
+  document.getElementById('v-s1').textContent = vals[2];
+  document.getElementById('line1').style.fontSize = vals[2] + 'px';
+  document.getElementById('v-ls').textContent = (vals[3]/100).toFixed(2);
+  document.getElementById('line1').style.letterSpacing = (vals[3]/100) + 'em';
+
+  // Gap 1
+  document.getElementById('v-g1').textContent = vals[4];
+  document.getElementById('line1').style.marginBottom = vals[4] + 'px';
+
+  // Line 2
+  document.getElementById('v-s2').textContent = vals[5];
+  document.getElementById('line2').style.fontSize = vals[5] + 'px';
+
+  // Gap 2
+  document.getElementById('v-g2').textContent = vals[6];
+  document.getElementById('line2').style.marginBottom = vals[6] + 'px';
+
+  // Line 3
+  document.getElementById('v-s3').textContent = vals[7];
+  document.getElementById('line3').style.fontSize = vals[7] + 'px';
+
+  // URL
+  document.getElementById('v-su').textContent = vals[8];
+  document.getElementById('url').style.fontSize = vals[8] + 'px';
+
+  // QR
+  document.getElementById('v-qr').textContent = vals[9];
+  document.getElementById('qr-box').style.width = vals[9] + 'px';
+  document.getElementById('qr-box').style.height = vals[9] + 'px';
+
+  // QR label
+  document.getElementById('v-ql').textContent = vals[10];
+  document.getElementById('qr-label').style.fontSize = vals[10] + 'px';
+}
+update();
+</script>
+</body>
+</html>

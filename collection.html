@@ -179,6 +179,9 @@
   .btn-action:hover { background: var(--bg); }
   .btn-danger { border-color: #e0b0b0; color: #c00; }
   .btn-danger:hover { background: #fff0f0; }
+  .btn-reeval { border-color: var(--gold); color: var(--gold); font-weight: 600; }
+  .btn-reeval:hover { background: rgba(201,168,76,0.08); }
+  .btn-reeval.loading { opacity: 0.5; pointer-events: none; }
 
   /* MODAL */
   .overlay {
@@ -778,23 +781,63 @@ async function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
   const hasPending = !!localStorage.getItem('pending_scan') || !!new URLSearchParams(window.location.search).get('thesis');
-  await checkProfile(hasPending);
-  // Auto-fill Add Map modal if arriving from scan page
   const pending = localStorage.getItem('pending_scan');
-  if (pending) {
-    try {
-      const scan = JSON.parse(pending);
-      localStorage.removeItem('pending_scan');
-      openAdd();
-      if (scan.title) document.getElementById('f-title').value = scan.title;
-      if (scan.year) document.getElementById('f-year').value = scan.year;
-      if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
-      const notes = [scan.region, scan.summary, '---', '📷 Re-scan from your collection for a personalized buy/watch/pass evaluation based on your thesis.'].filter(Boolean).join('\n\n');
-      if (notes) document.getElementById('f-notes').value = notes;
-    } catch(e) { localStorage.removeItem('pending_scan'); }
+  const isFirstUser = await checkProfileSilent();
+
+  if (hasPending && isFirstUser) {
+    // New user from scan: save map first, then prompt for thesis
+    if (pending) {
+      try {
+        const scan = JSON.parse(pending);
+        localStorage.removeItem('pending_scan');
+        // Auto-save the scanned map with defaults
+        const { data: { user } } = await db.auth.getUser();
+        const notes = [scan.region, scan.summary].filter(Boolean).join('\n\n');
+        await db.from('maps').insert({
+          user_id: user.id,
+          title: scan.title || 'Scanned Map',
+          year: scan.year || '',
+          cartographer: scan.cartographer || '',
+          act: 1, status: 'watching', priority: 3,
+          notes: notes || ''
+        });
+      } catch(e) { localStorage.removeItem('pending_scan'); }
+    }
+    // Now show thesis prompt
+    await loadMaps();
+    document.getElementById('onboarding-modal').style.display = 'flex';
+  } else if (hasPending) {
+    // Returning user from scan: auto-fill the Add modal
+    await checkProfile(true);
+    if (pending) {
+      try {
+        const scan = JSON.parse(pending);
+        localStorage.removeItem('pending_scan');
+        openAdd();
+        if (scan.title) document.getElementById('f-title').value = scan.title;
+        if (scan.year) document.getElementById('f-year').value = scan.year;
+        if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
+        const notes = [scan.region, scan.summary, '---', 'Tap Re-evaluate below for a personalized buy/watch/pass based on your thesis.'].filter(Boolean).join('\n\n');
+        if (notes) document.getElementById('f-notes').value = notes;
+      } catch(e) { localStorage.removeItem('pending_scan'); }
+    }
+  } else {
+    await checkProfile(false);
   }
   // Check for Market Radar matches
   checkRadarBadge();
+}
+
+// Check if this is a first-time user (no thesis set)
+async function checkProfileSilent() {
+  const { data: { user } } = await db.auth.getUser();
+  const { data } = await db.from('profiles').select('thesis').eq('user_id', user.id).single();
+  if (data?.thesis) {
+    userThesis = data.thesis;
+    renderThesisPanel();
+    return false; // not first time
+  }
+  return true; // first time
 }
 
 // ONBOARDING
@@ -806,7 +849,7 @@ async function checkProfile(skipOnboarding) {
     renderThesisPanel();
     await loadMaps();
   } else if (skipOnboarding) {
-    // New user arriving from scan or theme selection — auto-create thesis
+    // Returning user from scan or theme selection — auto-create thesis
     const urlThesis = new URLSearchParams(window.location.search).get('thesis');
     const defaultThesis = urlThesis || 'Antique and vintage maps';
     await db.from('profiles').upsert({ user_id: user.id, thesis: defaultThesis });
@@ -1004,10 +1047,61 @@ db.auth.getSession().then(({ data: { session } }) => {
   if (session) showApp();
 });
 
-// DATA
 async function loadMaps() {
   const { data, error } = await db.from('maps').select('*').order('created_at', { ascending: false });
   if (!error) { maps = data || []; renderAll(); }
+}
+
+async function reEvaluateMap(id) {
+  const m = maps.find(x => x.id === id);
+  if (!m) return;
+  if (!userThesis) { alert('Please set your collection thesis first.'); return; }
+
+  const btn = document.getElementById('reeval-btn-' + id);
+  if (!btn) return;
+  btn.textContent = 'Evaluating…';
+  btn.classList.add('loading');
+
+  // Build a thesis-aware prompt and call the Supabase edge function
+  try {
+    const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        thesis: userThesis,
+        mapTitle: m.title,
+        mapYear: m.year,
+        mapCartographer: m.cartographer,
+        reEvaluate: true
+      })
+    });
+    const parsed = await res.json();
+
+    if (parsed.error) {
+      // If the edge function doesn't support text-only, fall back to edit modal
+      openEdit(id);
+      setTimeout(() => evaluateMap(), 300);
+      btn.textContent = 'Re-evaluate ↻';
+      btn.classList.remove('loading');
+      return;
+    }
+
+    // Update the map's notes with the new evaluation
+    const evaluation = parsed.evaluation || parsed.summary || '';
+    if (evaluation) {
+      const updatedNotes = '📋 Thesis-based evaluation:\n' + evaluation + '\n\n---\n' + (m.notes || '');
+      await db.from('maps').update({ notes: updatedNotes }).eq('id', id);
+      const mapIdx = maps.findIndex(x => x.id === id);
+      if (mapIdx >= 0) maps[mapIdx].notes = updatedNotes;
+      renderList();
+    }
+  } catch(e) {
+    // Fallback: open edit modal and auto-trigger existing evaluateMap
+    openEdit(id);
+    setTimeout(() => evaluateMap(), 300);
+    btn.textContent = 'Re-evaluate ↻';
+    btn.classList.remove('loading');
+  }
 }
 
 async function saveMap() {
@@ -1111,6 +1205,7 @@ function renderList() {
         ${m.notes ? `<div class="card-notes">${m.notes}</div>` : ''}
         ${(m.listing_url || m.url) ? `<a class="card-listing-link" href="${m.listing_url || m.url}" target="_blank" rel="noopener">View Listing →</a>` : ''}
         <div class="card-actions">
+          <button class="btn-action btn-reeval" id="reeval-btn-${m.id}" onclick="reEvaluateMap('${m.id}')">Re-evaluate ↻</button>
           <button class="btn-action" onclick="openEdit('${m.id}')">Edit</button>
           <button class="btn-action btn-danger" onclick="deleteMap('${m.id}')">Remove</button>
         </div>
