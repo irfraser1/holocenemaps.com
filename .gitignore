@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Environment / secrets
+.env
+.env.local
+.env.production
+
+# Supabase local
+supabase/.temp/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Node (if added later)
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/
