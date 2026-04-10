@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Holocene Maps Clipper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 380px;
+      min-height: 200px;
+      background: #1a1209;
+      color: #e8dfc8;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 14px;
+    }
+
+    .header {
+      background: #0f0b06;
+      border-bottom: 1px solid #c4a44a30;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo {
+      font-family: 'Cormorant SC', serif;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: #c4a44a;
+      opacity: 0.8;
+    }
+
+    .header-title {
+      font-family: 'Cormorant SC', serif;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      color: #e8dfc8;
+    }
+
+    .header-dot {
+      width: 1px;
+      height: 14px;
+      background: #c4a44a40;
+    }
+
+    /* States */
+    #state-loading, #state-no-map, #state-form, #state-success, #state-error {
+      display: none;
+      padding: 20px 18px;
+    }
+
+    #state-loading {
+      text-align: center;
+      padding: 40px 18px;
+      color: #c4a44a80;
+      font-style: italic;
+      letter-spacing: 0.05em;
+    }
+
+    #state-no-map {
+      text-align: center;
+      padding: 32px 18px;
+    }
+
+    #state-no-map p {
+      color: #e8dfc890;
+      font-style: italic;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    #state-no-map .site-list {
+      margin-top: 14px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: #c4a44a60;
+      font-family: 'Cormorant SC', serif;
+    }
+
+    /* Form */
+    .field {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-family: 'Cormorant SC', serif;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      color: #c4a44a;
+      opacity: 0.7;
+      margin-bottom: 5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: #0f0b0620;
+      border: 1px solid #c4a44a25;
+      border-radius: 2px;
+      padding: 8px 10px;
+      color: #e8dfc8;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #c4a44a60;
+    }
+
+    select option {
+      background: #1a1209;
+      color: #e8dfc8;
+    }
+
+    textarea {
+      height: 72px;
+      resize: none;
+      line-height: 1.5;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Stars */
+    .stars {
+      display: flex;
+      gap: 4px;
+      padding: 6px 0;
+    }
+
+    .star {
+      font-size: 18px;
+      color: #c4a44a30;
+      cursor: pointer;
+      transition: color 0.15s;
+      line-height: 1;
+    }
+
+    .star.active { color: #c4a44a; }
+    .star:hover { color: #c4a44a80; }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: #c4a44a15;
+      margin: 14px 0;
+    }
+
+    /* URL preview */
+    .url-preview {
+      font-size: 10px;
+      color: #c4a44a50;
+      font-style: italic;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 4px;
+    }
+
+    /* Actions */
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .btn-save {
+      flex: 1;
+      background: #c4a44a;
+      color: #0f0b06;
+      border: none;
+      padding: 11px;
+      font-family: 'Cormorant SC', serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: background 0.2s;
+    }
+
+    .btn-save:hover { background: #d4b45a; }
+    .btn-save:disabled { background: #c4a44a40; cursor: not-allowed; }
+
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid #c4a44a25;
+      color: #e8dfc860;
+      padding: 11px 16px;
+      font-family: 'Cormorant SC', serif;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: border-color 0.2s;
+    }
+
+    .btn-cancel:hover { border-color: #c4a44a50; }
+
+    /* Success */
+    #state-success {
+      text-align: center;
+      padding: 40px 18px;
+    }
+
+    .success-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .success-title {
+      font-family: 'Cormorant SC', serif;
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      color: #c4a44a;
+      margin-bottom: 8px;
+    }
+
+    .success-sub {
+      font-size: 12px;
+      color: #e8dfc870;
+      font-style: italic;
+    }
+
+    /* Error */
+    #state-error {
+      text-align: center;
+      padding: 32px 18px;
+    }
+
+    .error-msg {
+      color: #d44a4a;
+      font-size: 12px;
+      font-style: italic;
+      margin-top: 8px;
+    }
+
+    .btn-retry {
+      margin-top: 16px;
+      background: transparent;
+      border: 1px solid #c4a44a40;
+      color: #c4a44a;
+      padding: 9px 20px;
+      font-family: 'Cormorant SC', serif;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      border-radius: 2px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c4a44a30; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <span class="header-logo">HOLOCENE MAPS</span>
+    <div class="header-dot"></div>
+    <span class="header-title">Collection Clipper</span>
+  </div>
+
+  <!-- Loading -->
+  <div id="state-loading">Reading listing…</div>
+
+  <!-- Not on a map page -->
+  <div id="state-no-map">
+    <p>Navigate to a map listing page to clip it into your collection.</p>
+    <div class="site-list">GEOGRAPHICUS · BARRY RUDERMAN</div>
+  </div>
+
+  <!-- Form -->
+  <div id="state-form">
+    <div class="field">
+      <label>Title / Description</label>
+      <input type="text" id="f-title" placeholder="Cartographer — Map Title">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Year</label>
+        <input type="number" id="f-year" placeholder="1718" min="1400" max="1900">
+      </div>
+      <div class="field">
+        <label>Cartographer</label>
+        <input type="text" id="f-cartographer" placeholder="De l'Isle">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Act</label>
+        <select id="f-act">
+          <option value="1">Act I — French (1688–1719)</option>
+          <option value="2">Act II — Contest (1720–1754)</option>
+          <option value="3">Act III — British (1763–1780)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="f-status">
+          <option value="target">Target</option>
+          <option value="watching">Watching</option>
+          <option value="owned">Owned</option>
+          <option value="negotiating">Negotiating</option>
+          <option value="passed">Passed</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Price / Ask ($)</label>
+        <input type="number" id="f-price" placeholder="0" min="0">
+      </div>
+      <div class="field">
+        <label>Dealer</label>
+        <input type="text" id="f-dealer" placeholder="Geographicus">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Priority</label>
+      <div class="stars" id="stars">
+        <span class="star" data-val="1">★</span>
+        <span class="star" data-val="2">★</span>
+        <span class="star" data-val="3">★</span>
+        <span class="star" data-val="4">★</span>
+        <span class="star" data-val="5">★</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="f-notes" placeholder="Condition, narrative fit, negotiation context…"></textarea>
+    </div>
+
+    <div id="url-preview" class="url-preview"></div>
+
+    <div class="actions">
+      <button class="btn-cancel" id="btn-cancel">Cancel</button>
+      <button class="btn-save" id="btn-save">Add to Collection</button>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div id="state-success">
+    <div class="success-icon">◈</div>
+    <div class="success-title">Added to Collection</div>
+    <div class="success-sub" id="success-sub"></div>
+  </div>
+
+  <!-- Error -->
+  <div id="state-error">
+    <div class="success-title" style="color:#d44a4a">Save Failed</div>
+    <div class="error-msg" id="error-msg"></div>
+    <button class="btn-retry" id="btn-retry">Try Again</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

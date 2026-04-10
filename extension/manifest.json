@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Holocene Maps — Collection Clipper",
+  "version": "1.0.0",
+  "description": "Clip antique map listings from Geographicus and Ruderman directly into your Holocene Maps collection.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "https://www.geographicus.com/*",
+    "https://geographicus.com/*",
+    "https://www.raremaps.com/*",
+    "https://raremaps.com/*",
+    "https://api.anthropic.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.geographicus.com/P/AntiqueMap/*",
+        "https://geographicus.com/P/AntiqueMap/*",
+        "https://www.raremaps.com/gallery/detail/*",
+        "https://raremaps.com/gallery/detail/*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
