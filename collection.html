@@ -918,7 +918,7 @@ async function updateThesis() {
   btn.textContent = 'Save';
 }
 
-// AI EVALUATION
+// AI EVALUATION (via Supabase Edge Function)
 async function evaluateMap() {
   if (!userThesis) return;
   const title = document.getElementById('f-title').value.trim();
@@ -928,33 +928,19 @@ async function evaluateMap() {
   const notesEl = document.getElementById('f-notes');
   notesEl.value = 'Evaluating…';
   notesEl.style.opacity = '0.4';
-  const prompt = `You are an expert antique map advisor. Evaluate this map for fit in a collector's collection in exactly 3 sentences. Mention narrative fit, whether it fills a gap or is redundant, and end with a one-line verdict: buy / watch / pass.
-
-Collection context:
-${userThesis}
-
-Map: ${title}${cartographer ? ', ' + cartographer : ''}${year ? ', ' + year : ''}
-
-3 sentences, no headers, no bullet points.`;
   try {
-    let CLAUDE_KEY = localStorage.getItem('claude_api_key');
-    if (!CLAUDE_KEY) {
-      CLAUDE_KEY = window.prompt('Enter your Anthropic API key to enable AI evaluation:');
-      if (!CLAUDE_KEY) { notesEl.value = ''; notesEl.style.opacity = '1'; return; }
-      localStorage.setItem('claude_api_key', CLAUDE_KEY);
-    }
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CLAUDE_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 300, messages: [{ role: 'user', content: prompt }] })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        thesis: userThesis,
+        mapTitle: title,
+        mapYear: year,
+        mapCartographer: cartographer
+      })
     });
-    const json = await res.json();
-    notesEl.value = json?.content?.[0]?.text || '';
+    const parsed = await res.json();
+    notesEl.value = parsed.evaluation || parsed.error || '';
   } catch(e) {
     notesEl.value = '';
   }
