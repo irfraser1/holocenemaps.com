@@ -784,43 +784,23 @@ async function showApp() {
   const pending = localStorage.getItem('pending_scan');
   const isFirstUser = await checkProfileSilent();
 
-  if (hasPending && isFirstUser) {
-    // New user from scan: save map first, then prompt for thesis
-    if (pending) {
-      try {
-        const scan = JSON.parse(pending);
-        localStorage.removeItem('pending_scan');
-        // Auto-save the scanned map with defaults
-        const { data: { user } } = await db.auth.getUser();
-        const notes = [scan.region, scan.summary, '---', 'Tap Re-evaluate below for a personalized buy/watch/pass based on your thesis.'].filter(Boolean).join('\n\n');
-        await db.from('maps').insert({
-          user_id: user.id,
-          title: scan.title || 'Scanned Map',
-          year: scan.year || '',
-          cartographer: scan.cartographer || '',
-          act: 1, status: 'watching', priority: 3,
-          notes: notes || ''
-        });
-      } catch(e) { localStorage.removeItem('pending_scan'); }
+  if (hasPending && pending) {
+    // Both new and returning users: open Add modal with scan data pre-filled
+    // Onboarding deferred until after save completes
+    if (isFirstUser) {
+      window._deferOnboarding = true;
     }
-    // Now show thesis prompt
-    await loadMaps();
-    document.getElementById('onboarding-modal').style.display = 'flex';
-  } else if (hasPending) {
-    // Returning user from scan: auto-fill the Add modal
-    await checkProfile(true);
-    if (pending) {
-      try {
-        const scan = JSON.parse(pending);
-        localStorage.removeItem('pending_scan');
-        openAdd();
-        if (scan.title) document.getElementById('f-title').value = scan.title;
-        if (scan.year) document.getElementById('f-year').value = scan.year;
-        if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
-        const notes = [scan.region, scan.summary, '---', 'Tap Re-evaluate below for a personalized buy/watch/pass based on your thesis.'].filter(Boolean).join('\n\n');
-        if (notes) document.getElementById('f-notes').value = notes;
-      } catch(e) { localStorage.removeItem('pending_scan'); }
-    }
+    await checkProfile(true); // load profile silently, don't trigger onboarding yet
+    try {
+      const scan = JSON.parse(pending);
+      localStorage.removeItem('pending_scan');
+      openAdd();
+      if (scan.title) document.getElementById('f-title').value = scan.title;
+      if (scan.year) document.getElementById('f-year').value = scan.year;
+      if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
+      const notes = [scan.region, scan.summary, '---', 'Tap Re-evaluate below for a personalized buy/watch/pass based on your thesis.'].filter(Boolean).join('\n\n');
+      if (notes) document.getElementById('f-notes').value = notes;
+    } catch(e) { localStorage.removeItem('pending_scan'); }
   } else {
     await checkProfile(false);
   }
@@ -1117,6 +1097,12 @@ async function saveMap() {
   }
   closeModal();
   await loadMaps();
+
+  // If onboarding was deferred (new user from scan flow), trigger it now
+  if (window._deferOnboarding) {
+    window._deferOnboarding = false;
+    document.getElementById('onboarding-modal').style.display = 'flex';
+  }
 }
 
 async function deleteMap(id) {
