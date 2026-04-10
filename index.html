@@ -695,6 +695,12 @@
         wrap.style.display = 'block';
 
         document.getElementById('loading').style.display = 'none';
+        
+        // Hide all other sections so result is visible
+        document.getElementById('value').style.display = 'none';
+        document.getElementById('themes').style.display = 'none';
+        document.querySelector('.site-footer').style.display = 'none';
+
         const resultEl = document.getElementById('result');
         resultEl.style.display = 'flex';
         window.scrollTo(0, 0);
@@ -708,7 +714,13 @@
   function reset() {
     document.getElementById('result').style.display = 'none';
     document.getElementById('loading').style.display = 'none';
+    
+    // Show all home sections again
     document.getElementById('hero').style.display = 'flex';
+    document.getElementById('value').style.display = '';
+    document.getElementById('themes').style.display = '';
+    document.querySelector('.site-footer').style.display = '';
+    
     document.getElementById('scan-input').value = '';
     window.scrollTo(0, 0);
   }
