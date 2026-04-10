@@ -20,7 +20,7 @@ import sys, json, urllib.request, urllib.error, os
 
 # ── CONFIG ──────────────────────────────────────────────────────
 SUPABASE_URL = 'https://irfuhohbabtywbuchwpb.supabase.co'
-SERVICE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZnVob2hiYWJ0eXdidWNod3BiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTI2NzAxOSwiZXhwIjoyMDkwODQzMDE5fQ.Jb6xQWcXPqKSB3v9QNZod7oOnjRHpFdlRhZWstClGRY'
+SERVICE_KEY  = os.environ.get('SUPABASE_SERVICE_KEY', '')
 GEMINI_KEY   = os.environ.get('GEMINI_API_KEY', '')
 CATEGORY     = 'maps'  # Change to 'coins', 'stamps', etc. for other verticals
 
