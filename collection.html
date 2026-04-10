@@ -1062,9 +1062,9 @@ async function reEvaluateMap(id) {
   btn.textContent = 'Evaluating…';
   btn.classList.add('loading');
 
-  // Build a thesis-aware prompt and call the Supabase edge function
   try {
-    const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
+    // Call the text-only evaluation endpoint (no image required)
+    const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1072,13 +1072,14 @@ async function reEvaluateMap(id) {
         mapTitle: m.title,
         mapYear: m.year,
         mapCartographer: m.cartographer,
-        reEvaluate: true
+        dealer: m.dealer,
+        price: m.price
       })
     });
     const parsed = await res.json();
 
     if (parsed.error) {
-      // If the edge function doesn't support text-only, fall back to edit modal
+      // Edge function not deployed yet — fall back to edit modal
       openEdit(id);
       setTimeout(() => evaluateMap(), 300);
       btn.textContent = 'Re-evaluate ↻';
@@ -1087,7 +1088,7 @@ async function reEvaluateMap(id) {
     }
 
     // Update the map's notes with the new evaluation
-    const evaluation = parsed.evaluation || parsed.summary || '';
+    const evaluation = parsed.evaluation || '';
     if (evaluation) {
       const updatedNotes = '📋 Thesis-based evaluation:\n' + evaluation + '\n\n---\n' + (m.notes || '');
       await db.from('maps').update({ notes: updatedNotes }).eq('id', id);
