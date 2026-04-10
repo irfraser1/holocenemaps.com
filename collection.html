@@ -792,7 +792,7 @@ async function showApp() {
         localStorage.removeItem('pending_scan');
         // Auto-save the scanned map with defaults
         const { data: { user } } = await db.auth.getUser();
-        const notes = [scan.region, scan.summary].filter(Boolean).join('\n\n');
+        const notes = [scan.region, scan.summary, '---', 'Tap Re-evaluate below for a personalized buy/watch/pass based on your thesis.'].filter(Boolean).join('\n\n');
         await db.from('maps').insert({
           user_id: user.id,
           title: scan.title || 'Scanned Map',
