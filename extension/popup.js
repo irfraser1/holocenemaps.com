@@ -222,8 +222,14 @@ async function init() {
           const descEl = document.querySelector('.product-description, #product-description, [class*="description"]');
           if (descEl) data.description = descEl.innerText.trim().slice(0, 600);
 
-          const imgEl = document.querySelector('[itemprop="image"], .product-images img, .product-image img, img.main-image');
-          if (imgEl) data.image = imgEl.src || imgEl.getAttribute('content') || null;
+          // Primary: zoomify modal image. Fallback: og:image meta tag
+          const imgEl = document.querySelector('a[href="#modal_zoomify"] img');
+          if (imgEl && imgEl.src) {
+            data.image = imgEl.src;
+          } else {
+            const ogImg = document.querySelector('meta[property="og:image"]');
+            if (ogImg) data.image = ogImg.getAttribute('content');
+          }
 
           return data;
         }
@@ -258,12 +264,11 @@ async function init() {
           const descEl = document.querySelector('[class*="description"], [class*="desc"], .content p');
           if (descEl) data.description = descEl.innerText.trim().slice(0, 600);
 
-          const stockMatch = window.location.pathname.match(/\/detail\/([a-zA-Z0-9]+)/);
-          if (stockMatch) {
-            data.image = `https://storage.googleapis.com/raremaps/img/large/${stockMatch[1]}.jpg`;
-          } else {
-            const imgEl = document.querySelector('.product-photo img, .main-image img, [itemprop="image"], img.product-image, .gallery img');
-            if (imgEl) data.image = imgEl.src || null;
+          // Ruderman uses OpenSeadragon (canvas) — no img tag for main image
+          // Use og:image meta tag which always has a valid static image URL
+          const ogImg = document.querySelector('meta[property="og:image"]');
+          if (ogImg) {
+            data.image = ogImg.getAttribute('content');
           }
 
           return data;
