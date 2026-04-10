@@ -34,7 +34,7 @@ serve(async (req) => {
       const arrayBuffer = await file.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
 
-      // Chunked base64 encode to avoid call stack overflow on large files
+      // Chunked base64 encode to avoid call stack overflow
       const CHUNK = 8192;
       let binary = "";
       for (let i = 0; i < bytes.length; i += CHUNK) {
@@ -101,12 +101,12 @@ Return ONLY valid JSON, no markdown fences, no extra text.`;
               { type: "text", text: prompt },
               {
                 type: "image_url",
-                image_url: { url: imageUrl, detail: "high" },
+                image_url: { url: imageUrl, detail: "auto" },
               },
             ],
           },
         ],
-        max_tokens: 600,
+        max_tokens: 400,
         temperature: 0.3,
       }),
     });
