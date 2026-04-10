@@ -619,6 +619,47 @@
     fm.style.display = 'block';
   }
 
+  // Rotating loading messages
+  const LOADING_MSGS = [
+    'Identifying your map…',
+    'Reading cartouche text…',
+    'Analyzing cartographic style…',
+    'Cross-referencing period & region…',
+    'Estimating market value…',
+    'Almost there…'
+  ];
+  let loadingInterval = null;
+
+  function startLoadingMessages() {
+    let i = 0;
+    const el = document.getElementById('loading-text');
+    el.textContent = LOADING_MSGS[0];
+    loadingInterval = setInterval(() => {
+      i = (i + 1) % LOADING_MSGS.length;
+      el.textContent = LOADING_MSGS[i];
+    }, 3000);
+  }
+
+  function stopLoadingMessages() {
+    if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
+  }
+
+  // Memory-safe resize: createImageBitmap + OffscreenCanvas
+  async function resizeForUpload(file, maxDim = 1200) {
+    const bitmap = await createImageBitmap(file);
+    let w = bitmap.width, h = bitmap.height;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else       { w = Math.round(w * maxDim / h); h = maxDim; }
+    }
+    const canvas = new OffscreenCanvas(w, h);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
+    return new File([blob], 'scan.jpg', { type: 'image/jpeg' });
+  }
+
   async function handleScan(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -631,17 +672,21 @@
     document.getElementById('friendly-msg').style.display = 'none';
     document.getElementById('loading').style.display = 'flex';
     document.getElementById('scan-input').value = '';
-
-    // Stream file directly to server — ZERO client-side memory usage
-    const formData = new FormData();
-    formData.append('image', file);
+    startLoadingMessages();
 
     try {
+      // Resize image before upload (3-8MB → ~200-400KB)
+      const resized = await resizeForUpload(file);
+
+      const formData = new FormData();
+      formData.append('image', resized);
+
       const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
         method: 'POST',
-        body: formData  // browser streams this natively, no Content-Type header needed
+        body: formData
       });
       const data = await res.json();
+      stopLoadingMessages();
 
       if (data.error) { showFriendly(data.error); return; }
 
@@ -670,7 +715,7 @@
 
       document.getElementById('result-summary').textContent = data.summary || '';
 
-      // Show thumbnail from the original file (small object URL, no memory spike)
+      // Show thumbnail from the original file
       const wrap = document.getElementById('result-image-wrap');
       const img = document.getElementById('result-img');
       img.src = URL.createObjectURL(file);
@@ -688,6 +733,7 @@
       window.scrollTo(0, 0);
 
     } catch(err) {
+      stopLoadingMessages();
       showFriendly('Something went wrong. Please try again.');
     }
   }
