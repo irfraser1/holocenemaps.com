@@ -263,6 +263,63 @@
       border-radius: 2px;
     }
 
+    /* Auth */
+    #state-auth {
+      display: none;
+      padding: 28px 18px;
+      text-align: center;
+    }
+    .auth-title {
+      font-family: 'Cormorant SC', serif;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      color: #c4a44a;
+      margin-bottom: 16px;
+    }
+    .auth-field {
+      margin-bottom: 10px;
+    }
+    .auth-field input {
+      width: 100%;
+      background: #0f0b0620;
+      border: 1px solid #c4a44a25;
+      border-radius: 2px;
+      padding: 10px 12px;
+      color: #e8dfc8;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 13px;
+      outline: none;
+    }
+    .auth-field input:focus { border-color: #c4a44a60; }
+    .auth-field input::placeholder { color: #e8dfc850; }
+    .btn-auth {
+      width: 100%;
+      background: #c4a44a;
+      color: #0f0b06;
+      border: none;
+      padding: 11px;
+      font-family: 'Cormorant SC', serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      border-radius: 2px;
+      margin-top: 6px;
+    }
+    .btn-auth:hover { background: #d4b45a; }
+    .auth-error {
+      color: #d44a4a;
+      font-size: 11px;
+      font-style: italic;
+      margin-top: 8px;
+      min-height: 16px;
+    }
+    .auth-hint {
+      font-size: 11px;
+      color: #e8dfc850;
+      font-style: italic;
+      margin-top: 12px;
+    }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -275,6 +332,20 @@
     <span class="header-logo">HOLOCENE MAPS</span>
     <div class="header-dot"></div>
     <span class="header-title">Collection Clipper</span>
+  </div>
+
+  <!-- Auth -->
+  <div id="state-auth">
+    <div class="auth-title">Sign In</div>
+    <div class="auth-field">
+      <input type="email" id="auth-email" placeholder="Email">
+    </div>
+    <div class="auth-field">
+      <input type="password" id="auth-password" placeholder="Password">
+    </div>
+    <button class="btn-auth" id="btn-auth">Sign In</button>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-hint">Use your holocenemaps.com account</div>
   </div>
 
   <!-- Loading -->
@@ -374,6 +445,7 @@
     <button class="btn-retry" id="btn-retry">Try Again</button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="popup.js"></script>
 </body>
 </html>

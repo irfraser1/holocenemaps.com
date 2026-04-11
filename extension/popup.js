@@ -1,54 +1,34 @@
-// popup.js
+// popup.js — Holocene Maps Collection Clipper
+// Auth: uses Supabase JS client with chrome.storage adapter for session persistence.
+// User identity always comes from db.auth.getUser() — never hardcoded.
 
 const SUPABASE_URL = 'https://irfuhohbabtywbuchwpb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_EwBThey-4JHJII0aNAu1Lg_vPnFvsyG';
-// User ID loaded from chrome.storage (set during login)
-let USER_ID = null;
-chrome.storage.local.get('holocene_user_id', (result) => {
-  USER_ID = result.holocene_user_id || 'd24bb44d-858f-47a2-a2e3-c80996538ac8';
+
+// Custom storage adapter: Supabase sessions persist in chrome.storage.local
+const chromeStorageAdapter = {
+  getItem: (key) => new Promise((resolve) => {
+    chrome.storage.local.get(key, (result) => resolve(result[key] || null));
+  }),
+  setItem: (key, value) => new Promise((resolve) => {
+    chrome.storage.local.set({ [key]: value }, resolve);
+  }),
+  removeItem: (key) => new Promise((resolve) => {
+    chrome.storage.local.remove(key, resolve);
+  }),
+};
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    storage: chromeStorageAdapter,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  }
 });
 
-const COLLECTION_CONTEXT = `Ian's antique map collection focuses on Imperial North America 1680–1780, structured as a three-act narrative:
-- Act I (1688–1719): French dominance — Mississippi basin & Great Lakes claims. Owned: Chatelain 1719 Carte de la Nouvelle France ($2,000, Act I anchor).
-- Act II (1720–1754): The Imperial Contest — Franco-British rivalry. Owned: Bowen c.1740 Atlantic World map (Act II anchor).
-- Act III (1763–1780): British Resolution — post-Seven Years' War consolidation. Owned: Gibson 1763 Proclamation Map (Act III anchor).
-Investment principle: blue-chip only — recognised collector value, strong provenance, long-term market liquidity.
-Priority gaps: De l'Isle 1718 Carte de la Louisiane (Act I), Palairet/Kitchin 1755 (Act II hinge), Faden 1777 (Act III), Mitchell 1755 (crown jewel).`;
-
-async function getAIEvaluation(data) {
-  const prompt = `You are an expert antique map advisor. Evaluate this map listing for fit in Ian's collection in exactly 3 sentences. Be direct and specific — mention the Act it fits, whether it fills a gap or is redundant, and a one-line verdict (buy / watch / pass).
-
-Collection context:
-${COLLECTION_CONTEXT}
-
-Map being evaluated:
-Title: ${data.title || 'Unknown'}
-Cartographer: ${data.cartographer || 'Unknown'}
-Year: ${data.year || 'Unknown'}
-Price: $${data.price || 'Unknown'}
-Dealer: ${data.dealer || 'Unknown'}
-Description: ${data.description || 'No description available'}
-
-Respond in exactly 3 sentences. No headers, no bullet points.`;
-
-  const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      thesis: COLLECTION_CONTEXT,
-      mapTitle: data.title || 'Unknown',
-      mapYear: data.year || 'Unknown',
-      mapCartographer: data.cartographer || 'Unknown',
-      dealer: data.dealer || '',
-      price: data.price || ''
-    })
-  });
-
-  const json = await res.json();
-  return json?.evaluation || null;
-}
-
-// Supported domains
+// Supported dealer domains
 const SUPPORTED = ['geographicus.com', 'raremaps.com'];
 
 let priority = 3;
@@ -56,7 +36,7 @@ let listingUrl = '';
 let imageUrl = '';
 
 function show(stateId) {
-  ['state-loading','state-no-map','state-form','state-success','state-error'].forEach(id => {
+  ['state-auth','state-loading','state-no-map','state-form','state-success','state-error'].forEach(id => {
     document.getElementById(id).style.display = id === stateId ? 'block' : 'none';
   });
 }
@@ -72,11 +52,28 @@ function setStars(val) {
 document.getElementById('stars').addEventListener('click', e => {
   if (e.target.classList.contains('star')) setStars(parseInt(e.target.dataset.val));
 });
+setStars(3);
 
-setStars(3); // default
+// AI evaluation via Edge Function
+async function getAIEvaluation(data, thesis) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/evaluate-text`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      thesis: thesis || '',
+      mapTitle: data.title || 'Unknown',
+      mapYear: data.year || 'Unknown',
+      mapCartographer: data.cartographer || 'Unknown',
+      dealer: data.dealer || '',
+      price: data.price || ''
+    })
+  });
+  const json = await res.json();
+  return json?.evaluation || null;
+}
 
 // Populate form with scraped data and AI evaluation
-async function populate(data) {
+async function populate(data, thesis) {
   if (!data) { show('state-no-map'); return; }
 
   document.getElementById('f-title').value = data.title || '';
@@ -85,10 +82,8 @@ async function populate(data) {
   document.getElementById('f-price').value = data.price || '';
   document.getElementById('f-dealer').value = data.dealer || '';
 
-  // Image URL
   if (data.image) imageUrl = data.image;
 
-  // Listing URL preview
   if (data.url) {
     listingUrl = data.url;
     const preview = document.getElementById('url-preview');
@@ -108,9 +103,9 @@ async function populate(data) {
   notesEl.style.opacity = '0.4';
   show('state-form');
 
-  // Fetch AI evaluation
+  // Fetch AI evaluation using user's thesis
   try {
-    const evaluation = await getAIEvaluation(data);
+    const evaluation = await getAIEvaluation(data, thesis);
     if (evaluation) {
       notesEl.value = evaluation;
     } else {
@@ -122,47 +117,38 @@ async function populate(data) {
   notesEl.style.opacity = '1';
 }
 
-// Save to Supabase
+// Save to Supabase — user_id comes from live auth session
 async function saveMap() {
   const btn = document.getElementById('btn-save');
   btn.disabled = true;
   btn.textContent = 'Saving…';
 
-  const payload = {
-    user_id: USER_ID,
-    title: document.getElementById('f-title').value.trim(),
-    year: parseInt(document.getElementById('f-year').value, 10) || null,
-    cartographer: document.getElementById('f-cartographer').value.trim(),
-    act: parseInt(document.getElementById('f-act').value, 10),
-    status: document.getElementById('f-status').value,
-    priority: priority,
-    dealer: document.getElementById('f-dealer').value.trim(),
-    price: parseInt(document.getElementById('f-price').value, 10) || 0,
-    notes: document.getElementById('f-notes').value.trim(),
-    listing_url: listingUrl || null,
-    image_url: imageUrl || null,
-  };
-
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/maps`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify(payload)
-    });
+    const { data: { user }, error: authErr } = await db.auth.getUser();
+    if (authErr || !user) throw new Error('Not signed in');
 
-    if (res.ok || res.status === 201) {
-      document.getElementById('success-sub').textContent = payload.title || 'Map saved';
-      show('state-success');
-      setTimeout(() => window.close(), 2200);
-    } else {
-      const err = await res.text();
-      throw new Error(err);
-    }
+    const payload = {
+      user_id: user.id,
+      title: document.getElementById('f-title').value.trim(),
+      year: parseInt(document.getElementById('f-year').value, 10) || null,
+      cartographer: document.getElementById('f-cartographer').value.trim(),
+      act: parseInt(document.getElementById('f-act').value, 10),
+      status: document.getElementById('f-status').value,
+      priority: priority,
+      dealer: document.getElementById('f-dealer').value.trim(),
+      price: parseInt(document.getElementById('f-price').value, 10) || 0,
+      notes: document.getElementById('f-notes').value.trim(),
+      url: listingUrl || null,
+      image_url: imageUrl || null,
+    };
+
+    const { error } = await db.from('maps').insert(payload);
+    if (error) throw new Error(JSON.stringify(error));
+
+    document.getElementById('success-sub').textContent = payload.title || 'Map saved';
+    show('state-success');
+    setTimeout(() => window.close(), 2200);
+
   } catch (e) {
     document.getElementById('error-msg').textContent = e.message || 'Unknown error';
     show('state-error');
@@ -171,14 +157,45 @@ async function saveMap() {
   }
 }
 
-// Init
-document.getElementById('btn-save').addEventListener('click', saveMap);
-document.getElementById('btn-cancel').addEventListener('click', () => window.close());
-document.getElementById('btn-retry').addEventListener('click', () => show('state-form'));
+// Auth: sign in with email/password
+async function signIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.textContent = '';
 
-// Check current tab and scrape
-async function init() {
+  if (!email || !password) {
+    errEl.textContent = 'Enter email and password';
+    return;
+  }
+
+  document.getElementById('btn-auth').textContent = 'Signing in…';
+
+  const { error } = await db.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    errEl.textContent = error.message;
+    document.getElementById('btn-auth').textContent = 'Sign In';
+    return;
+  }
+
+  // Signed in — proceed to scrape
+  startScraping();
+}
+
+// Scrape current tab
+async function startScraping() {
   show('state-loading');
+
+  // Load user's thesis for AI evaluation
+  let thesis = '';
+  try {
+    const { data: { user } } = await db.auth.getUser();
+    if (user) {
+      const { data } = await db.from('profiles').select('thesis').eq('user_id', user.id).single();
+      if (data?.thesis) thesis = data.thesis;
+    }
+  } catch(e) { /* proceed without thesis */ }
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) { show('state-no-map'); return; }
@@ -191,7 +208,6 @@ async function init() {
     return;
   }
 
-  // Inject content script if needed and scrape
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
@@ -243,7 +259,6 @@ async function init() {
 
           const bodyText = document.body.innerText;
 
-          // Ruderman has structured metadata
           const cartMatch = bodyText.match(/(?:Cartographer|Maker|Author)[:\s]+([^\n\r]+)/i);
           if (cartMatch) data.cartographer = cartMatch[1].trim();
 
@@ -265,7 +280,6 @@ async function init() {
           if (descEl) data.description = descEl.innerText.trim().slice(0, 600);
 
           // Ruderman uses OpenSeadragon (canvas) — no img tag for main image
-          // Use og:image meta tag which always has a valid static image URL
           const ogImg = document.querySelector('meta[property="og:image"]');
           if (ogImg) {
             data.image = ogImg.getAttribute('content');
@@ -282,13 +296,36 @@ async function init() {
     });
 
     const data = results?.[0]?.result;
-    populate(data);
+    populate(data, thesis);
 
   } catch (e) {
     console.error('Scrape error:', e);
-    // Still show form, just empty
-    populate({ dealer: '', url: tab.url });
+    populate({ dealer: '', url: tab.url }, thesis);
   }
 }
+
+// Init: check for existing session
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+
+  if (session) {
+    // Session exists — proceed to scrape
+    startScraping();
+  } else {
+    // No session — show sign-in
+    show('state-auth');
+  }
+}
+
+// Event listeners
+document.getElementById('btn-save').addEventListener('click', saveMap);
+document.getElementById('btn-cancel').addEventListener('click', () => window.close());
+document.getElementById('btn-retry').addEventListener('click', () => show('state-form'));
+document.getElementById('btn-auth').addEventListener('click', signIn);
+
+// Allow Enter key to submit sign-in
+document.getElementById('auth-password').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') signIn();
+});
 
 init();
