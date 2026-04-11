@@ -147,7 +147,6 @@ async function saveMap() {
 
     document.getElementById('success-sub').textContent = payload.title || 'Map saved';
     show('state-success');
-    setTimeout(() => window.close(), 2200);
 
   } catch (e) {
     document.getElementById('error-msg').textContent = e.message || 'Unknown error';
