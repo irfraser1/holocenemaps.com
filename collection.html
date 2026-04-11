@@ -920,8 +920,8 @@ async function saveThesis() {
   const btn = document.querySelector('#onboarding-box .btn-primary');
   btn.textContent = 'Saving…';
   const { data: { user } } = await db.auth.getUser();
-  const { error } = await db.from('profiles').upsert({ user_id: user.id, thesis });
-  if (error) { errEl.textContent = error.message; btn.textContent = 'Start Building'; return; }
+  const { error } = await db.from('profiles').upsert({ user_id: user.id, thesis }, { onConflict: 'user_id' });
+  if (error) { console.error('Thesis save error:', error); errEl.textContent = error.message; btn.textContent = 'Start Building'; return; }
   userThesis = thesis;
   renderThesisPanel();
   document.getElementById('onboarding-modal').style.display = 'none';
@@ -962,8 +962,8 @@ async function updateThesis() {
   const btn = document.getElementById('thesis-save-btn');
   btn.textContent = 'Saving…';
   const { data: { user } } = await db.auth.getUser();
-  const { error } = await db.from('profiles').upsert({ user_id: user.id, thesis });
-  if (error) { btn.textContent = 'Save'; return; }
+  const { error } = await db.from('profiles').upsert({ user_id: user.id, thesis }, { onConflict: 'user_id' });
+  if (error) { console.error('Thesis update error:', error); btn.textContent = 'Save'; return; }
   userThesis = thesis;
   renderThesisPanel();
   cancelEditThesis();
