@@ -967,7 +967,8 @@ async function updateThesis() {
   userThesis = thesis;
   renderThesisPanel();
   cancelEditThesis();
-  btn.textContent = 'Save';
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => { btn.textContent = 'Save'; }, 2000);
 }
 
 // AI EVALUATION (via Supabase Edge Function)
