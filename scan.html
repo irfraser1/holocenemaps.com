@@ -264,7 +264,13 @@
   <div class="result-footer">Our AI does its best, but old maps can be tricky! Double-check details that matter to you. 🗺️</div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  const SUPABASE_URL = 'https://irfuhohbabtywbuchwpb.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_EwBThey-4JHJII0aNAu1Lg_vPnFvsyG';
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
   let currentScanData = {};
 
   function saveToCollection() {
@@ -376,6 +382,18 @@
       }
 
       currentScanData = data;
+
+      // Upload resized image to Supabase Storage immediately
+      try {
+        const filename = `scans/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+        const { data: uploadData, error: uploadErr } = await db.storage
+          .from('map-images')
+          .upload(filename, resized, { contentType: 'image/jpeg', upsert: false });
+        if (!uploadErr && uploadData) {
+          const { data: urlData } = db.storage.from('map-images').getPublicUrl(filename);
+          currentScanData.image_url = urlData.publicUrl;
+        }
+      } catch(imgErr) { /* image upload failed silently — scan data still works */ }
       document.getElementById('result-summary').textContent = data.summary || '';
 
       const wrap = document.getElementById('result-image-wrap');

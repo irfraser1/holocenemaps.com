@@ -739,6 +739,18 @@
           <input type="url" id="f-url" placeholder="https://www.raremaps.com/gallery/detail/…">
         </div>
         <div class="field full">
+          <label class="lbl">Photo</label>
+          <div id="f-photo-wrap" style="display:flex;align-items:center;gap:12px;">
+            <img id="f-photo-preview" style="display:none;width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid rgba(139,105,20,0.2);">
+            <label style="cursor:pointer;padding:9px 14px;background:#ede8dc;border:1px solid rgba(139,105,20,0.2);border-radius:6px;font-family:'Spectral',serif;font-size:13px;color:var(--ink,var(--navy));">
+              Choose image…
+              <input type="file" id="f-photo" accept="image/*" style="display:none" onchange="handleModalPhoto(event)">
+            </label>
+            <span id="f-photo-name" style="font-size:12px;color:#999;"></span>
+          </div>
+          <input type="hidden" id="f-image-url">
+        </div>
+        <div class="field full">
           <label class="lbl" style="display:flex;justify-content:space-between;align-items:center;">
             Notes
             <a class="evaluate-link" onclick="evaluateMap()">Re-evaluate based on Thesis →</a>
@@ -860,6 +872,13 @@ async function showApp() {
       if (scan.title) document.getElementById('f-title').value = scan.title;
       if (scan.year) document.getElementById('f-year').value = scan.year;
       if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
+      if (scan.image_url) {
+        document.getElementById('f-image-url').value = scan.image_url;
+        const preview = document.getElementById('f-photo-preview');
+        preview.src = scan.image_url;
+        preview.style.display = 'block';
+        document.getElementById('f-photo-name').textContent = 'From scan';
+      }
       const notes = [scan.region, scan.summary, '---', 'Tap Re-evaluate below for a personalized buy/watch/pass based on your thesis.'].filter(Boolean).join('\n\n');
       if (notes) document.getElementById('f-notes').value = notes;
     } catch(e) { localStorage.removeItem('pending_scan'); }
@@ -1133,6 +1152,50 @@ async function reEvaluateMap(id) {
   }
 }
 
+// Handle manual photo upload in the Add/Edit modal
+async function handleModalPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const nameEl = document.getElementById('f-photo-name');
+  nameEl.textContent = 'Uploading…';
+
+  try {
+    // Resize for storage
+    const bitmap = await createImageBitmap(file);
+    let w = bitmap.width, h = bitmap.height;
+    const maxDim = 1200;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else       { w = Math.round(w * maxDim / h); h = maxDim; }
+    }
+    const canvas = new OffscreenCanvas(w, h);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
+
+    // Upload to Supabase Storage
+    const filename = `manual/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const { data: uploadData, error: uploadErr } = await db.storage
+      .from('map-images')
+      .upload(filename, blob, { contentType: 'image/jpeg', upsert: false });
+
+    if (uploadErr) throw uploadErr;
+
+    const { data: urlData } = db.storage.from('map-images').getPublicUrl(filename);
+    document.getElementById('f-image-url').value = urlData.publicUrl;
+
+    // Show preview
+    const preview = document.getElementById('f-photo-preview');
+    preview.src = urlData.publicUrl;
+    preview.style.display = 'block';
+    nameEl.textContent = 'Uploaded ✓';
+  } catch(err) {
+    nameEl.textContent = 'Upload failed — try again';
+  }
+}
+
 async function saveMap() {
   const btn = document.getElementById('save-btn');
   btn.textContent = 'Saving…';
@@ -1149,6 +1212,7 @@ async function saveMap() {
     price: document.getElementById('f-price').value.trim(),
     url: document.getElementById('f-url').value.trim(),
     notes: document.getElementById('f-notes').value.trim(),
+    image_url: document.getElementById('f-image-url').value.trim() || null,
   };
   if (!payload.title) { btn.textContent = editingId ? 'Update' : 'Add map'; return; }
 
@@ -1279,6 +1343,10 @@ function openAdd() {
   ['title','year','cartographer','dealer','price','url','notes'].forEach(f => document.getElementById('f-'+f).value = '');
   document.getElementById('f-act').value = '1';
   document.getElementById('f-status').value = 'watching';
+  document.getElementById('f-image-url').value = '';
+  document.getElementById('f-photo-preview').style.display = 'none';
+  document.getElementById('f-photo-preview').src = '';
+  document.getElementById('f-photo-name').textContent = '';
   renderStars(3);
   document.getElementById('modal').style.display = 'flex';
 }
@@ -1298,6 +1366,15 @@ function openEdit(id) {
   document.getElementById('f-price').value = m.price || '';
   document.getElementById('f-url').value = m.url || '';
   document.getElementById('f-notes').value = m.notes || '';
+  document.getElementById('f-image-url').value = m.image_url || '';
+  if (m.image_url) {
+    document.getElementById('f-photo-preview').src = m.image_url;
+    document.getElementById('f-photo-preview').style.display = 'block';
+    document.getElementById('f-photo-name').textContent = 'Current image';
+  } else {
+    document.getElementById('f-photo-preview').style.display = 'none';
+    document.getElementById('f-photo-name').textContent = '';
+  }
   renderStars(m.priority || 3);
   document.getElementById('modal').style.display = 'flex';
 }
