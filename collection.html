@@ -982,7 +982,8 @@ async function evaluateMap() {
   notesEl.value = 'Evaluating…';
   notesEl.style.opacity = '0.4';
   try {
-    const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
+    // Run evaluation
+    const evalPromise = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -992,8 +993,29 @@ async function evaluateMap() {
         mapCartographer: cartographer
       })
     });
-    const parsed = await res.json();
+
+    // Backfill image if URL exists but no image set
+    const listingUrl = document.getElementById('f-url').value.trim();
+    const existingImage = document.getElementById('f-image-url').value.trim();
+    let imageBackfill = null;
+    if (listingUrl && !existingImage) {
+      imageBackfill = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/scrape-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: listingUrl })
+      }).then(r => r.json()).catch(() => null);
+    }
+
+    const [evalRes, imgRes] = await Promise.all([evalPromise, imageBackfill]);
+    const parsed = await evalRes.json();
     notesEl.value = parsed.evaluation || parsed.error || '';
+
+    // Set backfilled image in the form
+    if (imgRes && imgRes.image_url) {
+      document.getElementById('f-image-url').value = imgRes.image_url;
+      document.getElementById('f-photo-preview').src = imgRes.image_url;
+      document.getElementById('f-photo-field').style.display = '';
+    }
   } catch(e) {
     notesEl.value = '';
   }
@@ -1102,8 +1124,8 @@ async function reEvaluateMap(id) {
   btn.classList.add('loading');
 
   try {
-    // Call the text-only evaluation endpoint (no image required)
-    const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
+    // Run evaluation and image backfill in parallel
+    const evalPromise = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1115,10 +1137,22 @@ async function reEvaluateMap(id) {
         price: m.price
       })
     });
-    const parsed = await res.json();
+
+    // Backfill image if missing and listing URL exists
+    let imageBackfill = null;
+    const listingUrl = m.url || m.listing_url;
+    if (!m.image_url && listingUrl) {
+      imageBackfill = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/scrape-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: listingUrl })
+      }).then(r => r.json()).catch(() => null);
+    }
+
+    const [evalRes, imgRes] = await Promise.all([evalPromise, imageBackfill]);
+    const parsed = await evalRes.json();
 
     if (parsed.error) {
-      // Edge function not deployed yet — fall back to edit modal
       openEdit(id);
       setTimeout(() => evaluateMap(), 300);
       btn.textContent = 'Re-evaluate ↻';
@@ -1126,17 +1160,30 @@ async function reEvaluateMap(id) {
       return;
     }
 
-    // Update the map's notes with the new evaluation
+    // Build DB update payload
+    const dbUpdate = {};
+    const mapIdx = maps.findIndex(x => x.id === id);
+
+    // Update notes with evaluation
     const evaluation = parsed.evaluation || '';
     if (evaluation) {
       const updatedNotes = '📋 Thesis-based evaluation:\n' + evaluation + '\n\n---\n' + (m.notes || '');
-      await db.from('maps').update({ notes: updatedNotes }).eq('id', id);
-      const mapIdx = maps.findIndex(x => x.id === id);
+      dbUpdate.notes = updatedNotes;
       if (mapIdx >= 0) maps[mapIdx].notes = updatedNotes;
+    }
+
+    // Save backfilled image
+    if (imgRes && imgRes.image_url) {
+      dbUpdate.image_url = imgRes.image_url;
+      if (mapIdx >= 0) maps[mapIdx].image_url = imgRes.image_url;
+    }
+
+    if (Object.keys(dbUpdate).length > 0) {
+      await db.from('maps').update(dbUpdate).eq('id', id);
       renderList();
     }
+
   } catch(e) {
-    // Fallback: open edit modal and auto-trigger existing evaluateMap
     openEdit(id);
     setTimeout(() => evaluateMap(), 300);
     btn.textContent = 'Re-evaluate ↻';
