@@ -345,5 +345,9 @@ document.getElementById('btn-save').addEventListener('click', saveMap);
 document.getElementById('btn-cancel').addEventListener('click', () => window.close());
 document.getElementById('btn-retry').addEventListener('click', () => show('state-form'));
 document.getElementById('btn-auth').addEventListener('click', signIn);
+document.getElementById('btn-view-collection').addEventListener('click', () => {
+  chrome.tabs.create({ url: 'https://holocenemaps.com/collection.html' });
+  window.close();
+});
 
 init();
