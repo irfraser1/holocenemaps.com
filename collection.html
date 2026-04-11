@@ -738,16 +738,9 @@
           <label class="lbl">Listing URL</label>
           <input type="url" id="f-url" placeholder="https://www.raremaps.com/gallery/detail/…">
         </div>
-        <div class="field full">
+        <div class="field full" id="f-photo-field" style="display:none;">
           <label class="lbl">Photo</label>
-          <div id="f-photo-wrap" style="display:flex;align-items:center;gap:12px;">
-            <img id="f-photo-preview" style="display:none;width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid rgba(139,105,20,0.2);">
-            <label style="cursor:pointer;padding:9px 14px;background:#ede8dc;border:1px solid rgba(139,105,20,0.2);border-radius:6px;font-family:'Spectral',serif;font-size:13px;color:var(--ink,var(--navy));">
-              Choose image…
-              <input type="file" id="f-photo" accept="image/*" style="display:none" onchange="handleModalPhoto(event)">
-            </label>
-            <span id="f-photo-name" style="font-size:12px;color:#999;"></span>
-          </div>
+          <img id="f-photo-preview" style="width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid rgba(139,105,20,0.2);">
           <input type="hidden" id="f-image-url">
         </div>
         <div class="field full">
@@ -874,10 +867,8 @@ async function showApp() {
       if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
       if (scan.image_url) {
         document.getElementById('f-image-url').value = scan.image_url;
-        const preview = document.getElementById('f-photo-preview');
-        preview.src = scan.image_url;
-        preview.style.display = 'block';
-        document.getElementById('f-photo-name').textContent = 'From scan';
+        document.getElementById('f-photo-preview').src = scan.image_url;
+        document.getElementById('f-photo-field').style.display = '';
       }
       const notes = [scan.region, scan.summary, '---', 'Tap Re-evaluate below for a personalized buy/watch/pass based on your thesis.'].filter(Boolean).join('\n\n');
       if (notes) document.getElementById('f-notes').value = notes;
@@ -1344,9 +1335,7 @@ function openAdd() {
   document.getElementById('f-act').value = '1';
   document.getElementById('f-status').value = 'watching';
   document.getElementById('f-image-url').value = '';
-  document.getElementById('f-photo-preview').style.display = 'none';
-  document.getElementById('f-photo-preview').src = '';
-  document.getElementById('f-photo-name').textContent = '';
+  document.getElementById('f-photo-field').style.display = 'none';
   renderStars(3);
   document.getElementById('modal').style.display = 'flex';
 }
@@ -1369,11 +1358,9 @@ function openEdit(id) {
   document.getElementById('f-image-url').value = m.image_url || '';
   if (m.image_url) {
     document.getElementById('f-photo-preview').src = m.image_url;
-    document.getElementById('f-photo-preview').style.display = 'block';
-    document.getElementById('f-photo-name').textContent = 'Current image';
+    document.getElementById('f-photo-field').style.display = '';
   } else {
-    document.getElementById('f-photo-preview').style.display = 'none';
-    document.getElementById('f-photo-name').textContent = '';
+    document.getElementById('f-photo-field').style.display = 'none';
   }
   renderStars(m.priority || 3);
   document.getElementById('modal').style.display = 'flex';
