@@ -1,7 +1,7 @@
 // popup.js
 
 const SUPABASE_URL = 'https://irfuhohbabtywbuchwpb.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZnVob2hiYWJ0eXdidWNod3BiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNjcwMTksImV4cCI6MjA5MDg0MzAxOX0.1Xf5K5r3_GLyN0eiY4tyUbbb91HPasUkqSmSmiEwYKY';
+const SUPABASE_KEY = 'sb_publishable_EwBThey-4JHJII0aNAu1Lg_vPnFvsyG';
 // User ID loaded from chrome.storage (set during login)
 let USER_ID = null;
 chrome.storage.local.get('holocene_user_id', (result) => {
