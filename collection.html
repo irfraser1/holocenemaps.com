@@ -185,47 +185,94 @@
 
   /* MODAL */
   .overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-    z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px;
+    position: fixed; inset: 0; background: rgba(26,23,18,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; padding: 20px;
   }
   .modal {
-    background: var(--cream); border: 2px solid var(--navy);
-    padding: 28px; width: 100%; max-width: 520px;
+    background: #f5f0e8;
+    border-radius: 4px;
+    width: 100%; max-width: 540px;
     max-height: 90vh; overflow-y: auto;
+    padding: 0;
   }
-  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
-  .field-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-  .field { display: flex; flex-direction: column; gap: 4px; }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(139,105,20,0.2);
+  }
+  .modal-header-brand {
+    font-family: 'Cormorant SC', serif;
+    font-size: 10px; letter-spacing: 0.22em;
+    color: var(--text-secondary, #666);
+  }
+  .modal-header-close {
+    background: none; border: none; cursor: pointer;
+    font-size: 16px; color: var(--text-secondary, #666);
+    padding: 0; line-height: 1;
+  }
+  .modal-body { padding: 24px 24px 0; }
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px; font-weight: 400;
+    color: var(--ink, var(--navy)); margin-bottom: 24px;
+  }
+  .field-group { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 0; }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
   .field.full { grid-column: 1 / -1; }
   label.lbl {
-    font-family: 'Spectral', serif; font-size: 10px; letter-spacing: 0.1em;
-    text-transform: uppercase; color: #666; font-weight: 600;
+    font-family: 'Cormorant SC', serif;
+    font-size: 9px; letter-spacing: 0.18em;
+    color: var(--text-secondary, #666);
   }
   .field input, .field select, .field textarea {
-    background: #fff; border: 1px solid var(--border);
-    padding: 7px 10px; font-family: 'Cormorant Garamond', serif;
-    font-size: 14px; color: var(--navy); outline: none;
+    background: #ede8dc;
+    border: 1px solid rgba(139,105,20,0.2);
+    border-radius: 6px;
+    padding: 11px 14px;
+    font-family: 'Spectral', serif;
+    font-size: 14px; font-weight: 300;
+    color: var(--ink, var(--navy));
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    -webkit-appearance: none;
   }
-  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold); }
-  .field textarea { resize: vertical; min-height: 70px; }
-  .star-picker { display: flex; gap: 6px; margin-top: 2px; }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: rgba(139,105,20,0.5);
+  }
+  .field textarea { resize: vertical; min-height: 90px; }
+  .star-picker { display: flex; gap: 8px; margin-top: 2px; }
   .star-btn {
     background: none; border: none; font-size: 20px; cursor: pointer;
     color: #ddd; padding: 0; line-height: 1;
   }
   .star-btn.on { color: var(--gold); }
-  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .modal-footer {
+    display: flex; gap: 12px;
+    padding: 24px;
+    border-top: none;
+    margin-top: 8px;
+  }
   .btn-cancel {
-    padding: 8px 18px; font-family: 'Spectral', serif; font-size: 11px;
-    letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--border);
-    background: transparent; color: #666; cursor: pointer;
+    flex: 1; padding: 14px;
+    background: transparent;
+    border: 1px solid rgba(139,105,20,0.3);
+    border-radius: 4px;
+    font-family: 'Spectral', serif;
+    font-size: 14px; color: var(--text-secondary, #666);
+    cursor: pointer;
   }
   .btn-save {
-    padding: 8px 22px; font-family: 'Spectral', serif; font-size: 11px;
-    letter-spacing: 0.08em; text-transform: uppercase; border: none;
-    background: var(--navy); color: var(--cream); cursor: pointer; font-weight: 700;
+    flex: 1; padding: 14px;
+    background: var(--navy);
+    border: none; border-radius: 4px;
+    font-family: 'Spectral', serif;
+    font-size: 14px; font-weight: 400;
+    color: var(--cream); cursor: pointer;
+    letter-spacing: 0.04em;
   }
-  .btn-save:hover { background: var(--gold); }
+  .btn-save:hover { background: var(--navy-mid, #2a3a5c); }
   .loading { text-align: center; padding: 40px; color: #999; font-style: italic; }
 
   /* EVAL LOADING OVERLAY */
@@ -629,65 +676,71 @@
 <!-- MODAL -->
 <div class="overlay" id="modal" style="display:none" onclick="overlayClick(event)">
   <div class="modal">
-    <div class="modal-title" id="modal-title">Add Map</div>
-    <div class="field-group">
-      <div class="field full">
-        <label class="lbl">Title</label>
-        <input type="text" id="f-title" placeholder="e.g. De l'Isle — Carte de la Louisiane">
-      </div>
-      <div class="field">
-        <label class="lbl">Year</label>
-        <input type="text" id="f-year" placeholder="1718">
-      </div>
-      <div class="field">
-        <label class="lbl">Cartographer</label>
-        <input type="text" id="f-cartographer" placeholder="De l'Isle">
-      </div>
-      <div class="field">
-        <label class="lbl">Act</label>
-        <select id="f-act">
-          <option value="1">Act I — French (1688–1719)</option>
-          <option value="2">Act II — Contest (1720–1754)</option>
-          <option value="3">Act III — British (1763–1780)</option>
-        </select>
-      </div>
-      <div class="field">
-        <label class="lbl">Status</label>
-        <select id="f-status">
-          <option value="owned">Owned</option>
-          <option value="negotiating">Negotiating</option>
-          <option value="target">Target</option>
-          <option value="watching">Watching</option>
-          <option value="passed">Passed</option>
-        </select>
-      </div>
-      <div class="field">
-        <label class="lbl">Price / Ask ($)</label>
-        <input type="text" id="f-price" placeholder="$3,500">
-      </div>
-      <div class="field">
-        <label class="lbl">Dealer</label>
-        <input type="text" id="f-dealer" placeholder="Barry Ruderman">
-      </div>
-      <div class="field full">
-        <label class="lbl">Priority</label>
-        <div class="star-picker" id="star-picker"></div>
-      </div>
-      <div class="field full">
-        <label class="lbl">Listing URL</label>
-        <input type="url" id="f-url" placeholder="https://www.raremaps.com/gallery/detail/…">
-      </div>
-      <div class="field full">
-        <label class="lbl" style="display:flex;justify-content:space-between;align-items:center;">
-          Notes
-          <a class="evaluate-link" onclick="evaluateMap()">Evaluate →</a>
-        </label>
-        <textarea id="f-notes" placeholder="State, condition, negotiation context, narrative fit…"></textarea>
+    <div class="modal-header">
+      <span class="modal-header-brand">Holocene Maps · Collection</span>
+      <button class="modal-header-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-title" id="modal-title">Add map</div>
+      <div class="field-group">
+        <div class="field full">
+          <label class="lbl">Title</label>
+          <input type="text" id="f-title" placeholder="e.g. De l'Isle — Carte de la Louisiane">
+        </div>
+        <div class="field">
+          <label class="lbl">Year</label>
+          <input type="text" id="f-year" placeholder="1718">
+        </div>
+        <div class="field">
+          <label class="lbl">Cartographer</label>
+          <input type="text" id="f-cartographer" placeholder="De l'Isle">
+        </div>
+        <div class="field">
+          <label class="lbl">Act</label>
+          <select id="f-act">
+            <option value="1">Act I — French (1688–1719)</option>
+            <option value="2">Act II — Contest (1720–1754)</option>
+            <option value="3">Act III — British (1763–1780)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="lbl">Status</label>
+          <select id="f-status">
+            <option value="owned">Owned</option>
+            <option value="negotiating">Negotiating</option>
+            <option value="target">Target</option>
+            <option value="watching">Watching</option>
+            <option value="passed">Passed</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="lbl">Price / Ask ($)</label>
+          <input type="text" id="f-price" placeholder="$3,500">
+        </div>
+        <div class="field">
+          <label class="lbl">Dealer</label>
+          <input type="text" id="f-dealer" placeholder="Barry Ruderman">
+        </div>
+        <div class="field full">
+          <label class="lbl">Priority</label>
+          <div class="star-picker" id="star-picker"></div>
+        </div>
+        <div class="field full">
+          <label class="lbl">Listing URL</label>
+          <input type="url" id="f-url" placeholder="https://www.raremaps.com/gallery/detail/…">
+        </div>
+        <div class="field full">
+          <label class="lbl" style="display:flex;justify-content:space-between;align-items:center;">
+            Notes
+            <a class="evaluate-link" onclick="evaluateMap()">Evaluate →</a>
+          </label>
+          <textarea id="f-notes" placeholder="State, condition, negotiation context, narrative fit…"></textarea>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" id="save-btn" onclick="saveMap()">Add Map</button>
+      <button class="btn-save" id="save-btn" onclick="saveMap()">Add map</button>
     </div>
   </div>
 </div>
@@ -1088,7 +1141,7 @@ async function saveMap() {
     url: document.getElementById('f-url').value.trim(),
     notes: document.getElementById('f-notes').value.trim(),
   };
-  if (!payload.title) { btn.textContent = editingId ? 'Update' : 'Add Map'; return; }
+  if (!payload.title) { btn.textContent = editingId ? 'Update' : 'Add map'; return; }
 
   if (editingId) {
     await db.from('maps').update(payload).eq('id', editingId);
@@ -1212,8 +1265,8 @@ function toggleCard(id) {
 // MODAL
 function openAdd() {
   editingId = null;
-  document.getElementById('modal-title').textContent = 'Add Map';
-  document.getElementById('save-btn').textContent = 'Add Map';
+  document.getElementById('modal-title').textContent = 'Add map';
+  document.getElementById('save-btn').textContent = 'Add map';
   ['title','year','cartographer','dealer','price','url','notes'].forEach(f => document.getElementById('f-'+f).value = '');
   document.getElementById('f-act').value = '1';
   document.getElementById('f-status').value = 'watching';
@@ -1242,7 +1295,7 @@ function openEdit(id) {
 
 function closeModal() {
   document.getElementById('modal').style.display = 'none';
-  document.getElementById('save-btn').textContent = editingId ? 'Update' : 'Add Map';
+  document.getElementById('save-btn').textContent = editingId ? 'Update' : 'Add map';
   editingId = null;
 }
 
