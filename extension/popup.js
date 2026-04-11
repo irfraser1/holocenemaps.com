@@ -157,30 +157,54 @@ async function saveMap() {
   }
 }
 
-// Auth: sign in with email/password
+// Auth: sign in with Google via chrome.identity
 async function signIn() {
-  const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
   const errEl = document.getElementById('auth-error');
   errEl.textContent = '';
-
-  if (!email || !password) {
-    errEl.textContent = 'Enter email and password';
-    return;
-  }
-
   document.getElementById('btn-auth').textContent = 'Signing in…';
 
-  const { error } = await db.auth.signInWithPassword({ email, password });
+  try {
+    const redirectUrl = chrome.identity.getRedirectURL();
 
-  if (error) {
-    errEl.textContent = error.message;
-    document.getElementById('btn-auth').textContent = 'Sign In';
-    return;
+    // Build Supabase Google OAuth URL
+    const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
+
+    // Open Chrome's auth popup
+    const responseUrl = await new Promise((resolve, reject) => {
+      chrome.identity.launchWebAuthFlow(
+        { url: authUrl, interactive: true },
+        (url) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(url);
+          }
+        }
+      );
+    });
+
+    // Parse tokens from the hash fragment
+    const hashParams = new URLSearchParams(responseUrl.split('#')[1]);
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+
+    if (!accessToken) throw new Error('No access token received');
+
+    // Set the Supabase session with the returned tokens
+    const { error } = await db.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (error) throw error;
+
+    // Signed in — proceed to scrape
+    startScraping();
+
+  } catch (e) {
+    errEl.textContent = e.message || 'Sign-in failed';
+    document.getElementById('btn-auth').textContent = 'Sign in with Google';
   }
-
-  // Signed in — proceed to scrape
-  startScraping();
 }
 
 // Scrape current tab
@@ -322,10 +346,5 @@ document.getElementById('btn-save').addEventListener('click', saveMap);
 document.getElementById('btn-cancel').addEventListener('click', () => window.close());
 document.getElementById('btn-retry').addEventListener('click', () => show('state-form'));
 document.getElementById('btn-auth').addEventListener('click', signIn);
-
-// Allow Enter key to submit sign-in
-document.getElementById('auth-password').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') signIn();
-});
 
 init();
