@@ -389,13 +389,11 @@
         const { data: uploadData, error: uploadErr } = await db.storage
           .from('map-images')
           .upload(filename, resized, { contentType: 'image/jpeg', upsert: false });
-        console.log('upload result:', uploadData, uploadErr);
         if (!uploadErr && uploadData) {
           const { data: urlData } = db.storage.from('map-images').getPublicUrl(filename);
           currentScanData.image_url = urlData.publicUrl;
-          console.log('image_url set:', currentScanData.image_url);
         }
-      } catch(imgErr) { console.error('IMAGE UPLOAD FAILED:', imgErr); }
+      } catch(imgErr) { /* scan data still works without image */ }
       document.getElementById('result-summary').textContent = data.summary || '';
 
       const wrap = document.getElementById('result-image-wrap');
