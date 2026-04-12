@@ -70,6 +70,12 @@ serve(async (req) => {
   "year": "estimated year or date range",
   "cartographer": "mapmaker name",
   "region": "geographic region depicted",
+  "publisher": "publisher if identifiable, or null",
+  "edition": "edition or state if identifiable, or null",
+  "technique": "printing technique (e.g. copperplate engraving, lithograph), or null",
+  "dimensions_estimate": "estimated dimensions if possible, or null",
+  "condition_notes": "visible condition observations from the image, or null",
+  "rarity": "rarity assessment (common, uncommon, scarce, rare, very rare), or null",
   "summary": "A 2-3 sentence expert analysis describing the map's historical significance and estimated market value range",
   "confidence": {
     "title": "high" | "medium" | "low",
@@ -77,7 +83,9 @@ serve(async (req) => {
     "cartographer": "high" | "medium" | "low",
     "region": "high" | "medium" | "low"
   },
-  "uncertainties": "Brief note about anything you're unsure of, or null"
+  "uncertainties": "Brief note about anything you're unsure of, or null",
+  "conversation_prompt": "A single short contextual prompt (max 12 words) to tease useful follow-up information. Choose from: dealer questions worth asking, edition/state uncertainties, condition red flags, or authentication concerns. Conversational and non-alarming. Set to null if nothing useful to add.",
+  "conversation_response": "The follow-up content shown when the user taps the prompt. 3-5 sentences. Specific to this map. Include concrete questions to ask a dealer or specific things to look for. Tone: knowledgeable friend, not textbook. Set to null if conversation_prompt is null."
 }
 
 If the image is NOT a map, respond with exactly: {"error": "I only know about maps, unfortunately! Point your camera at an antique or vintage map and I'll tell you everything about it. 🗺️"}
@@ -106,7 +114,7 @@ Return ONLY valid JSON, no markdown fences, no extra text.`;
             ],
           },
         ],
-        max_tokens: 400,
+        max_tokens: 700,
         temperature: 0.3,
       }),
     });

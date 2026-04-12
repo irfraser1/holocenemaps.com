@@ -108,105 +108,165 @@
       display: none;
       min-height: 100dvh;
       flex-direction: column;
+      background: #fafaf9;
       animation: fadeUp 0.5s ease forwards;
     }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 
     .result-header {
-      background: var(--navy2);
-      border-bottom: 1px solid rgba(201,168,76,0.2);
-      padding: 20px 24px 16px;
+      background: #fafaf9;
+      border-bottom: 1px solid #e7e5e4;
+      padding: 16px 24px;
       display: flex; align-items: center; justify-content: space-between;
     }
-    .result-wordmark { font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+    .result-wordmark { font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #15803d; }
     .btn-back {
-      font-family: 'Inter', sans-serif; font-size: 12px; color: var(--text-muted);
+      font-family: 'Inter', sans-serif; font-size: 12px; color: #78716c;
       background: none; border: none; cursor: pointer; padding: 4px 0;
       display: flex; align-items: center; gap: 6px;
     }
-    .btn-back:hover { color: var(--cream); }
+    .btn-back:hover { color: #1a1a1a; }
 
     .result-image-wrap {
-      width: 100%; max-height: 240px; overflow: hidden; position: relative;
-      background: var(--navy3);
+      width: 100%; max-height: 220px; overflow: hidden; position: relative;
+      background: #e7e5e4;
     }
-    .result-image-wrap img { width: 100%; height: 240px; object-fit: cover; filter: brightness(0.85); }
+    .result-image-wrap img { width: 100%; height: 220px; object-fit: cover; }
     .result-image-overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to bottom, transparent 50%, var(--navy2) 100%);
+      background: linear-gradient(to bottom, transparent 60%, #fafaf9 100%);
     }
 
-    .result-body { padding: 28px 24px 40px; flex: 1; background: var(--navy2); }
+    .result-body { padding: 0 20px 40px; flex: 1; background: #fafaf9; }
 
-    .result-label {
-      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
-      color: var(--gold); font-family: 'Inter', sans-serif; font-weight: 600;
-      margin-bottom: 10px;
+    /* ── SECTION A: IDENTIFICATION CARD ── */
+    .id-card {
+      background: #ffffff;
+      border: 2px solid #e7e5e4;
+      border-radius: 12px;
+      padding: 28px 24px 24px;
+      margin-top: -16px;
+      position: relative;
+      z-index: 2;
+    }
+    .id-label {
+      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: #15803d; margin-bottom: 12px;
+    }
+    .id-title {
+      font-family: 'Spectral', serif; font-size: clamp(1.3rem, 5vw, 1.75rem);
+      font-weight: 400; line-height: 1.25; color: #1a1a1a; margin-bottom: 20px;
+    }
+    .id-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
+      margin-bottom: 20px;
+    }
+    .id-field { display: flex; flex-direction: column; gap: 3px; }
+    .id-field.full { grid-column: 1 / -1; }
+    .id-field-label {
+      font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase; color: #78716c;
+    }
+    .id-field-value {
+      font-family: 'Spectral', serif; font-size: 15px;
+      color: #1a1a1a; line-height: 1.4;
+    }
+    .id-field-value.uncertain {
+      color: #a8a29e;
+    }
+    .id-field-value .approx { color: #a8a29e; font-size: 12px; }
+
+    .id-divider { height: 1px; background: #e7e5e4; margin: 4px 0 18px; }
+
+    .id-summary {
+      font-family: 'Spectral', serif; font-size: 14px; line-height: 1.7;
+      color: #44403c; margin-bottom: 4px;
     }
 
-    .result-title {
-      font-family: 'Spectral', serif; font-size: clamp(1.4rem, 5vw, 2rem);
-      font-weight: 400; line-height: 1.2; color: var(--cream); margin-bottom: 20px;
-    }
-
-    .result-meta {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;
-    }
-    .meta-chip {
-      background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25);
-      padding: 5px 12px; border-radius: 20px;
-      font-family: 'Spectral', serif; font-size: 12px; color: var(--cream2);
-    }
-
-    .result-divider { height: 1px; background: rgba(201,168,76,0.15); margin-bottom: 24px; }
-
-    .confidence-dot {
-      display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 6px; vertical-align: middle;
-    }
-    .confidence-dot.high { background: #4ade80; }
-    .confidence-dot.medium { background: #facc15; }
-    .confidence-dot.low { background: #f87171; }
-
-    .result-uncertainties {
+    .id-uncertainties {
       font-family: 'Spectral', serif; font-style: italic;
-      font-size: 13px; line-height: 1.6; color: var(--text-muted);
-      margin-bottom: 20px; padding: 12px 16px;
-      background: rgba(201,168,76,0.06); border-left: 2px solid rgba(201,168,76,0.3);
+      font-size: 13px; line-height: 1.6; color: #78716c;
+      margin-top: 14px; padding: 10px 14px;
+      background: #fafaf9; border-left: 2px solid #d6d3d1;
+      border-radius: 0 6px 6px 0;
     }
 
-    .result-summary {
-      font-family: 'Spectral', serif; font-size: 15px; line-height: 1.75;
-      color: var(--cream2); margin-bottom: 36px;
+    /* ── SECTION B: CONVERSATION CARD ── */
+    .conv-card {
+      background: #f5f5f4;
+      border: 1px solid #e7e5e4;
+      border-radius: 12px;
+      margin-top: 14px;
+      overflow: hidden;
     }
+    .conv-prompt {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+    .conv-prompt:hover { background: #eeeceb; }
+    .conv-prompt-text {
+      font-family: 'Spectral', serif; font-size: 14px; font-style: italic;
+      color: #44403c; line-height: 1.5; flex: 1;
+    }
+    .conv-prompt-arrow {
+      font-size: 14px; color: #78716c; margin-left: 12px; flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .conv-prompt-arrow.open { transform: rotate(90deg); }
+    .conv-response {
+      display: none;
+      padding: 0 20px 18px;
+      font-family: 'Spectral', serif; font-size: 14px;
+      line-height: 1.7; color: #57534e;
+      border-top: 1px solid #e7e5e4;
+    }
+    .conv-response.open { display: block; padding-top: 16px; }
+    .conv-done {
+      display: none;
+      padding: 8px 20px 14px;
+      text-align: right;
+    }
+    .conv-done.open { display: block; }
+    .conv-done-btn {
+      font-family: 'Inter', sans-serif; font-size: 11px;
+      color: #78716c; background: none; border: none; cursor: pointer;
+      letter-spacing: 0.04em;
+    }
+    .conv-done-btn:hover { color: #1a1a1a; }
 
-    .result-ctas { display: flex; flex-direction: column; gap: 12px; }
+    /* ── CTAs ── */
+    .result-ctas { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
 
     .btn-cta-primary {
       width: 100%; padding: 15px;
-      background: var(--gold); color: var(--navy);
-      border: none; border-radius: 2px; cursor: pointer;
+      background: #15803d; color: #ffffff;
+      border: none; border-radius: 8px; cursor: pointer;
       font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
-      letter-spacing: 0.06em; text-align: center;
+      letter-spacing: 0.04em; text-align: center;
       text-decoration: none; display: block;
       transition: background 0.2s;
     }
-    .btn-cta-primary:hover { background: var(--gold-light); }
+    .btn-cta-primary:hover { background: #166534; }
 
     .btn-cta-secondary {
       width: 100%; padding: 14px;
-      background: transparent; color: var(--text-muted);
-      border: 1px solid rgba(245,240,232,0.15); border-radius: 2px; cursor: pointer;
+      background: transparent; color: #78716c;
+      border: 1px solid #d6d3d1; border-radius: 8px; cursor: pointer;
       font-family: 'Inter', sans-serif; font-size: 13px;
       letter-spacing: 0.04em;
       transition: color 0.2s, border-color 0.2s;
     }
-    .btn-cta-secondary:hover { color: var(--cream); border-color: rgba(245,240,232,0.35); }
+    .btn-cta-secondary:hover { color: #1a1a1a; border-color: #a8a29e; }
 
     .result-footer {
       padding: 20px 24px;
       font-family: 'Spectral', serif; font-style: italic;
-      font-size: 12px; color: var(--text-muted); text-align: center;
-      background: var(--navy);
+      font-size: 12px; color: #a8a29e; text-align: center;
+      background: #fafaf9; border-top: 1px solid #e7e5e4;
     }
 
     /* ── ERROR message inside loading ── */
@@ -250,12 +310,29 @@
     <div class="result-image-overlay"></div>
   </div>
   <div class="result-body">
-    <div class="result-label">Map Identified</div>
-    <h2 class="result-title" id="result-title">—</h2>
-    <div class="result-meta" id="result-meta"></div>
-    <div class="result-divider"></div>
-    <div class="result-uncertainties" id="result-uncertainties" style="display:none"></div>
-    <p class="result-summary" id="result-summary"></p>
+    <!-- Section A: Identification -->
+    <div class="id-card" id="id-card">
+      <div class="id-label">Map Identified</div>
+      <h2 class="id-title" id="result-title">—</h2>
+      <div class="id-grid" id="id-grid"></div>
+      <div class="id-divider"></div>
+      <p class="id-summary" id="result-summary"></p>
+      <div class="id-uncertainties" id="result-uncertainties" style="display:none"></div>
+    </div>
+
+    <!-- Section B: Conversation -->
+    <div class="conv-card" id="conv-card" style="display:none">
+      <div class="conv-prompt" id="conv-prompt" onclick="toggleConversation()">
+        <span class="conv-prompt-text" id="conv-prompt-text"></span>
+        <span class="conv-prompt-arrow" id="conv-arrow">→</span>
+      </div>
+      <div class="conv-response" id="conv-response"></div>
+      <div class="conv-done" id="conv-done">
+        <button class="conv-done-btn" onclick="collapseConversation()">Done ✓</button>
+      </div>
+    </div>
+
+    <!-- CTAs -->
     <div class="result-ctas">
       <button onclick="saveToCollection()" class="btn-cta-primary">Save to My Collection →</button>
       <button class="btn-cta-secondary" onclick="reset()">Scan Another Map</button>
@@ -363,22 +440,58 @@
 
       if (data.error) { showFriendly(data.error); return; }
 
-      // Build result
+      // Build result — Section A: Identification
       document.getElementById('result-title').textContent = data.title || 'Map Identified';
 
-      const meta = document.getElementById('result-meta');
       const conf = data.confidence || {};
-      meta.innerHTML = '';
-      if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}<span class="confidence-dot ${conf.year || ''}"></span></span>`;
-      if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}<span class="confidence-dot ${conf.cartographer || ''}"></span></span>`;
-      if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}<span class="confidence-dot ${conf.region || ''}"></span></span>`;
+      const grid = document.getElementById('id-grid');
+      grid.innerHTML = '';
 
+      function addField(label, value, confLevel, opts = {}) {
+        if (!value) return;
+        const isUncertain = confLevel === 'low' || confLevel === 'medium';
+        const prefix = (label === 'Year' && isUncertain) ? '<span class="approx">c. </span>' : '';
+        grid.innerHTML += `<div class="id-field${opts.full ? ' full' : ''}">
+          <span class="id-field-label">${label}</span>
+          <span class="id-field-value${isUncertain ? ' uncertain' : ''}">${prefix}${value}</span>
+        </div>`;
+      }
+
+      // Primary fields
+      addField('Cartographer', data.cartographer, conf.cartographer);
+      addField('Year', data.year, conf.year);
+      addField('Region', data.region, conf.region);
+      addField('Publisher', data.publisher);
+      addField('Edition / State', data.edition);
+      addField('Technique', data.technique);
+      addField('Dimensions', data.dimensions_estimate);
+      addField('Condition', data.condition_notes, null, { full: true });
+      addField('Rarity', data.rarity);
+
+      // Uncertainties
       const uncEl = document.getElementById('result-uncertainties');
       if (data.uncertainties) {
-        uncEl.textContent = '💡 ' + data.uncertainties;
+        uncEl.textContent = data.uncertainties;
         uncEl.style.display = 'block';
       } else {
         uncEl.style.display = 'none';
+      }
+
+      // Summary
+      document.getElementById('result-summary').textContent = data.summary || '';
+
+      // Section B: Conversation
+      const convCard = document.getElementById('conv-card');
+      if (data.conversation_prompt && data.conversation_response) {
+        document.getElementById('conv-prompt-text').textContent = data.conversation_prompt;
+        document.getElementById('conv-response').textContent = data.conversation_response;
+        // Reset state
+        document.getElementById('conv-response').classList.remove('open');
+        document.getElementById('conv-done').classList.remove('open');
+        document.getElementById('conv-arrow').classList.remove('open');
+        convCard.style.display = '';
+      } else {
+        convCard.style.display = 'none';
       }
 
       currentScanData = data;
@@ -394,7 +507,6 @@
           currentScanData.image_url = urlData.publicUrl;
         }
       } catch(imgErr) { /* scan data still works without image */ }
-      document.getElementById('result-summary').textContent = data.summary || '';
 
       const wrap = document.getElementById('result-image-wrap');
       const img = document.getElementById('result-img');
@@ -410,6 +522,27 @@
       stopLoadingMessages();
       showFriendly('Something went wrong. Please try again.');
     }
+  }
+
+  // Conversation toggle
+  function toggleConversation() {
+    const resp = document.getElementById('conv-response');
+    const arrow = document.getElementById('conv-arrow');
+    const done = document.getElementById('conv-done');
+    const isOpen = resp.classList.contains('open');
+    if (isOpen) {
+      collapseConversation();
+    } else {
+      resp.classList.add('open');
+      arrow.classList.add('open');
+      done.classList.add('open');
+    }
+  }
+
+  function collapseConversation() {
+    document.getElementById('conv-response').classList.remove('open');
+    document.getElementById('conv-arrow').classList.remove('open');
+    document.getElementById('conv-done').classList.remove('open');
   }
 
   function reset() {
