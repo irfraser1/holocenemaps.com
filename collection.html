@@ -91,29 +91,30 @@
   /* THESIS PANEL */
   .thesis-panel {
     background: var(--bg); border-bottom: 1px solid var(--border);
-    overflow: hidden; transition: max-height 0.3s ease; max-height: 200px;
+    overflow: hidden; transition: max-height 0.3s ease; max-height: 400px;
   }
   .thesis-panel.collapsed { max-height: 0; }
-  .thesis-inner { padding: 16px 24px; display: flex; align-items: flex-start; gap: 14px; }
+  .thesis-inner { padding: 16px 24px; }
   .thesis-label {
     font-size: 11px; font-weight: 600;
     letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--muted); white-space: nowrap; padding-top: 3px; flex-shrink: 0;
+    color: var(--muted); margin-bottom: 8px; display: block;
   }
   .thesis-text {
-    font-size: 14px; color: var(--text); line-height: 1.6; flex: 1;
-    min-width: 0; word-break: normal; overflow-wrap: break-word;
+    font-size: 14px; color: var(--text); line-height: 1.6;
+    display: block; width: 100%; word-break: normal; overflow-wrap: break-word;
+    margin-bottom: 10px;
   }
   .thesis-text.editing { display: none; }
   #thesis-edit-input {
-    flex: 1; background: var(--card);
+    background: var(--card);
     border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
     font-size: 14px; color: var(--text); outline: none; resize: none;
-    line-height: 1.6; width: 100%; display: none;
+    line-height: 1.6; width: 100%; display: none; margin-bottom: 10px;
   }
   #thesis-edit-input:focus { border-color: var(--green); }
   #thesis-edit-input.editing { display: block; }
-  .thesis-actions { display: flex; gap: 8px; flex-shrink: 0; padding-top: 2px; }
+  .thesis-actions { display: flex; gap: 8px; }
   .thesis-btn {
     font-size: 12px; font-weight: 500;
     background: transparent; border: 1px solid var(--border); border-radius: 8px;
