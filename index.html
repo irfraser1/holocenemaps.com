@@ -211,8 +211,8 @@
       display: flex; align-items: center; justify-content: space-between;
     }
     .result-wordmark {
-      font-family: system-ui, sans-serif; font-size: 15px; font-weight: 700;
-      color: var(--text);
+      font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700;
+      letter-spacing: 0.08em; color: var(--text);
     }
     .btn-back {
       font-family: system-ui, sans-serif; font-size: 12px; color: var(--muted);
@@ -221,90 +221,145 @@
     }
     .btn-back:hover { color: var(--text); }
 
-    .result-image-wrap {
-      width: 100%; max-height: 220px; overflow: hidden; position: relative;
-      background: var(--border);
+    /* CONFIDENCE CHIP */
+    .conf-area { padding: 16px 20px 0; background: var(--bg); }
+    .conf-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 50px;
+      font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
     }
-    .result-image-wrap img { width: 100%; height: 220px; object-fit: cover; }
+    .conf-chip.high { background: #dcfce7; color: #15803d; }
+    .conf-chip.medium { background: #fef3c7; color: #d97706; }
+    .conf-chip.low { background: #f5f5f4; color: #78716c; }
+    .conf-summary {
+      padding: 8px 20px 0; font-family: Georgia, serif; font-style: italic;
+      font-size: 14px; line-height: 1.6; color: var(--muted);
+      max-width: 600px;
+    }
+
+    /* MAP IMAGE */
+    .result-image-wrap {
+      width: 100%; max-height: 260px; overflow: hidden; position: relative;
+      background: var(--border); margin-top: 16px;
+    }
+    .result-image-wrap img { width: 100%; height: 260px; object-fit: cover; }
     .result-image-overlay {
       position: absolute; inset: 0;
       background: linear-gradient(to bottom, transparent 60%, var(--bg) 100%);
     }
 
+    /* RESULT BODY */
     .result-body {
-      padding: 0 20px 40px; flex: 1; background: var(--bg);
-    }
-    .id-card {
-      background: var(--card); border: 2px solid var(--border);
-      border-radius: 12px; padding: 28px 24px 24px;
-      margin-top: -16px; position: relative; z-index: 2;
-    }
-    .id-label {
-      font-family: system-ui, sans-serif; font-size: 10px; font-weight: 600;
-      letter-spacing: 0.16em; text-transform: uppercase;
-      color: var(--green); margin-bottom: 12px;
-    }
-    .result-title {
-      font-family: Georgia, serif; font-size: clamp(1.3rem, 5vw, 1.75rem);
-      font-weight: 400; line-height: 1.25; color: var(--text); margin-bottom: 20px;
-    }
-    .result-meta {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
-      margin-bottom: 20px;
-    }
-    .meta-chip {
-      display: flex; flex-direction: column; gap: 3px;
-    }
-    .meta-chip-label {
-      font-family: system-ui, sans-serif; font-size: 9px; font-weight: 600;
-      letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
-    }
-    .meta-chip-value {
-      font-family: Georgia, serif; font-size: 15px; color: var(--text); line-height: 1.4;
-    }
-    .confidence-dot {
-      display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 6px; vertical-align: middle;
-    }
-    .confidence-dot.high { background: #4ade80; }
-    .confidence-dot.medium { background: #facc15; }
-    .confidence-dot.low { background: #f87171; }
-    .id-divider { height: 1px; background: var(--border); margin: 4px 0 18px; }
-    .result-summary {
-      font-family: Georgia, serif; font-size: 14px; line-height: 1.7;
-      color: #44403c; margin-bottom: 4px;
-    }
-    .result-uncertainties {
-      font-family: Georgia, serif; font-style: italic;
-      font-size: 13px; line-height: 1.6; color: var(--muted);
-      margin-top: 14px; padding: 10px 14px;
-      background: var(--bg); border-left: 2px solid #d6d3d1;
-      border-radius: 0 6px 6px 0;
+      padding: 0 20px 32px; flex: 1; background: var(--bg);
     }
 
-    .result-ctas { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+    /* ID CARD */
+    .id-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+      margin-top: -16px; position: relative; z-index: 2;
+    }
+    .result-title {
+      font-family: Georgia, serif; font-size: 22px;
+      font-weight: 400; line-height: 1.3; color: var(--text); margin-bottom: 4px;
+    }
+    .result-cartographer-year {
+      font-size: 14px; color: var(--muted); margin-bottom: 16px;
+    }
+    .id-divider { height: 1px; background: var(--border); margin: 0 0 14px; }
+    .id-fields { margin-bottom: 14px; }
+    .id-field-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 7px 0; border-bottom: 1px solid #f5f5f4;
+    }
+    .id-field-row:last-child { border-bottom: none; }
+    .id-field-label {
+      font-family: system-ui, sans-serif; font-size: 13px; color: var(--muted);
+    }
+    .id-field-value {
+      font-family: system-ui, sans-serif; font-size: 13px; color: var(--text);
+      text-align: right; max-width: 60%;
+    }
+    .id-field-value.undetermined { color: #a8a29e; font-style: italic; }
+    .result-summary {
+      font-family: Georgia, serif; font-size: 14px; line-height: 1.7;
+      color: #44403c; margin-top: 14px;
+    }
+
+    /* CONVERSATION CARD */
+    .conv-card {
+      background: #f5f5f4; border: 1px solid var(--border);
+      border-radius: 12px; margin-top: 14px; overflow: hidden;
+    }
+    .conv-prompt {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+    .conv-prompt:hover { background: #eeeceb; }
+    .conv-prompt-text {
+      font-family: Georgia, serif; font-size: 14px; font-style: italic;
+      color: #44403c; line-height: 1.5; flex: 1;
+    }
+    .conv-prompt-arrow {
+      font-size: 14px; color: var(--muted); margin-left: 12px; flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .conv-prompt-arrow.open { transform: rotate(90deg); }
+    .conv-response {
+      display: none; padding: 0 20px 18px;
+      font-family: Georgia, serif; font-size: 14px;
+      line-height: 1.7; color: #57534e;
+      border-top: 1px solid var(--border);
+    }
+    .conv-response.open { display: block; padding-top: 16px; }
+
+    /* OWNERSHIP CHECKBOX CARD */
+    .own-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 20px; margin-top: 14px;
+      display: flex; gap: 14px; align-items: flex-start;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .own-card:hover { border-color: #d6d3d1; }
+    .own-checkbox {
+      width: 22px; height: 22px; border: 2px solid var(--border);
+      border-radius: 6px; flex-shrink: 0; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s; cursor: pointer;
+      -webkit-appearance: none; appearance: none;
+      background: var(--card);
+    }
+    .own-checkbox:checked {
+      background: var(--green); border-color: var(--green);
+    }
+    .own-checkbox:checked::after {
+      content: ''; display: block; width: 6px; height: 10px;
+      border: solid #fff; border-width: 0 2px 2px 0;
+      transform: rotate(45deg); margin-top: -2px;
+    }
+    .own-label { font-size: 14px; font-weight: 600; color: var(--text); }
+    .own-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ACTION BUTTONS */
+    .result-ctas { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
     .btn-cta-primary {
       width: 100%; padding: 15px;
       background: var(--green); color: #fff;
-      border: none; border-radius: 8px; cursor: pointer;
-      font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
-      letter-spacing: 0.04em; text-align: center;
+      border: none; border-radius: 50px; cursor: pointer;
+      font-family: system-ui, sans-serif; font-size: 14px; font-weight: 600;
+      letter-spacing: 0.02em; text-align: center;
       transition: background 0.2s;
     }
     .btn-cta-primary:hover { background: var(--green-dark); }
     .btn-cta-secondary {
       width: 100%; padding: 14px;
       background: transparent; color: var(--muted);
-      border: 1px solid #d6d3d1; border-radius: 8px; cursor: pointer;
-      font-family: system-ui, sans-serif; font-size: 13px;
+      border: 1px solid #d6d3d1; border-radius: 50px; cursor: pointer;
+      font-family: system-ui, sans-serif; font-size: 14px;
       transition: color 0.2s, border-color 0.2s;
     }
     .btn-cta-secondary:hover { color: var(--text); border-color: #a8a29e; }
-    .result-footer {
-      padding: 20px 24px;
-      font-family: Georgia, serif; font-style: italic;
-      font-size: 12px; color: #a8a29e; text-align: center;
-      background: var(--bg); border-top: 1px solid var(--border);
-    }
 
     /* ── ERROR ── */
     #friendly-msg {
@@ -448,25 +503,54 @@
     <span class="result-wordmark">HOLOCENE MAPS</span>
     <button class="btn-back" onclick="reset()">← Scan another</button>
   </div>
+
+  <!-- Confidence Chip -->
+  <div class="conf-area">
+    <span class="conf-chip" id="conf-chip"></span>
+  </div>
+  <p class="conf-summary" id="conf-summary"></p>
+
+  <!-- Map Photo -->
   <div class="result-image-wrap" id="result-image-wrap" style="display:none">
     <img id="result-img" src="" alt="Scanned map">
     <div class="result-image-overlay"></div>
   </div>
+
   <div class="result-body">
+    <!-- ID Card -->
     <div class="id-card">
-      <div class="id-label">Map Identified</div>
       <h2 class="result-title" id="result-title">—</h2>
-      <div class="result-meta" id="result-meta"></div>
+      <div class="result-cartographer-year" id="result-cart-year"></div>
+      <div class="id-divider"></div>
+      <div class="id-fields" id="id-fields"></div>
       <div class="id-divider"></div>
       <p class="result-summary" id="result-summary"></p>
-      <div class="result-uncertainties" id="result-uncertainties" style="display:none"></div>
     </div>
+
+    <!-- Conversation Card -->
+    <div class="conv-card" id="conv-card" style="display:none">
+      <div class="conv-prompt" onclick="toggleConversation()">
+        <span class="conv-prompt-text" id="conv-prompt-text"></span>
+        <span class="conv-prompt-arrow" id="conv-arrow">→</span>
+      </div>
+      <div class="conv-response" id="conv-response"></div>
+    </div>
+
+    <!-- Ownership Checkbox -->
+    <label class="own-card" id="own-card">
+      <input type="checkbox" class="own-checkbox" id="own-checkbox" onchange="updateSaveLabel()">
+      <div>
+        <div class="own-label">I own this map — add to my collection</div>
+        <div class="own-sub">Uncheck to add to your watchlist instead</div>
+      </div>
+    </label>
+
+    <!-- Action Buttons -->
     <div class="result-ctas">
-      <button onclick="saveToCollection()" class="btn-cta-primary">Save to My Collection →</button>
+      <button onclick="saveToCollection()" class="btn-cta-primary" id="btn-save-action">Add to Watchlist →</button>
       <button class="btn-cta-secondary" onclick="reset()">Scan Another Map</button>
     </div>
   </div>
-  <div class="result-footer">Our AI does its best, but old maps can be tricky! Double-check details that matter to you. 🗺️</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -510,16 +594,51 @@
         if (data.error) { showFriendly(data.error); return; }
 
         document.getElementById('result-title').textContent = data.title || 'Map Identified';
-        const meta = document.getElementById('result-meta');
-        const conf = data.confidence || {};
-        meta.innerHTML = '';
-        if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}<span class="confidence-dot ${conf.year || ''}"></span></span>`;
-        if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}<span class="confidence-dot ${conf.cartographer || ''}"></span></span>`;
-        if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}<span class="confidence-dot ${conf.region || ''}"></span></span>`;
 
-        const uncEl = document.getElementById('result-uncertainties');
-        if (data.uncertainties) { uncEl.textContent = '💡 ' + data.uncertainties; uncEl.style.display = 'block'; }
-        else { uncEl.style.display = 'none'; }
+        // Cartographer + year subtitle
+        let cartYear = '';
+        if (data.cartographer) cartYear += data.cartographer;
+        if (data.year) cartYear += (cartYear ? ', c. ' : 'c. ') + data.year;
+        document.getElementById('result-cart-year').textContent = cartYear;
+
+        // Confidence chip
+        const confLevel = data.overall_confidence || 'medium';
+        const confChip = document.getElementById('conf-chip');
+        confChip.className = 'conf-chip ' + confLevel;
+        const confIcons = { high: '✦', medium: '◎', low: '◯' };
+        const confLabels = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' };
+        confChip.textContent = (confIcons[confLevel] || '◎') + ' ' + (confLabels[confLevel] || 'Medium confidence');
+        document.getElementById('conf-summary').textContent = data.confidence_summary || '';
+
+        // ID fields
+        const idFields = document.getElementById('id-fields');
+        const fields = [
+          ['Region', data.region],
+          ['Publisher', data.publisher],
+          ['Edition', data.edition],
+          ['Technique', data.technique],
+          ['Dimensions', data.dimensions_estimate],
+          ['Condition', data.condition_notes],
+          ['Rarity', data.rarity]
+        ];
+        idFields.innerHTML = fields.map(([label, val]) => {
+          const v = val || 'Not determined';
+          const cls = (v === 'Not determined' || !val) ? ' undetermined' : '';
+          return `<div class="id-field-row"><span class="id-field-label">${label}</span><span class="id-field-value${cls}">${v}</span></div>`;
+        }).join('');
+
+        // Conversation card
+        if (data.conversation_prompt) {
+          document.getElementById('conv-card').style.display = '';
+          document.getElementById('conv-prompt-text').textContent = data.conversation_prompt;
+          document.getElementById('conv-response').textContent = data.conversation_response || '';
+        } else {
+          document.getElementById('conv-card').style.display = 'none';
+        }
+
+        // Reset ownership checkbox
+        document.getElementById('own-checkbox').checked = false;
+        updateSaveLabel();
 
         currentScanData = data;
         document.getElementById('result-summary').textContent = data.summary || '';
@@ -537,8 +656,23 @@
   }
 
   function saveToCollection() {
+    const owned = document.getElementById('own-checkbox').checked;
+    currentScanData._owned = owned;
     localStorage.setItem('pending_scan', JSON.stringify(currentScanData));
     window.location.href = '/collection.html';
+  }
+
+  function updateSaveLabel() {
+    const btn = document.getElementById('btn-save-action');
+    const owned = document.getElementById('own-checkbox').checked;
+    btn.textContent = owned ? 'Save to My Collection →' : 'Add to Watchlist →';
+  }
+
+  function toggleConversation() {
+    const resp = document.getElementById('conv-response');
+    const arrow = document.getElementById('conv-arrow');
+    const isOpen = resp.classList.toggle('open');
+    arrow.classList.toggle('open', isOpen);
   }
 
   function showFriendly(msg) {
@@ -629,22 +763,50 @@
       // Build result
       document.getElementById('result-title').textContent = data.title || 'Map Identified';
 
-      // Meta chips with confidence dots
-      const meta = document.getElementById('result-meta');
-      const conf = data.confidence || {};
-      meta.innerHTML = '';
-      if (data.year) meta.innerHTML += `<span class="meta-chip">c. ${data.year}<span class="confidence-dot ${conf.year || ''}"></span></span>`;
-      if (data.cartographer) meta.innerHTML += `<span class="meta-chip">${data.cartographer}<span class="confidence-dot ${conf.cartographer || ''}"></span></span>`;
-      if (data.region) meta.innerHTML += `<span class="meta-chip">${data.region}<span class="confidence-dot ${conf.region || ''}"></span></span>`;
+      // Cartographer + year subtitle
+      let cartYear = '';
+      if (data.cartographer) cartYear += data.cartographer;
+      if (data.year) cartYear += (cartYear ? ', c. ' : 'c. ') + data.year;
+      document.getElementById('result-cart-year').textContent = cartYear;
 
-      // Uncertainties
-      const uncEl = document.getElementById('result-uncertainties');
-      if (data.uncertainties) {
-        uncEl.textContent = '💡 ' + data.uncertainties;
-        uncEl.style.display = 'block';
+      // Confidence chip
+      const confLevel = data.overall_confidence || 'medium';
+      const confChip = document.getElementById('conf-chip');
+      confChip.className = 'conf-chip ' + confLevel;
+      const confIcons = { high: '✦', medium: '◎', low: '◯' };
+      const confLabels = { high: 'High confidence', medium: 'Medium confidence', low: 'Low confidence' };
+      confChip.textContent = (confIcons[confLevel] || '◎') + ' ' + (confLabels[confLevel] || 'Medium confidence');
+      document.getElementById('conf-summary').textContent = data.confidence_summary || '';
+
+      // ID fields
+      const idFields = document.getElementById('id-fields');
+      const fields = [
+        ['Region', data.region],
+        ['Publisher', data.publisher],
+        ['Edition', data.edition],
+        ['Technique', data.technique],
+        ['Dimensions', data.dimensions_estimate],
+        ['Condition', data.condition_notes],
+        ['Rarity', data.rarity]
+      ];
+      idFields.innerHTML = fields.map(([label, val]) => {
+        const v = val || 'Not determined';
+        const cls = (v === 'Not determined' || !val) ? ' undetermined' : '';
+        return `<div class="id-field-row"><span class="id-field-label">${label}</span><span class="id-field-value${cls}">${v}</span></div>`;
+      }).join('');
+
+      // Conversation card
+      if (data.conversation_prompt) {
+        document.getElementById('conv-card').style.display = '';
+        document.getElementById('conv-prompt-text').textContent = data.conversation_prompt;
+        document.getElementById('conv-response').textContent = data.conversation_response || '';
       } else {
-        uncEl.style.display = 'none';
+        document.getElementById('conv-card').style.display = 'none';
       }
+
+      // Reset ownership checkbox
+      document.getElementById('own-checkbox').checked = false;
+      updateSaveLabel();
 
       // Store for bridge
       currentScanData = data;
