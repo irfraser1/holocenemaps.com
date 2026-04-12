@@ -126,6 +126,29 @@
     margin-bottom: 10px;
   }
   .thesis-text.editing { display: none; }
+
+  /* THESIS PROMPT */
+  .thesis-prompt {
+    display: none; padding: 16px; margin-bottom: 12px;
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+    animation: fadeDropdown 0.3s ease;
+  }
+  .thesis-prompt.visible { display: block; }
+  .thesis-prompt-text {
+    font-size: 14px; line-height: 1.6; color: #1a1a1a; margin-bottom: 12px;
+  }
+  .thesis-prompt-actions { display: flex; align-items: center; gap: 12px; }
+  .thesis-prompt-btn {
+    background: var(--green); color: #fff; border: none; border-radius: 50px;
+    padding: 9px 18px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .thesis-prompt-btn:hover { background: var(--green-dark); }
+  .thesis-prompt-dismiss {
+    font-size: 12px; color: var(--muted); background: none; border: none;
+    cursor: pointer; padding: 0;
+  }
+  .thesis-prompt-dismiss:hover { color: var(--text); }
   #thesis-edit-input {
     background: var(--card);
     border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
@@ -685,6 +708,14 @@
     </div>
     <div class="thesis-text-preview" id="thesis-preview"></div>
     <div class="thesis-body">
+      <!-- Thesis Prompt -->
+      <div class="thesis-prompt" id="thesis-prompt">
+        <div class="thesis-prompt-text">Your collection is more powerful with a thesis. Add one now to get AI evaluations tailored to your goals.</div>
+        <div class="thesis-prompt-actions">
+          <button class="thesis-prompt-btn" onclick="acceptThesisPrompt()">Add Thesis</button>
+          <button class="thesis-prompt-dismiss" onclick="dismissThesisPrompt()">Maybe later</button>
+        </div>
+      </div>
       <span class="thesis-text" id="thesis-display"></span>
       <textarea id="thesis-edit-input" rows="2"></textarea>
       <div class="thesis-actions">
@@ -937,6 +968,7 @@ let expandedId = null;
 let userThesis = '';
 let radarMatches = [];
 let currentTab = 'collection';
+let needsThesisPrompt = false;
 
 // STAR PICKER
 function renderStars(val) {
@@ -1039,6 +1071,16 @@ async function showApp() {
   } else {
     await checkProfile(false);
   }
+  // Check no-thesis state and set prompt flag
+  if (!userThesis || userThesis.trim() === '' || userThesis === 'Antique and vintage maps') {
+    needsThesisPrompt = true;
+  }
+  // New user direct-load trigger: ?new=true
+  if (new URLSearchParams(window.location.search).get('new') === 'true') {
+    if (needsThesisPrompt) {
+      setTimeout(() => showThesisPrompt(), 600);
+    }
+  }
   // Check for Market Radar matches
   checkRadarBadge();
 }
@@ -1121,6 +1163,25 @@ function cancelEditThesis() {
   document.getElementById('thesis-cancel-btn').style.display = 'none';
 }
 
+// THESIS PROMPT
+function showThesisPrompt() {
+  if (!needsThesisPrompt) return;
+  const panel = document.getElementById('thesis-panel');
+  panel.classList.add('expanded');
+  document.getElementById('thesis-prompt').classList.add('visible');
+  // Scroll thesis panel into view smoothly
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function dismissThesisPrompt() {
+  document.getElementById('thesis-prompt').classList.remove('visible');
+}
+
+function acceptThesisPrompt() {
+  document.getElementById('thesis-prompt').classList.remove('visible');
+  startEditThesis();
+}
+
 async function updateThesis() {
   const thesis = document.getElementById('thesis-edit-input').value.trim();
   if (!thesis) return;
@@ -1130,6 +1191,8 @@ async function updateThesis() {
   const { error } = await db.from('profiles').upsert({ user_id: user.id, thesis }, { onConflict: 'user_id' });
   if (error) { console.error('Thesis update error:', error); btn.textContent = 'Save'; return; }
   userThesis = thesis;
+  needsThesisPrompt = false;
+  document.getElementById('thesis-prompt').classList.remove('visible');
   renderThesisPanel();
   cancelEditThesis();
   btn.textContent = 'Saved ✓';
@@ -1655,8 +1718,12 @@ function openEdit(id) {
 
 function closeModal() {
   document.getElementById('modal').style.display = 'none';
-  document.getElementById('save-btn').textContent = editingId ? 'Update' : 'Add map';
+  document.getElementById('save-btn').textContent = editingId ? 'Update' : 'Add Map';
   editingId = null;
+  // Trigger thesis prompt if needed
+  if (needsThesisPrompt) {
+    setTimeout(() => showThesisPrompt(), 600);
+  }
 }
 
 function overlayClick(e) { if (e.target === e.currentTarget) closeModal(); }
