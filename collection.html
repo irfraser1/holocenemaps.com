@@ -432,23 +432,33 @@
   }
   .star-btn.on { color: #f59e0b; }
   .modal-footer {
-    display: flex; gap: 12px; padding: 24px;
-    border-top: none; margin-top: 8px;
+    padding: 20px 24px 24px;
+    border-top: none;
   }
-  .btn-cancel {
-    flex: 1; padding: 14px;
-    background: transparent; border: 1px solid var(--border);
-    border-radius: 8px; font-size: 14px; color: var(--muted); cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-cancel:hover { border-color: #d6d3d1; color: var(--text); }
   .btn-save {
-    flex: 1; padding: 14px;
-    background: var(--green); border: none; border-radius: 8px;
+    width: 100%; padding: 15px;
+    background: var(--green); border: none; border-radius: 50px;
     font-size: 14px; font-weight: 600;
     color: #fff; cursor: pointer; transition: background 0.2s;
+    text-align: center;
   }
   .btn-save:hover { background: var(--green-dark); }
+
+  /* AI ANALYSIS */
+  .ai-analysis {
+    background: var(--alt-bg); border-radius: 12px;
+    padding: 16px; margin-top: 16px;
+  }
+  .ai-analysis-header {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; color: var(--green);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .ai-analysis-text {
+    font-size: 14px; line-height: 1.6; color: var(--muted);
+  }
+  .ai-analysis.empty { display: none; }
   .loading { text-align: center; padding: 40px; color: var(--muted); font-style: italic; }
 
   /* EVAL LOADING */
@@ -817,13 +827,10 @@
     <div class="modal-body">
       <div class="modal-title" id="modal-title">Add map</div>
       <div class="field-group">
-        <div class="field full" id="fetch-url-row">
-          <label class="lbl">Paste dealer listing URL</label>
-          <div style="display:flex;gap:8px;">
-            <input type="url" id="f-fetch-url" placeholder="https://www.raremaps.com/gallery/detail/..." style="flex:1;">
-            <button class="btn-save" id="btn-fetch-url" style="white-space:nowrap;padding:8px 14px;font-size:12px;" onclick="fetchFromUrl()">Fetch</button>
-          </div>
-          <div id="fetch-status" style="font-size:11px;color:#999;margin-top:4px;min-height:16px;"></div>
+        <!-- Hidden fetch-url elements (kept for JS compat) -->
+        <div class="field full" id="fetch-url-row" style="display:none">
+          <input type="url" id="f-fetch-url">
+          <div id="fetch-status"></div>
         </div>
         <div class="field full">
           <label class="lbl">Title</label>
@@ -877,17 +884,20 @@
           <input type="hidden" id="f-image-url">
         </div>
         <div class="field full">
-          <label class="lbl" style="display:flex;justify-content:space-between;align-items:center;">
-            Notes
-            <a class="evaluate-link" onclick="evaluateMap()">Re-evaluate based on Thesis →</a>
-          </label>
-          <textarea id="f-notes" placeholder="State, condition, negotiation context, narrative fit…"></textarea>
+          <label class="lbl">Notes</label>
+          <textarea id="f-notes" placeholder="Your notes — condition, negotiation context, narrative fit…"></textarea>
+        </div>
+        <!-- AI Analysis (read-only) -->
+        <div class="field full">
+          <div class="ai-analysis" id="ai-analysis">
+            <div class="ai-analysis-header">✦ AI Analysis</div>
+            <div class="ai-analysis-text" id="ai-analysis-text"></div>
+          </div>
         </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" id="save-btn" onclick="saveMap()">Add map</button>
+      <button class="btn-save" id="save-btn" onclick="saveMap()">Add Map</button>
     </div>
   </div>
 </div>
@@ -997,13 +1007,19 @@ async function showApp() {
       if (scan.title) document.getElementById('f-title').value = scan.title;
       if (scan.year) document.getElementById('f-year').value = scan.year;
       if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
+      if (scan._owned) document.getElementById('f-status').value = 'owned';
       if (scan.image_url) {
         document.getElementById('f-image-url').value = scan.image_url;
         document.getElementById('f-photo-preview').src = scan.image_url;
         document.getElementById('f-photo-field').style.display = '';
       }
-      const notes = [scan.region, scan.summary, '---', 'Tap Re-evaluate below for a personalized buy/watch/pass based on your thesis.'].filter(Boolean).join('\n\n');
-      if (notes) document.getElementById('f-notes').value = notes;
+      // Populate AI Analysis section (read-only)
+      const aiText = [scan.summary, scan.confidence_summary].filter(Boolean).join(' ');
+      if (aiText) {
+        document.getElementById('ai-analysis-text').textContent = aiText;
+        document.getElementById('ai-analysis').classList.remove('empty');
+      }
+      // Leave notes empty for user's own notes
     } catch(e) { localStorage.removeItem('pending_scan'); }
   } else {
     await checkProfile(false);
@@ -1577,8 +1593,8 @@ function closeDetail() {
 // MODAL
 function openAdd() {
   editingId = null;
-  document.getElementById('modal-title').textContent = 'Add map';
-  document.getElementById('save-btn').textContent = 'Add map';
+  document.getElementById('modal-title').textContent = 'Add Map';
+  document.getElementById('save-btn').textContent = 'Add Map';
   ['title','year','cartographer','dealer','price','url','notes'].forEach(f => document.getElementById('f-'+f).value = '');
   document.getElementById('f-act').value = '1';
   document.getElementById('f-status').value = 'watching';
@@ -1586,7 +1602,9 @@ function openAdd() {
   document.getElementById('f-photo-field').style.display = 'none';
   document.getElementById('f-fetch-url').value = '';
   document.getElementById('fetch-status').textContent = '';
-  document.getElementById('fetch-url-row').style.display = '';
+  // Clear AI analysis
+  document.getElementById('ai-analysis-text').textContent = '';
+  document.getElementById('ai-analysis').classList.add('empty');
   renderStars(3);
   document.getElementById('modal').style.display = 'flex';
 }
@@ -1597,7 +1615,6 @@ function openEdit(id) {
   editingId = id;
   document.getElementById('modal-title').textContent = 'Edit Map';
   document.getElementById('save-btn').textContent = 'Update';
-  document.getElementById('fetch-url-row').style.display = 'none';
   document.getElementById('f-title').value = m.title || '';
   document.getElementById('f-year').value = m.year || '';
   document.getElementById('f-cartographer').value = m.cartographer || '';
@@ -1614,6 +1631,9 @@ function openEdit(id) {
   } else {
     document.getElementById('f-photo-field').style.display = 'none';
   }
+  // Clear AI analysis for edit mode
+  document.getElementById('ai-analysis-text').textContent = '';
+  document.getElementById('ai-analysis').classList.add('empty');
   renderStars(m.priority || 3);
   document.getElementById('modal').style.display = 'flex';
 }
