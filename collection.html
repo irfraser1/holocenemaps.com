@@ -1602,7 +1602,7 @@ function toggleCard(id) {
     ${m.notes ? `<div class="detail-notes">${m.notes}</div>` : ''}
     ${(m.listing_url || m.url) ? `<a class="detail-listing-link" href="${m.listing_url || m.url}" target="_blank" rel="noopener">View Listing →</a>` : ''}
     <div class="detail-actions">
-      <button class="btn-action btn-reeval" id="reeval-btn-${m.id}" onclick="reEvaluateMap('${m.id}')">Re-evaluate ↻</button>
+      ${(userThesis && userThesis.trim() !== '' && userThesis !== 'Antique and vintage maps') ? `<button class="btn-action btn-reeval" id="reeval-btn-${m.id}" onclick="reEvaluateMap('${m.id}')">Re-evaluate ↻</button>` : ''}
       <button class="btn-action" onclick="closeDetail();openEdit('${m.id}')">Edit</button>
       <button class="btn-action btn-danger" onclick="closeDetail();deleteMap('${m.id}')">Remove</button>
     </div>
