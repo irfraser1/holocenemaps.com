@@ -97,6 +97,11 @@ Rules for overall_confidence:
 
 Every field must have a value — use "Not determined" rather than null for publisher, edition, technique, dimensions_estimate, condition_notes, and rarity if you cannot determine them from the image.
 
+Attribution guidance:
+- Examine the ENTIRE image for printed credits, publisher marks, magazine headers, page numbers, or branding — not just the cartouche. These may appear in margins, corners, or along edges.
+- For 20th century maps: if the map shows an oblique aerial or bird's-eye projection of a major American city with bold graphic colours typical of mid-century magazine illustration, check for Fortune Magazine branding or credits visible anywhere in the image. If present, attribute the publisher as "Fortune Magazine" and consider Richard Edes Harrison as the likely cartographer — he produced iconic oblique-projection city and world maps for Fortune from the 1930s through 1960s.
+- Always report any visible text credits for cartographer or publisher, even if they appear outside the main map area.
+
 If the image is NOT a map, respond with exactly: {"error": "I only know about maps, unfortunately! Point your camera at an antique or vintage map and I'll tell you everything about it. 🗺️"}
 
 Return ONLY valid JSON, no markdown fences, no extra text.`;
