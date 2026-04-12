@@ -479,9 +479,15 @@
   let currentScanData = {};
 
   async function runDemo() {
-    // Show loading
+    // Show loading, hide all homepage content
     document.getElementById('hero').style.display = 'none';
     document.getElementById('result').style.display = 'none';
+    document.querySelector('.map-showcase').style.display = 'none';
+    document.getElementById('value').style.display = 'none';
+    document.getElementById('themes').style.display = 'none';
+    document.querySelector('.cta-section').style.display = 'none';
+    document.querySelector('.site-nav').style.display = 'none';
+    document.querySelector('.site-footer').style.display = 'none';
     document.getElementById('spin').style.display = '';
     document.getElementById('loading-text').style.display = '';
     document.getElementById('friendly-msg').style.display = 'none';
@@ -588,9 +594,15 @@
     const file = e.target.files[0];
     if (!file) return;
 
-    // Show loading
+    // Show loading, hide all homepage content
     document.getElementById('hero').style.display = 'none';
     document.getElementById('result').style.display = 'none';
+    document.querySelector('.map-showcase').style.display = 'none';
+    document.getElementById('value').style.display = 'none';
+    document.getElementById('themes').style.display = 'none';
+    document.querySelector('.cta-section').style.display = 'none';
+    document.querySelector('.site-nav').style.display = 'none';
+    document.querySelector('.site-footer').style.display = 'none';
     document.getElementById('spin').style.display = '';
     document.getElementById('loading-text').style.display = '';
     document.getElementById('friendly-msg').style.display = 'none';
@@ -659,9 +671,12 @@
 
       document.getElementById('loading').style.display = 'none';
       
-      // Hide all other sections so result is visible
+      // Hide all other homepage sections so result is clean
+      document.querySelector('.map-showcase').style.display = 'none';
       document.getElementById('value').style.display = 'none';
       document.getElementById('themes').style.display = 'none';
+      document.querySelector('.cta-section').style.display = 'none';
+      document.querySelector('.site-nav').style.display = 'none';
       document.querySelector('.site-footer').style.display = 'none';
 
       const resultEl = document.getElementById('result');
@@ -680,8 +695,11 @@
     
     // Show all home sections again
     document.getElementById('hero').style.display = 'flex';
+    document.querySelector('.map-showcase').style.display = '';
     document.getElementById('value').style.display = '';
     document.getElementById('themes').style.display = '';
+    document.querySelector('.cta-section').style.display = '';
+    document.querySelector('.site-nav').style.display = '';
     document.querySelector('.site-footer').style.display = '';
     
     document.getElementById('scan-input').value = '';
