@@ -364,6 +364,7 @@
   .card-add-label { font-size: 13px; color: var(--muted); font-weight: 500; }
 
   /* DETAIL SHEET */
+  body.panel-open { overflow: hidden; position: fixed; width: 100%; }
   .detail-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.4);
     z-index: 150; display: none;
@@ -375,6 +376,8 @@
     background: var(--card); border-top: 1px solid var(--border);
     border-radius: 16px 16px 0 0;
     width: 100%; max-height: 85vh; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 28px; animation: slideUp 0.25s ease-out;
   }
   @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -1668,11 +1671,17 @@ function toggleCard(id) {
     </div>
     <div class="reeval-status" id="reeval-status"></div>
   `;
+  window._panelScrollY = window.scrollY;
+  document.body.classList.add('panel-open');
+  document.body.style.top = `-${window._panelScrollY}px`;
   document.getElementById('detail-overlay').classList.add('open');
 }
 
 function closeDetail() {
   document.getElementById('detail-overlay').classList.remove('open');
+  document.body.classList.remove('panel-open');
+  document.body.style.top = '';
+  window.scrollTo(0, window._panelScrollY || 0);
 }
 
 // MODAL
