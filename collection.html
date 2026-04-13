@@ -371,7 +371,6 @@
     align-items: flex-end; justify-content: center;
     backdrop-filter: blur(2px);
     overflow: hidden;
-    touch-action: none;
   }
   .detail-overlay.open { display: flex; }
   .detail-sheet {
@@ -381,7 +380,6 @@
     overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    touch-action: pan-y;
     padding: 28px; animation: slideUp 0.25s ease-out;
   }
   @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -1679,9 +1677,40 @@ function toggleCard(id) {
   document.body.classList.add('panel-open');
   document.body.style.top = `-${window._panelScrollY}px`;
   document.getElementById('detail-overlay').classList.add('open');
+  _setupPanelTouch();
+}
+
+// ── Panel touch scroll containment (iOS Safari) ──
+let _panelTouchY = 0;
+function _onOverlayTouch(e) { e.preventDefault(); }
+function _onSheetTouchStart(e) { _panelTouchY = e.touches[0].clientY; }
+function _onSheetTouchMove(e) {
+  const sheet = document.getElementById('detail-sheet');
+  if (!sheet) return;
+  const dy = e.touches[0].clientY - _panelTouchY;
+  const { scrollTop, scrollHeight, clientHeight } = sheet;
+  // At top and pulling down → block (prevents pull-to-refresh)
+  if (scrollTop <= 0 && dy > 0) { e.preventDefault(); return; }
+  // At bottom and pushing up → block (prevents scroll chaining)
+  if (scrollTop + clientHeight >= scrollHeight && dy < 0) { e.preventDefault(); return; }
+}
+function _setupPanelTouch() {
+  const overlay = document.getElementById('detail-overlay');
+  const sheet = document.getElementById('detail-sheet');
+  overlay.addEventListener('touchmove', _onOverlayTouch, { passive: false });
+  sheet.addEventListener('touchstart', _onSheetTouchStart, { passive: true });
+  sheet.addEventListener('touchmove', _onSheetTouchMove, { passive: false });
+}
+function _teardownPanelTouch() {
+  const overlay = document.getElementById('detail-overlay');
+  const sheet = document.getElementById('detail-sheet');
+  overlay.removeEventListener('touchmove', _onOverlayTouch);
+  sheet.removeEventListener('touchstart', _onSheetTouchStart);
+  sheet.removeEventListener('touchmove', _onSheetTouchMove);
 }
 
 function closeDetail() {
+  _teardownPanelTouch();
   document.getElementById('detail-overlay').classList.remove('open');
   document.body.classList.remove('panel-open');
   document.body.style.top = '';
