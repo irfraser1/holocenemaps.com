@@ -1399,18 +1399,20 @@ async function reEvaluateMap(id) {
 
   try {
     // Run evaluation and image backfill in parallel
+    const evalPayload = {
+      thesis: userThesis,
+      mapTitle: m.title,
+      mapYear: m.year,
+      mapCartographer: m.cartographer,
+      dealer: m.dealer,
+      price: m.price
+    };
+    console.log('evaluate-text payload:', evalPayload);
     const evalPromise = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
-      body: JSON.stringify({
-        thesis: userThesis,
-        mapTitle: m.title,
-        mapYear: m.year,
-        mapCartographer: m.cartographer,
-        dealer: m.dealer,
-        price: m.price
-      })
+      body: JSON.stringify(evalPayload)
     });
 
     let imageBackfill = null;
@@ -1427,7 +1429,10 @@ async function reEvaluateMap(id) {
     const [evalRes, imgRes] = await Promise.all([evalPromise, imageBackfill]);
 
     if (!evalRes.ok) {
-      if (statusEl) statusEl.textContent = 'Evaluation failed \u2014 try again';
+      let errMsg = 'Evaluation failed';
+      try { const errBody = await evalRes.json(); errMsg = errBody.error || errMsg; } catch (_) {}
+      console.error('evaluate-text error:', evalRes.status, errMsg);
+      if (statusEl) statusEl.textContent = errMsg;
       return;
     }
 
@@ -1438,7 +1443,8 @@ async function reEvaluateMap(id) {
     }
 
     if (parsed.error) {
-      if (statusEl) statusEl.textContent = 'Evaluation failed \u2014 try again';
+      console.error('evaluate-text returned error:', parsed.error);
+      if (statusEl) statusEl.textContent = parsed.error;
       return;
     }
 
@@ -1477,6 +1483,7 @@ async function reEvaluateMap(id) {
     }
 
   } catch (e) {
+    console.error('reEvaluateMap error:', e);
     if (statusEl) {
       statusEl.textContent = e.name === 'AbortError'
         ? 'Evaluation timed out \u2014 try again'
