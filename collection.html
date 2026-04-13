@@ -1552,6 +1552,7 @@ async function saveMap() {
   };
   if (!payload.title) { btn.textContent = editingId ? 'Update' : 'Add map'; return; }
 
+  const wasEditing = editingId;
   if (editingId) {
     await db.from('maps').update(payload).eq('id', editingId);
   } else {
@@ -1559,6 +1560,11 @@ async function saveMap() {
   }
   closeModal();
   await loadMaps();
+
+  // If we were editing an existing map, re-open its detail panel with fresh data
+  if (wasEditing) {
+    toggleCard(wasEditing);
+  }
 
   // If onboarding was deferred (new user from scan flow), trigger it now
   if (window._deferOnboarding) {
@@ -1607,6 +1613,11 @@ function stars(n) { return '★'.repeat(n||0) + '☆'.repeat(5-(n||0)); }
 function actLabel(n) { return ['','Act I','Act II','Act III'][n] || ''; }
 function actClass(n) { return ['','act1','act2','act3'][n] || ''; }
 function statusLabel(s) { return {owned:'Owned',negotiating:'Negotiating',target:'Target',watching:'Watching',passed:'Passed'}[s] || s; }
+function formatPrice(p) {
+  if (!p) return '';
+  const n = Number(String(p).replace(/[^0-9.]/g, ''));
+  return isNaN(n) || n === 0 ? String(p) : '$' + n.toLocaleString();
+}
 
 function renderStats() {
   const counts = {owned:0,negotiating:0,target:0,watching:0,passed:0};
@@ -1661,7 +1672,7 @@ function toggleCard(id) {
     <div class="detail-meta">
       ${m.cartographer ? `<span class="detail-meta-item"><strong>${m.cartographer}</strong></span>` : ''}
       ${m.dealer ? `<span class="detail-meta-item">${m.dealer}</span>` : ''}
-      ${m.price ? `<span class="detail-meta-item">$${Number(m.price).toLocaleString()}</span>` : ''}
+      ${m.price ? `<span class="detail-meta-item">${formatPrice(m.price)}</span>` : ''}
       <span class="card-status cs-${m.status}">${statusLabel(m.status)}</span>
     </div>
     ${m.notes ? `<div class="detail-notes">${m.notes}</div>` : ''}
