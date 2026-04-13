@@ -1029,8 +1029,8 @@ async function showApp() {
       if (aiText) {
         document.getElementById('ai-analysis-text').textContent = aiText;
         document.getElementById('ai-analysis').classList.remove('empty');
+        document.getElementById('f-notes').value = aiText;
       }
-      // Leave notes empty for user's own notes
     } catch(e) { localStorage.removeItem('pending_scan'); }
   } else {
     await checkProfile(false);
