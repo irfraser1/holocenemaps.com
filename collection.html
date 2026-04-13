@@ -402,14 +402,16 @@
     color: var(--green); text-decoration: none;
   }
   .detail-listing-link:hover { text-decoration: underline; }
-  .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .detail-actions { display: flex; gap: 8px; flex-wrap: nowrap; align-items: center; }
   .btn-action {
-    height: 44px; min-height: 44px; max-height: 44px;
-    padding: 0 16px; font-size: 13px; cursor: pointer;
+    height: 40px; min-height: 40px; max-height: 40px;
+    padding: 0 14px; font-size: 13px; cursor: pointer;
     border: 1px solid var(--border); border-radius: 8px;
-    background: transparent; color: var(--muted); transition: all 0.2s;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: transparent; color: var(--muted);
+    white-space: nowrap; overflow: hidden;
     display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 1; min-width: 0;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
   .btn-action:hover { background: var(--alt-bg); color: var(--text); border-color: #d6d3d1; }
   .btn-danger { border-color: #fecaca; color: #dc2626; }
@@ -417,7 +419,7 @@
   .btn-reeval { border-color: var(--green); color: var(--green); font-weight: 600; }
   .btn-reeval:hover { background: #f0fdf4; }
   .btn-reeval.loading { opacity: 0.6; pointer-events: none; }
-  .reeval-error { font-size: 12px; color: var(--muted); margin-top: 6px; display: none; }
+  .reeval-status { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 0; }
 
   @media (min-width: 700px) {
     .detail-overlay { align-items: center; }
@@ -1349,31 +1351,47 @@ async function loadMaps() {
   if (!error) { maps = data || []; renderAll(); }
 }
 
+let _reevalInFlight = false;
+
 async function reEvaluateMap(id) {
+  // Guard: block duplicate clicks
+  if (_reevalInFlight) return;
+
   const m = maps.find(x => x.id === id);
   if (!m) return;
   if (!userThesis) { alert('Please set your collection thesis first.'); return; }
 
+  // Auth check — fail fast if session is gone
+  let user;
+  try {
+    const { data } = await db.auth.getUser();
+    user = data?.user;
+  } catch (_) { /* ignore */ }
+  if (!user) {
+    const st = document.getElementById('reeval-status');
+    if (st) { st.textContent = 'Please sign in to re-evaluate this map.'; }
+    return;
+  }
+
   const btn = document.getElementById('reeval-btn-' + id);
   if (!btn) return;
-  const errEl = document.getElementById('reeval-error');
-  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  const statusEl = document.getElementById('reeval-status');
+  if (statusEl) statusEl.textContent = '';
 
-  btn.textContent = 'Evaluating…';
+  _reevalInFlight = true;
+  btn.textContent = 'Evaluating\u2026';
   btn.classList.add('loading');
 
-  // 30-second timeout
-  const timeout = setTimeout(() => {
-    btn.textContent = 'Re-evaluate ↻';
-    btn.classList.remove('loading');
-    if (errEl) { errEl.textContent = 'Evaluation timed out — try again'; errEl.style.display = 'block'; }
-  }, 30000);
+  // AbortController for real 25-second timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
 
   try {
     // Run evaluation and image backfill in parallel
     const evalPromise = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         thesis: userThesis,
         mapTitle: m.title,
@@ -1384,40 +1402,43 @@ async function reEvaluateMap(id) {
       })
     });
 
-    // Backfill image if missing and listing URL exists
     let imageBackfill = null;
     const listingUrl = m.url || m.listing_url;
     if (!m.image_url && listingUrl) {
       imageBackfill = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/scrape-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ url: listingUrl })
       }).then(r => r.json()).catch(() => null);
     }
 
     const [evalRes, imgRes] = await Promise.all([evalPromise, imageBackfill]);
-    clearTimeout(timeout);
-    const parsed = await evalRes.json();
 
-    if (parsed.error) {
-      btn.textContent = 'Re-evaluate ↻';
-      btn.classList.remove('loading');
-      if (errEl) { errEl.textContent = 'Evaluation failed — try again'; errEl.style.display = 'block'; }
+    if (!evalRes.ok) {
+      if (statusEl) statusEl.textContent = 'Evaluation failed \u2014 try again';
       return;
     }
 
-    // Build DB update payload
+    let parsed;
+    try { parsed = await evalRes.json(); } catch (_) {
+      if (statusEl) statusEl.textContent = 'Evaluation returned invalid data';
+      return;
+    }
+
+    if (parsed.error) {
+      if (statusEl) statusEl.textContent = 'Evaluation failed \u2014 try again';
+      return;
+    }
+
+    // Build DB update
     const dbUpdate = {};
     const mapIdx = maps.findIndex(x => x.id === id);
-
-    // Update notes with evaluation
     const evaluation = parsed.evaluation || '';
     if (evaluation) {
       dbUpdate.notes = evaluation;
       if (mapIdx >= 0) maps[mapIdx].notes = evaluation;
     }
-
-    // Save backfilled image
     if (imgRes && imgRes.image_url) {
       dbUpdate.image_url = imgRes.image_url;
       if (mapIdx >= 0) maps[mapIdx].image_url = imgRes.image_url;
@@ -1428,30 +1449,37 @@ async function reEvaluateMap(id) {
       renderList();
     }
 
-    // Update detail panel notes display
-    const notesEl = document.querySelector('.detail-notes');
-    if (notesEl && evaluation) {
-      notesEl.textContent = evaluation;
-    } else if (!notesEl && evaluation) {
-      // Insert notes div if it didn't exist before
-      const actionsEl = document.querySelector('.detail-actions');
-      if (actionsEl) {
-        const newNotes = document.createElement('div');
-        newNotes.className = 'detail-notes';
-        newNotes.textContent = evaluation;
-        actionsEl.parentNode.insertBefore(newNotes, actionsEl);
+    // Update the visible detail panel
+    if (evaluation) {
+      const notesEl = document.querySelector('.detail-notes');
+      if (notesEl) {
+        notesEl.textContent = evaluation;
+      } else {
+        const actionsEl = document.querySelector('.detail-actions');
+        if (actionsEl) {
+          const n = document.createElement('div');
+          n.className = 'detail-notes';
+          n.textContent = evaluation;
+          actionsEl.parentNode.insertBefore(n, actionsEl);
+        }
       }
     }
 
-    // Reset button to success state
-    btn.textContent = 'Re-evaluate ↻';
-    btn.classList.remove('loading');
-
-  } catch(e) {
-    clearTimeout(timeout);
-    btn.textContent = 'Re-evaluate ↻';
-    btn.classList.remove('loading');
-    if (errEl) { errEl.textContent = 'Evaluation failed — try again'; errEl.style.display = 'block'; }
+  } catch (e) {
+    if (statusEl) {
+      statusEl.textContent = e.name === 'AbortError'
+        ? 'Evaluation timed out \u2014 try again'
+        : 'Evaluation failed \u2014 try again';
+    }
+  } finally {
+    clearTimeout(timeoutId);
+    _reevalInFlight = false;
+    // Re-check btn existence — panel may have been closed during await
+    const b = document.getElementById('reeval-btn-' + id);
+    if (b) {
+      b.textContent = 'Re-evaluate \u21bb';
+      b.classList.remove('loading');
+    }
   }
 }
 
@@ -1638,7 +1666,7 @@ function toggleCard(id) {
       <button class="btn-action" onclick="closeDetail();openEdit('${m.id}')">Edit</button>
       <button class="btn-action btn-danger" onclick="closeDetail();deleteMap('${m.id}')">Remove</button>
     </div>
-    <div class="reeval-error" id="reeval-error"></div>
+    <div class="reeval-status" id="reeval-status"></div>
   `;
   document.getElementById('detail-overlay').classList.add('open');
 }
