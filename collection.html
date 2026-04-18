@@ -1856,6 +1856,13 @@ async function fetchImportUrl() {
     return;
   }
 
+  // Always pre-fill the Listing URL field
+  document.getElementById('f-url').value = url;
+
+  // Try to auto-detect dealer from URL
+  if (url.includes('raremaps.com')) document.getElementById('f-dealer').value = 'Barry Ruderman';
+  else if (url.includes('geographicus.com')) document.getElementById('f-dealer').value = 'Geographicus';
+
   statusEl.textContent = 'Fetching listing details…';
   statusEl.className = 'import-status loading';
   btn.disabled = true;
@@ -1868,6 +1875,13 @@ async function fetchImportUrl() {
       body: JSON.stringify({ url })
     });
     const data = await res.json();
+
+    // Handle Cloudflare / bot-protection blocks
+    if (data.blocked) {
+      statusEl.innerHTML = '⚠️ This dealer site blocked automated access. The listing URL has been saved — please <strong>copy the details from the listing page</strong> into the fields below.';
+      statusEl.className = 'import-status error';
+      return;
+    }
 
     if (data.error) {
       statusEl.textContent = 'Error: ' + data.error;
@@ -1899,8 +1913,13 @@ async function fetchImportUrl() {
 
     // Count populated fields
     const populated = [data.title, data.year, data.cartographer, data.price, data.dealer, data.image_url].filter(Boolean).length;
-    statusEl.textContent = `Imported ✓ — ${populated} fields populated. Review and save.`;
-    statusEl.className = 'import-status success';
+    if (populated > 0) {
+      statusEl.textContent = `Imported ✓ — ${populated} fields populated. Review and save.`;
+      statusEl.className = 'import-status success';
+    } else {
+      statusEl.innerHTML = '⚠️ Could not extract listing details. The URL has been saved — please <strong>fill in the details manually</strong> below.';
+      statusEl.className = 'import-status error';
+    }
 
   } catch(e) {
     statusEl.textContent = 'Failed to fetch — check the URL and try again';

@@ -112,11 +112,18 @@ serve(async (req: Request) => {
       );
     }
 
-    // Fetch the dealer page
+    // Fetch the dealer page with full browser-like headers
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
       },
+      redirect: "follow",
     });
 
     if (!res.ok) {
@@ -127,6 +134,24 @@ serve(async (req: Request) => {
     }
 
     const html = await res.text();
+
+    // Detect Cloudflare or bot-protection blocks
+    if (
+      html.includes("Attention Required! | Cloudflare") ||
+      html.includes("you have been blocked") ||
+      html.includes("cf-error-details") ||
+      html.includes("Just a moment...") ||
+      html.includes("Enable JavaScript and cookies to continue")
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: "This site is blocking automated requests (Cloudflare protection). Please copy the listing details manually.",
+          blocked: true,
+          url,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Route to the appropriate scraper
     let data;
