@@ -281,6 +281,15 @@
   .custom-select-option:hover { background: var(--alt-bg); }
   .custom-select-option.active { color: var(--green); font-weight: 600; }
 
+  /* Group headers */
+  .group-header {
+    grid-column: 1 / -1; padding: 18px 0 6px;
+    font-size: 14px; font-weight: 600; color: var(--green);
+    letter-spacing: 0.03em; text-transform: uppercase;
+    border-bottom: 1px solid var(--border); margin-bottom: 4px;
+  }
+  .group-header:first-child { padding-top: 0; }
+
   /* Hidden native selects */
   select.filter-select { display: none; }
 
@@ -828,6 +837,17 @@
       </div>
     </div>
 
+    <!-- Custom Group By Select -->
+    <div class="custom-select" id="cs-group">
+      <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-group')">All</div>
+      <div class="custom-select-menu">
+        <button class="custom-select-option active" data-value="" onclick="selectCustom('cs-group','','All')">All</button>
+        <button class="custom-select-option" data-value="act" onclick="selectCustom('cs-group','act','Act')">Act</button>
+        <button class="custom-select-option" data-value="dealer" onclick="selectCustom('cs-group','dealer','Dealer')">Dealer</button>
+        <button class="custom-select-option" data-value="cartographer" onclick="selectCustom('cs-group','cartographer','Cartographer')">Cartographer</button>
+      </div>
+    </div>
+
     <!-- Hidden native selects (used by existing JS) -->
     <select class="filter-select" id="status-filter" onchange="renderList()" style="display:none">
       <option value="">All Status</option>
@@ -842,6 +862,12 @@
       <option value="priority">Priority</option>
       <option value="act">Act</option>
       <option value="year">Year</option>
+    </select>
+    <select class="filter-select" id="group-select" onchange="renderList()" style="display:none">
+      <option value="">All</option>
+      <option value="act">Act</option>
+      <option value="dealer">Dealer</option>
+      <option value="cartographer">Cartographer</option>
     </select>
     <!-- Hidden act filter buttons (used by JS) -->
     <button class="filter-btn all active" id="f-all" onclick="setActFilter(0)" style="display:none">All Acts</button>
@@ -1709,30 +1735,66 @@ function renderStats() {
   ).join('') + `<div class="stat"><span class="stat-num">${maps.length}</span>Total</div>`;
 }
 
+function renderCard(m) {
+  return `<div class="card" id="card-${m.id}" onclick="toggleCard('${m.id}')">
+    ${m.image_url
+      ? `<img class="card-img" src="${m.image_url}" alt="" loading="lazy"><div class="card-gradient"></div>`
+      : `<div class="card-placeholder"><div class="card-placeholder-icon">⊕</div></div><div class="card-gradient"></div>`
+    }
+    <div class="card-stars">${stars(m.priority)}</div>
+    <div class="card-body">
+      <div class="card-act-year">${m.cartographer || ''}${m.cartographer && m.year ? ' · ' : ''}${m.year || ''}</div>
+      <div class="card-title">${m.title}</div>
+      <div class="card-status-row">
+        <span class="card-status cs-${m.status}">${statusLabel(m.status)}</span>
+        ${(m.listing_url || m.url) ? `<a class="card-listing-link" href="${m.listing_url || m.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">View Listing →</a>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderList() {
   const filtered = getFiltered();
   const el = document.getElementById('map-list');
   if (!filtered.length) { el.innerHTML = '<div class="empty">No maps match your filters.</div>'; return; }
-  el.innerHTML = filtered.map(m => {
-    return `<div class="card" id="card-${m.id}" onclick="toggleCard('${m.id}')">
-      ${m.image_url
-        ? `<img class="card-img" src="${m.image_url}" alt="" loading="lazy"><div class="card-gradient"></div>`
-        : `<div class="card-placeholder"><div class="card-placeholder-icon">⊕</div></div><div class="card-gradient"></div>`
-      }
-      <div class="card-stars">${stars(m.priority)}</div>
-      <div class="card-body">
-        <div class="card-act-year">${m.cartographer || ''}${m.cartographer && m.year ? ' · ' : ''}${m.year || ''}</div>
-        <div class="card-title">${m.title}</div>
-        <div class="card-status-row">
-          <span class="card-status cs-${m.status}">${statusLabel(m.status)}</span>
-          ${(m.listing_url || m.url) ? `<a class="card-listing-link" href="${m.listing_url || m.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">View Listing →</a>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('') + `<div class="card-add" onclick="openAdd()">
+
+  const groupBy = document.getElementById('group-select').value;
+  const addCard = `<div class="card-add" onclick="openAdd()">
     <span class="card-add-icon">+</span>
     <span class="card-add-label">Add map</span>
   </div>`;
+
+  if (!groupBy) {
+    // No grouping — flat list
+    el.innerHTML = filtered.map(m => renderCard(m)).join('') + addCard;
+    return;
+  }
+
+  // Group maps by the selected field
+  const groups = {};
+  filtered.forEach(m => {
+    let key;
+    if (groupBy === 'act') key = actLabel(m.act) || 'Unassigned';
+    else if (groupBy === 'dealer') key = m.dealer || 'No Dealer';
+    else if (groupBy === 'cartographer') key = m.cartographer || 'Unknown';
+    else key = 'All';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(m);
+  });
+
+  // Sort group keys alphabetically (Acts stay in order since 'Act I' < 'Act II' < 'Act III')
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    if (a === 'Unassigned' || a === 'No Dealer' || a === 'Unknown') return 1;
+    if (b === 'Unassigned' || b === 'No Dealer' || b === 'Unknown') return -1;
+    return a.localeCompare(b);
+  });
+
+  let html = '';
+  sortedKeys.forEach(key => {
+    html += `<div class="group-header">${key}</div>`;
+    html += groups[key].map(m => renderCard(m)).join('');
+  });
+  el.innerHTML = html + addCard;
 }
 
 function renderAll() {
@@ -2114,6 +2176,9 @@ function selectCustom(wrapperId, value, label) {
     renderList();
   } else if (wrapperId === 'cs-sort') {
     document.getElementById('sort-select').value = value;
+    renderList();
+  } else if (wrapperId === 'cs-group') {
+    document.getElementById('group-select').value = value;
     renderList();
   }
 }
