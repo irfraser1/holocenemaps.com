@@ -277,32 +277,59 @@ async function startScraping() {
         function scrapeRuderman() {
           const data = { dealer: 'Barry Ruderman', url: window.location.href };
 
+          // Title from h1
           const titleEl = document.querySelector('h1');
           if (titleEl) data.title = titleEl.textContent.trim();
 
-          const bodyText = document.body.innerText;
-
-          const cartMatch = bodyText.match(/(?:Cartographer|Maker|Author)[:\s]+([^\n\r]+)/i);
-          if (cartMatch) data.cartographer = cartMatch[1].trim();
-
-          const dateMatch = bodyText.match(/(?:Date|Year)[:\s]+([^\n\r]+)/i);
-          if (dateMatch) {
-            const ym = dateMatch[1].match(/\b(1[5-9]\d{2})\b/);
-            if (ym) data.year = parseInt(ym[1], 10);
+          // Cartographer from /mapmaker/ link (raremaps uses structured links)
+          const mapmakerLink = document.querySelector('a[href*="/mapmaker/"]');
+          if (mapmakerLink) {
+            data.cartographer = mapmakerLink.textContent.trim();
+            // Normalize "DELISLE, Guillaume" → "Guillaume Delisle"
+            if (data.cartographer.includes(',')) {
+              const parts = data.cartographer.split(',').map(s => s.trim());
+              if (parts.length === 2) {
+                // "SURNAME, First" → "First Surname"
+                const surname = parts[0].charAt(0) + parts[0].slice(1).toLowerCase();
+                data.cartographer = parts[1] + ' ' + surname;
+              }
+            }
           }
 
+          // Year: extract from title text first (most reliable)
+          if (data.title) {
+            // Match year in title like "... Juin 1718" or "... 1763"
+            const titleYears = data.title.match(/\b(1[5-9]\d{2})\b/g);
+            if (titleYears) {
+              // Use the last year found in the title (usually the map date)
+              data.year = parseInt(titleYears[titleYears.length - 1], 10);
+            }
+          }
+
+          // Fallback: year from URL slug (e.g. /carte-de-la-louisiane-...-juin-1718)
           if (!data.year) {
-            const ym = bodyText.match(/\b(1[5-9]\d{2})\b/);
-            if (ym) data.year = parseInt(ym[1], 10);
+            const urlYears = window.location.pathname.match(/\b(1[5-9]\d{2})\b/g);
+            if (urlYears) {
+              data.year = parseInt(urlYears[urlYears.length - 1], 10);
+            }
           }
 
-          const priceText = document.querySelector('div.text-2xl.font-text')?.innerText;
-          if (priceText) data.price = parseInt(priceText.replace(/[$,]/g, ''), 10);
+          // Price: try multiple selectors
+          const priceEl = document.querySelector('div.text-2xl.font-text')
+            || document.querySelector('[class*="price"]');
+          if (priceEl) {
+            const priceMatch = priceEl.innerText.match(/[\d,]+/);
+            if (priceMatch) data.price = parseInt(priceMatch[0].replace(/,/g, ''), 10);
+          }
 
-          const descEl = document.querySelector('[class*="description"], [class*="desc"], .content p');
-          if (descEl) data.description = descEl.innerText.trim().slice(0, 600);
+          // Description: prefer the main description block, not the bio
+          // Raremaps puts description before the condition/cartographer bio sections
+          const descEls = document.querySelectorAll('div[class*="prose"], div[class*="description"], section p');
+          if (descEls.length > 0) {
+            data.description = descEls[0].innerText.trim().slice(0, 600);
+          }
 
-          // Ruderman uses OpenSeadragon (canvas) — no img tag for main image
+          // Image: og:image meta tag (OpenSeadragon renders canvas, no img tag)
           const ogImg = document.querySelector('meta[property="og:image"]');
           if (ogImg) {
             data.image = ogImg.getAttribute('content');

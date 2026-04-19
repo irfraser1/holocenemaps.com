@@ -48,44 +48,65 @@ function scrapeGeographicus() {
 function scrapeRuderman() {
   const data = {};
 
-  // Title
-  const titleEl = document.querySelector('h1.map-title, h1[class*="title"], h1');
+  // Title from h1
+  const titleEl = document.querySelector('h1');
   if (titleEl) data.title = titleEl.textContent.trim();
 
-  // Price
-  const priceText = document.querySelector('div.text-2xl.font-text')?.innerText;
-  if (priceText) data.price = parseInt(priceText.replace(/[$,]/g, ''), 10);
-
-  // Meta fields — Ruderman often has a structured table
-  const rows = document.querySelectorAll('table tr, .map-details tr, dl dt, .detail-row');
-  rows.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    if (text.includes('date') || text.includes('year')) {
-      const match = row.textContent.match(/\b(1[6-9]\d{2})\b/);
-      if (match) data.year = parseInt(match[1], 10);
+  // Cartographer from /mapmaker/ link (raremaps uses structured links)
+  const mapmakerLink = document.querySelector('a[href*="/mapmaker/"]');
+  if (mapmakerLink) {
+    data.cartographer = mapmakerLink.textContent.trim();
+    // Normalize "DELISLE, Guillaume" → "Guillaume Delisle"
+    if (data.cartographer.includes(',')) {
+      const parts = data.cartographer.split(',').map(s => s.trim());
+      if (parts.length === 2) {
+        const surname = parts[0].charAt(0) + parts[0].slice(1).toLowerCase();
+        data.cartographer = parts[1] + ' ' + surname;
+      }
     }
-    if (text.includes('cartographer') || text.includes('maker') || text.includes('author')) {
-      const cells = row.querySelectorAll('td, dd');
-      if (cells.length > 1) data.cartographer = cells[1].textContent.trim();
-    }
-  });
+  }
 
-  // Fallback year from page text
+  // Year: extract from title text first (most reliable)
+  if (data.title) {
+    const titleYears = data.title.match(/\b(1[5-9]\d{2})\b/g);
+    if (titleYears) {
+      data.year = parseInt(titleYears[titleYears.length - 1], 10);
+    }
+  }
+
+  // Fallback: year from URL slug
   if (!data.year) {
-    const bodyText = document.body.textContent;
-    const yearMatch = bodyText.match(/\b(1[6-9]\d{2})\b/);
-    if (yearMatch) data.year = parseInt(yearMatch[1], 10);
+    const urlYears = window.location.pathname.match(/\b(1[5-9]\d{2})\b/g);
+    if (urlYears) {
+      data.year = parseInt(urlYears[urlYears.length - 1], 10);
+    }
+  }
+
+  // Price: try multiple selectors
+  const priceEl = document.querySelector('div.text-2xl.font-text')
+    || document.querySelector('[class*="price"]');
+  if (priceEl) {
+    const priceMatch = priceEl.innerText.match(/[\d,]+/);
+    if (priceMatch) data.price = parseInt(priceMatch[0].replace(/,/g, ''), 10);
   }
 
   data.url = window.location.href;
   data.dealer = 'Barry Ruderman';
 
-  // Extract stock number from URL (e.g. raremaps.com/gallery/detail/79764)
-  const stockMatch = window.location.pathname.match(/\/detail\/([a-zA-Z0-9]+)/);
-  if (stockMatch) data.image = `https://storage.googleapis.com/raremaps/img/large/${stockMatch[1]}.jpg`;
+  // Image: og:image or construct from stock number
+  const ogImg = document.querySelector('meta[property="og:image"]');
+  if (ogImg) {
+    data.image = ogImg.getAttribute('content');
+  } else {
+    const stockMatch = window.location.pathname.match(/\/detail\/([a-zA-Z0-9]+)/);
+    if (stockMatch) data.image = `https://storage.googleapis.com/raremaps/img/large/${stockMatch[1]}.jpg`;
+  }
 
-  const descEl = document.querySelector('.map-description, .description, #description, [class*="desc"]');
-  if (descEl) data.description = descEl.textContent.trim().slice(0, 800);
+  // Description: prefer main description block, not bio
+  const descEls = document.querySelectorAll('div[class*="prose"], div[class*="description"], section p');
+  if (descEls.length > 0) {
+    data.description = descEls[0].innerText.trim().slice(0, 800);
+  }
 
   return data;
 }

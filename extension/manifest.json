@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Holocene Maps — Collection Clipper",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Clip antique map listings from Geographicus and Ruderman directly into your Holocene Maps collection.",
   "permissions": ["activeTab", "scripting", "storage", "identity"],
   "host_permissions": [
