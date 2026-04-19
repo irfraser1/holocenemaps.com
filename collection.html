@@ -826,25 +826,17 @@
       </div>
     </div>
 
-    <!-- Custom Sort Select -->
-    <div class="custom-select" id="cs-sort">
-      <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-sort')">Date Added</div>
-      <div class="custom-select-menu">
-        <button class="custom-select-option active" data-value="created" onclick="selectCustom('cs-sort','created','Date Added')">Date Added</button>
-        <button class="custom-select-option" data-value="priority" onclick="selectCustom('cs-sort','priority','Priority')">Priority</button>
-        <button class="custom-select-option" data-value="act" onclick="selectCustom('cs-sort','act','Act')">Act</button>
-        <button class="custom-select-option" data-value="year" onclick="selectCustom('cs-sort','year','Year')">Year</button>
-      </div>
     </div>
 
     <!-- Custom Group By Select -->
     <div class="custom-select" id="cs-group">
-      <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-group')">All</div>
+      <div class="custom-select-trigger" onclick="toggleCustomSelect('cs-group')">Group By</div>
       <div class="custom-select-menu">
-        <button class="custom-select-option active" data-value="" onclick="selectCustom('cs-group','','All')">All</button>
+        <button class="custom-select-option active" data-value="" onclick="selectCustom('cs-group','','Group By')">None</button>
+        <button class="custom-select-option" data-value="cartographer" onclick="selectCustom('cs-group','cartographer','Cartographer')">Cartographer</button>
         <button class="custom-select-option" data-value="act" onclick="selectCustom('cs-group','act','Act')">Act</button>
         <button class="custom-select-option" data-value="dealer" onclick="selectCustom('cs-group','dealer','Dealer')">Dealer</button>
-        <button class="custom-select-option" data-value="cartographer" onclick="selectCustom('cs-group','cartographer','Cartographer')">Cartographer</button>
+        <button class="custom-select-option" data-value="priority" onclick="selectCustom('cs-group','priority','Priority')">Priority</button>
       </div>
     </div>
 
@@ -857,17 +849,12 @@
       <option value="watching">Watching</option>
       <option value="passed">Passed</option>
     </select>
-    <select class="filter-select" id="sort-select" onchange="renderList()" style="display:none">
-      <option value="created">Date Added</option>
-      <option value="priority">Priority</option>
-      <option value="act">Act</option>
-      <option value="year">Year</option>
-    </select>
     <select class="filter-select" id="group-select" onchange="renderList()" style="display:none">
-      <option value="">All</option>
+      <option value="">None</option>
+      <option value="cartographer">Cartographer</option>
       <option value="act">Act</option>
       <option value="dealer">Dealer</option>
-      <option value="cartographer">Cartographer</option>
+      <option value="priority">Priority</option>
     </select>
     <!-- Hidden act filter buttons (used by JS) -->
     <button class="filter-btn all active" id="f-all" onclick="setActFilter(0)" style="display:none">All Acts</button>
@@ -1702,16 +1689,12 @@ function setActFilter(n) {
 function getFiltered() {
   const q = document.getElementById('search-input').value.toLowerCase();
   const s = document.getElementById('status-filter').value;
-  const sort = document.getElementById('sort-select').value;
   let result = maps.filter(m => {
     if (actFilter && m.act !== actFilter) return false;
     if (s && m.status !== s) return false;
     if (q) return [m.title, m.cartographer, m.dealer, m.notes, m.year].some(f => f?.toLowerCase().includes(q));
     return true;
   });
-  if (sort === 'priority') result.sort((a,b) => (b.priority||0) - (a.priority||0));
-  else if (sort === 'act') result.sort((a,b) => a.act - b.act);
-  else if (sort === 'year') result.sort((a,b) => (a.year||'').localeCompare(b.year||''));
   return result;
 }
 
@@ -1777,15 +1760,18 @@ function renderList() {
     if (groupBy === 'act') key = actLabel(m.act) || 'Unassigned';
     else if (groupBy === 'dealer') key = m.dealer || 'No Dealer';
     else if (groupBy === 'cartographer') key = m.cartographer || 'Unknown';
+    else if (groupBy === 'priority') key = '★'.repeat(m.priority || 0) + ' ' + (m.priority || 0) + ' Star' + ((m.priority || 0) !== 1 ? 's' : '');
     else key = 'All';
     if (!groups[key]) groups[key] = [];
     groups[key].push(m);
   });
 
-  // Sort group keys alphabetically (Acts stay in order since 'Act I' < 'Act II' < 'Act III')
+  // Sort group keys
   const sortedKeys = Object.keys(groups).sort((a, b) => {
     if (a === 'Unassigned' || a === 'No Dealer' || a === 'Unknown') return 1;
     if (b === 'Unassigned' || b === 'No Dealer' || b === 'Unknown') return -1;
+    // Priority: sort descending (5 stars first)
+    if (groupBy === 'priority') return b.localeCompare(a);
     return a.localeCompare(b);
   });
 
@@ -2173,9 +2159,6 @@ function selectCustom(wrapperId, value, label) {
   wrap.classList.remove('open');
   if (wrapperId === 'cs-status') {
     document.getElementById('status-filter').value = value;
-    renderList();
-  } else if (wrapperId === 'cs-sort') {
-    document.getElementById('sort-select').value = value;
     renderList();
   } else if (wrapperId === 'cs-group') {
     document.getElementById('group-select').value = value;
