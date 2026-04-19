@@ -343,6 +343,15 @@
     font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600;
     border: 1px solid;
   }
+  .card-status-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .card-listing-link {
+    font-size: 11px; color: var(--muted); text-decoration: none;
+    font-weight: 500; letter-spacing: 0.02em;
+    transition: color 0.15s;
+  }
+  .card-listing-link:hover { color: var(--green); text-decoration: underline; }
   .cs-owned { border-color: #bbf7d0; color: var(--green); background: #f0fdf4; }
   .cs-negotiating { border-color: #fde68a; color: #92400e; background: #fffbeb; }
   .cs-target { border-color: #fed7aa; color: #9a3412; background: #fff7ed; }
@@ -1714,7 +1723,10 @@ function renderList() {
       <div class="card-body">
         <div class="card-act-year">${actLabel(m.act)}${m.year ? ' · ' + m.year : ''}</div>
         <div class="card-title">${m.title}</div>
-        <span class="card-status cs-${m.status}">${statusLabel(m.status)}</span>
+        <div class="card-status-row">
+          <span class="card-status cs-${m.status}">${statusLabel(m.status)}</span>
+          ${(m.listing_url || m.url) ? `<a class="card-listing-link" href="${m.listing_url || m.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">View Listing →</a>` : ''}
+        </div>
       </div>
     </div>`;
   }).join('') + `<div class="card-add" onclick="openAdd()">
