@@ -1721,7 +1721,7 @@ function renderList() {
       }
       <div class="card-stars">${stars(m.priority)}</div>
       <div class="card-body">
-        <div class="card-act-year">${actLabel(m.act)}${m.year ? ' · ' + m.year : ''}</div>
+        <div class="card-act-year">${m.cartographer || ''}${m.cartographer && m.year ? ' · ' : ''}${m.year || ''}</div>
         <div class="card-title">${m.title}</div>
         <div class="card-status-row">
           <span class="card-status cs-${m.status}">${statusLabel(m.status)}</span>
