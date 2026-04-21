@@ -482,7 +482,8 @@
   }
 
   // Memory-safe resize: createImageBitmap + OffscreenCanvas
-  async function resizeForUpload(file, maxDim = 1200) {
+  // maxDim 2000 + quality 0.88 preserves engraved text detail for GPT-4o OCR
+  async function resizeForUpload(file, maxDim = 2000) {
     const bitmap = await createImageBitmap(file);
     let w = bitmap.width, h = bitmap.height;
 
@@ -496,7 +497,7 @@
     ctx.drawImage(bitmap, 0, 0, w, h);
     bitmap.close();
 
-    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.88 });
     return new File([blob], 'scan.jpg', { type: 'image/jpeg' });
   }
 
