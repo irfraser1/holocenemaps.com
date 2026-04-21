@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Holocene Maps — Collection</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1033,6 +1034,7 @@
 <script>
 const SUPABASE_URL = 'https://irfuhohbabtywbuchwpb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_EwBThey-4JHJII0aNAu1Lg_vPnFvsyG';
+const GOOGLE_CLIENT_ID = '695591998996-7fr2k9i455mbbmmvgtsp0lb2ufe0e14o.apps.googleusercontent.com';
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1063,13 +1065,28 @@ function renderStars(val) {
 }
 renderStars(3);
 
-// AUTH
-async function signInWithGoogle() {
-  const { error } = await db.auth.signInWithOAuth({
+// AUTH — Google Identity Services (popup, no redirect)
+async function handleGoogleCredential(response) {
+  const { data, error } = await db.auth.signInWithIdToken({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    token: response.credential
   });
-  if (error) document.getElementById('auth-error').textContent = error.message;
+  if (error) {
+    document.getElementById('auth-error').textContent = error.message;
+    return;
+  }
+  showApp();
+}
+
+function signInWithGoogle() {
+  // Use Google Identity Services popup
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+    auto_select: false,
+    cancel_on_tap_outside: true
+  });
+  google.accounts.id.prompt();
 }
 
 async function signIn() {
