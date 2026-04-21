@@ -1,37 +1,14 @@
 // ════════════════════════════════════════════════════════════
-// prompts.ts — Extract, Identify, and Corroborate Prompts
+// prompts.ts — Combined Extract+Identify, and Corroborate Prompts
 // ════════════════════════════════════════════════════════════
 
-// ── Call 1: EXTRACT ──
-// Observation-only. No identification, no attribution.
+// ── Call 1: EXTRACT + IDENTIFY (combined — single image pass) ──
+// Observation AND identification in one call to eliminate double image processing.
 
-export const EXTRACT_PROMPT = `You are a senior map specialist. Examine this image and record ONLY what you directly observe. Do NOT attempt identification, attribution, or historical context yet.
+export const EXTRACT_IDENTIFY_PROMPT = `You are a senior specialist at a major map auction house. Examine this map photograph carefully and complete TWO tasks in sequence:
 
-Return this JSON:
-{
-  "observed": {
-    "title_text": "Transcribe any title text exactly as printed. Empty string if illegible.",
-    "date_text": "Transcribe any date text. Empty string if none.",
-    "place_names": ["Legible place names on the map"],
-    "cartographer_text": "Any cartographer/author credit visible. Empty string if none.",
-    "publisher_text": "Any publisher/printer credit visible anywhere. Empty string if none.",
-    "engraver_text": "Any engraver credit visible (e.g., 'sculp.', 'del.', 'fecit'). Empty string if none.",
-    "page_or_plate_number": "Any page/plate number. Empty string if none.",
-    "format_clues": ["Physical clues: 'plate mark visible', 'wide margins', 'book gutter', 'fold lines', etc."],
-    "technique_clues": ["Technique evidence: 'plate mark', 'stipple shading', 'lithographic texture', etc."],
-    "condition_clues": ["Condition: 'foxing', 'centerfold', 'original hand colour', 'trimmed margins', etc."]
-  },
-  "ocr_confidence": {
-    "title_text": "high" | "medium" | "low" | "none",
-    "date_text": "high" | "medium" | "low" | "none",
-    "cartographer_text": "high" | "medium" | "low" | "none"
-  },
-  "classification": {
-    "object_category": "separately_issued_map" | "book_plate" | "atlas_plate" | "magazine_map" | "guide_map" | "other_component" | "undetermined",
-    "classification_confidence": "high" | "medium" | "low",
-    "classification_reason": "OBSERVED: [evidence]. INFERRED: [conclusion]."
-  }
-}
+TASK 1 — EXTRACT: Record what you directly observe in the image.
+TASK 2 — IDENTIFY: Using those observations and your expert knowledge, identify the map.
 
 ARCHAIC TEXT GUIDANCE:
 Maps from the 15th–18th centuries use period conventions you must recognize:
@@ -45,115 +22,122 @@ Maps from the 15th–18th centuries use period conventions you must recognize:
 - Check BELOW the map image and in CARTOUCHES for imprint/credits
 - Transcribe as printed, preserving period spelling (e.g., TIERRA NVEVA not Tierra Nueva)
 
-Rules:
-- Transcribe EXACTLY what you see — no corrections or expansions.
-- Check the ENTIRE image: margins, corners, edges for credits.
-- If NOT a map: {"error": "I only know about maps, unfortunately! Point your camera at an antique or vintage map and I'll tell you everything about it. 🗺️"}
+If NOT a map: {"error": "I only know about maps, unfortunately! Point your camera at an antique or vintage map and I'll tell you everything about it. 🗺️"}
 
-Return ONLY valid JSON.`;
-
-// ── Call 2: IDENTIFY ──
-// Independent identification from image + observations. No corpus data.
-
-export function buildIdentifyPrompt(extractedJson: string): string {
-  return `You are a senior specialist at a major map auction house. A colleague extracted these observations from a map photograph. Now study the image yourself and provide an independent identification.
-
-EXTRACTED OBSERVATIONS:
-${extractedJson}
-
-Using these observations AND your own expert examination of the image, identify the map. Rely entirely on what you can see and your own specialist knowledge. No reference records are available.
-
-RESOLUTION STATE — you must choose exactly one:
-- "identified": You have strong evidence — at least one primary bibliographic anchor (visible title, imprint, cartographer name, or date) — and no major contradictions. Your candidate is clearly stronger than alternatives.
-- "probable": You have meaningful support for a candidate (multiple signals, style match, partial text) but are missing at least one decisive component. No fatal contradiction.
-- "unresolved": The evidence does not justify a named attribution. Use this when: no primary anchor, competing candidates, poor image quality, or support is mainly stylistic. If you cannot confidently name a cartographer and title, you MUST use "unresolved".
-
-CRITICAL RULES:
-- Unresolved is acceptable. Wrong attribution is NOT acceptable.
-- Do NOT name a cartographer, publisher, or title unless you have specific evidence.
-- If resolution_state is "unresolved", then cartographer.value and publisher.value MUST be null.
-- Every field must have evidence_basis: "observed" (directly visible), "inferred" (concluded from evidence), or "unresolved" (insufficient evidence, value is null).
-- "corroborated" is NOT valid at this stage.
-
-Return this JSON:
+Return this JSON with BOTH sections:
 {
-  "resolution_state": "identified" | "probable" | "unresolved",
-  "resolution_reasoning": "Why you chose this resolution state. Reference specific evidence.",
-
-  "attribution": {
-    "title": {
-      "value": "Best title, or null if unknown",
-      "evidence_basis": "observed" | "inferred" | "unresolved",
-      "evidence_detail": "What evidence supports this value"
+  "extracted": {
+    "observed": {
+      "title_text": "Transcribe any title text exactly as printed. Empty string if illegible.",
+      "date_text": "Transcribe any date text. Empty string if none.",
+      "place_names": ["Legible place names on the map"],
+      "cartographer_text": "Any cartographer/author credit visible. Empty string if none.",
+      "publisher_text": "Any publisher/printer credit visible anywhere. Empty string if none.",
+      "engraver_text": "Any engraver credit visible (e.g., 'sculp.', 'del.', 'fecit'). Empty string if none.",
+      "page_or_plate_number": "Any page/plate number. Empty string if none.",
+      "format_clues": ["Physical clues: 'plate mark visible', 'wide margins', 'book gutter', 'fold lines', etc."],
+      "technique_clues": ["Technique evidence: 'plate mark', 'stipple shading', 'lithographic texture', etc."],
+      "condition_clues": ["Condition: 'foxing', 'centerfold', 'original hand colour', 'trimmed margins', etc."]
     },
-    "cartographer": {
-      "value": "Named cartographer or null",
-      "evidence_basis": "observed" | "inferred" | "unresolved",
-      "evidence_detail": "What evidence supports this"
+    "ocr_confidence": {
+      "title_text": "high | medium | low | none",
+      "date_text": "high | medium | low | none",
+      "cartographer_text": "high | medium | low | none"
     },
-    "publisher": {
-      "value": "Named publisher or null",
-      "evidence_basis": "observed" | "inferred" | "unresolved",
-      "evidence_detail": "What evidence supports this"
-    },
-    "date": {
-      "value": "Date or null",
-      "evidence_basis": "observed" | "inferred" | "unresolved",
-      "evidence_detail": "What evidence supports this"
-    },
-    "engraver": {
-      "value": "Named engraver or null",
-      "evidence_basis": "observed" | "inferred" | "unresolved",
-      "evidence_detail": "What evidence supports this"
-    },
-    "publication_place": {
-      "value": "Place or null",
-      "evidence_basis": "observed" | "inferred" | "unresolved",
-      "evidence_detail": "What evidence supports this"
-    },
-    "edition_state": {
-      "value": "Edition/state or null",
-      "evidence_basis": "observed" | "inferred" | "unresolved",
-      "evidence_detail": "What evidence supports this"
+    "classification": {
+      "object_category": "separately_issued_map | book_plate | atlas_plate | magazine_map | guide_map | other_component | undetermined",
+      "classification_confidence": "high | medium | low",
+      "classification_reason": "OBSERVED: [evidence]. INFERRED: [conclusion]."
     }
   },
 
-  "region": "Geographic region depicted",
-  "technique": "Printing technique with evidence",
-  "dimensions_estimate": "Estimated dimensions or null",
-  "condition_notes": "Condition observations or null",
-  "parent_work": "Parent atlas or publication, or null",
+  "identified": {
+    "resolution_state": "identified | probable | unresolved",
+    "resolution_reasoning": "Why you chose this resolution state. Reference specific evidence.",
 
-  "competing_candidates": ["Other plausible identifications, if any"],
-  "uncertainties": ["Unresolved questions"],
-  "evidence_summary": "Summary of what observed evidence supports your identification",
+    "attribution": {
+      "title": {
+        "value": "Best title, or null if unknown",
+        "evidence_basis": "observed | inferred | unresolved",
+        "evidence_detail": "What evidence supports this value"
+      },
+      "cartographer": {
+        "value": "Named cartographer or null",
+        "evidence_basis": "observed | inferred | unresolved",
+        "evidence_detail": "What evidence supports this"
+      },
+      "publisher": {
+        "value": "Named publisher or null",
+        "evidence_basis": "observed | inferred | unresolved",
+        "evidence_detail": "What evidence supports this"
+      },
+      "date": {
+        "value": "Date or null",
+        "evidence_basis": "observed | inferred | unresolved",
+        "evidence_detail": "What evidence supports this"
+      },
+      "engraver": {
+        "value": "Named engraver or null",
+        "evidence_basis": "observed | inferred | unresolved",
+        "evidence_detail": "What evidence supports this"
+      },
+      "publication_place": {
+        "value": "Place or null",
+        "evidence_basis": "observed | inferred | unresolved",
+        "evidence_detail": "What evidence supports this"
+      },
+      "edition_state": {
+        "value": "Edition/state or null",
+        "evidence_basis": "observed | inferred | unresolved",
+        "evidence_detail": "What evidence supports this"
+      }
+    },
 
-  "user_facing": {
-    "headline": "Concise result title for the user",
-    "summary": "3-4 sentences, specialist dealer catalogue style. Every sentence specific to THIS map.
+    "region": "Geographic region depicted",
+    "technique": "Printing technique with evidence",
+    "dimensions_estimate": "Estimated dimensions or null",
+    "condition_notes": "Condition observations or null",
+    "parent_work": "Parent atlas or publication, or null",
 
-First: [map category + maker] + [period] + [characteristics]. Categories: double-hemisphere world map, regional survey, atlas plate, sea chart, town plan, etc.
-Second: Historical context — school, workshop, patron, political context.
-Third: Distinguishing features visible in this map.
-Fourth (optional): Copy-specific observations.
+    "competing_candidates": ["Other plausible identifications, if any"],
+    "uncertainties": ["Unresolved questions"],
+    "evidence_summary": "Summary of what observed evidence supports your identification",
 
-If evidence is limited, prioritize accuracy over completing all sentences. Do not fabricate context.
-
-PROHIBITED: 'historical significance', 'artistic detail', 'collectors value this map', 'beautifully detailed', 'fine example', 'rich history', 'testament to', 'a window into'.",
-    "confidence_summary": "What you CAN vs CANNOT identify, in plain language",
-    "conversation_prompt": "A compelling question about the map. Max 12 words. null if not appropriate.",
-    "conversation_response": "3-5 sentence answer. null if prompt is null.",
-    "rarity": "Rarity assessment with reasoning, or null"
+    "user_facing": {
+      "headline": "Concise result title for the user",
+      "summary": "3-4 sentences, specialist dealer catalogue style. Every sentence specific to THIS map. First: [map category + maker] + [period] + [characteristics]. Second: Historical context. Third: Distinguishing features. Fourth (optional): Copy-specific observations. PROHIBITED: 'historical significance', 'artistic detail', 'collectors value', 'beautifully detailed', 'fine example', 'rich history', 'testament to', 'a window into'.",
+      "confidence_summary": "What you CAN vs CANNOT identify, in plain language",
+      "conversation_prompt": "A compelling question about the map. Max 12 words. null if not appropriate.",
+      "conversation_response": "3-5 sentence answer. null if prompt is null.",
+      "rarity": "Rarity assessment with reasoning, or null"
+    }
   }
 }
 
+RESOLUTION STATE — choose exactly one:
+- "identified": Strong evidence — at least one primary bibliographic anchor (visible title, imprint, cartographer name, or date) — no major contradictions. Candidate clearly stronger than alternatives.
+- "probable": Meaningful support (multiple signals, style match, partial text) but missing at least one decisive component. No fatal contradiction.
+- "unresolved": Evidence does not justify a named attribution. Use when: no primary anchor, competing candidates, poor image quality, or support is mainly stylistic.
+
+CRITICAL RULES:
+- Transcribe EXACTLY what you see — no corrections or expansions in the extracted section.
+- Check the ENTIRE image: margins, corners, edges for credits.
+- Unresolved is acceptable. Wrong attribution is NOT acceptable.
+- Do NOT name a cartographer, publisher, or title unless you have specific evidence.
+- If resolution_state is "unresolved", then cartographer.value and publisher.value MUST be null.
+- Every attribution field must have evidence_basis: "observed" (directly visible), "inferred" (concluded from evidence), or "unresolved" (insufficient evidence, value is null).
 - No market value, price ranges, or dollar figures.
-- If you cannot resolve the map confidently, remain unresolved. A cautious, honest output is always better than a confident wrong one.
 
 Return ONLY valid JSON.`;
+
+// Legacy export for backward compatibility
+export const EXTRACT_PROMPT = EXTRACT_IDENTIFY_PROMPT;
+export function buildIdentifyPrompt(_extractedJson: string): string {
+  // No longer used — Extract+Identify are now combined
+  return '';
 }
 
-// ── Call 3: CORROBORATE ──
+// ── Call 2: CORROBORATE ──
 // Review independent identification against corpus records.
 // Cannot change core attribution fields.
 

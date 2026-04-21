@@ -1,13 +1,12 @@
 // ════════════════════════════════════════════════════════════
 // Supabase Edge Function: evaluate-map
-// Three-call pipeline: Extract → Identify → (Retrieve) → Corroborate
+// Two-call pipeline: Extract+Identify → (Retrieve) → Corroborate
 // Deploy with: supabase functions deploy evaluate-map --no-verify-jwt
 // ════════════════════════════════════════════════════════════
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
-  EXTRACT_PROMPT,
-  buildIdentifyPrompt,
+  EXTRACT_IDENTIFY_PROMPT,
   buildCorroboratePrompt,
 } from "./prompts.ts";
 import {
@@ -116,42 +115,37 @@ serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════════════
-    // CALL 1: EXTRACT (observation-only, with image)
+    // CALL 1: EXTRACT + IDENTIFY (combined — single image pass)
     // ══════════════════════════════════════════════════════════
 
-    log("EXTRACT_START");
+    log("EXTRACT_IDENTIFY_START");
     let extracted: ExtractOutput;
+    let identified: IdentifyOutput;
     try {
-      extracted = await callLLM(EXTRACT_PROMPT, true, 800);
-      log("EXTRACT_DONE");
-    } catch {
+      const combined = await callLLM(EXTRACT_IDENTIFY_PROMPT, true, 2400);
+      log("EXTRACT_IDENTIFY_DONE");
+
+      // Handle not-a-map error
+      if (combined.error) {
+        return new Response(JSON.stringify(combined), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Split combined response into extract and identify parts
+      extracted = combined.extracted;
+      identified = combined.identified;
+
+      // Validate we got both parts
+      if (!extracted?.observed || !identified?.resolution_state) {
+        throw new Error("Combined response missing extracted or identified section");
+      }
+    } catch (e) {
+      log(`EXTRACT_IDENTIFY_FAILED — ${(e as Error).message}`);
       return new Response(
         JSON.stringify({ error: "I only know about maps, unfortunately! Point your camera at an antique or vintage map and I'll tell you everything about it. 🗺️" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
-    }
-
-    // Not a map → return error
-    if (extracted.error) {
-      return new Response(JSON.stringify(extracted), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // CALL 2: IDENTIFY (with image + observations, no corpus)
-    // ══════════════════════════════════════════════════════════
-
-    log("IDENTIFY_START");
-    let identified: IdentifyOutput;
-    try {
-      const identifyPrompt = buildIdentifyPrompt(JSON.stringify(extracted, null, 2));
-      identified = await callLLM(identifyPrompt, true, 1600);
-      log(`IDENTIFY_DONE — state: ${identified.resolution_state}`);
-    } catch (e) {
-      log(`IDENTIFY_FAILED — ${(e as Error).message}`);
-      // If identify fails, build a minimal unresolved output from extraction
-      identified = buildFallbackIdentify(extracted);
     }
 
     // ══════════════════════════════════════════════════════════
@@ -174,7 +168,7 @@ serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════════════
-    // CALL 3: CORROBORATE (only if candidates found; text-only)
+    // CALL 2: CORROBORATE (only if candidates found; text-only)
     // ══════════════════════════════════════════════════════════
 
     let finalResult: MergedResult;
