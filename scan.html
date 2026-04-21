@@ -6,7 +6,7 @@
   <title>Scan a Map — Holocene Maps</title>
   <meta name="description" content="Point your camera at any antique map and get an instant expert identification. Powered by Holocene Maps.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -33,7 +33,7 @@
     }
 
     .wordmark {
-      font-family: 'Spectral', serif;
+      font-family: 'Cormorant SC', serif;
       font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
       color: var(--gold); margin-bottom: 18px;
     }
@@ -108,18 +108,18 @@
       display: none;
       min-height: 100dvh;
       flex-direction: column;
-      background: #fafaf9;
+      background: #f5f0e8;
       animation: fadeUp 0.5s ease forwards;
     }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 
     .result-header {
-      background: #fafaf9;
-      border-bottom: 1px solid #e7e5e4;
+      background: #f5f0e8;
+      border-bottom: 1px solid rgba(139,105,20,0.25);
       padding: 16px 24px;
       display: flex; align-items: center; justify-content: space-between;
     }
-    .result-wordmark { font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #15803d; }
+    .result-wordmark { font-family: 'Cormorant SC', serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #8b6914; }
     .btn-back {
       font-family: 'Inter', sans-serif; font-size: 12px; color: #78716c;
       background: none; border: none; cursor: pointer; padding: 4px 0;
@@ -129,31 +129,59 @@
 
     .result-image-wrap {
       width: 100%; max-height: 220px; overflow: hidden; position: relative;
-      background: #e7e5e4;
+      background: #ede6d6;
     }
     .result-image-wrap img { width: 100%; height: 220px; object-fit: cover; }
     .result-image-overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to bottom, transparent 60%, #fafaf9 100%);
+      background: linear-gradient(to bottom, transparent 60%, #f5f0e8 100%);
     }
 
-    .result-body { padding: 0 20px 40px; flex: 1; background: #fafaf9; }
+    .result-body { padding: 0 20px 40px; flex: 1; background: #f5f0e8; }
+
+    /* ── RESOLUTION STATE BADGE ── */
+    .resolution-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      padding: 5px 12px; border-radius: 100px;
+      margin-bottom: 12px;
+    }
+    .resolution-badge .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+    }
+    .resolution-badge.state-identified {
+      background: rgba(28,43,58,0.08); color: #1c2b3a;
+    }
+    .resolution-badge.state-identified .dot { background: #1c2b3a; }
+
+    .resolution-badge.state-probable {
+      background: rgba(196,164,74,0.15); color: #8b6914;
+    }
+    .resolution-badge.state-probable .dot { background: #c4a44a; }
+
+    .resolution-badge.state-unresolved {
+      background: #f1f5f9; color: #64748b;
+    }
+    .resolution-badge.state-unresolved .dot { background: #94a3b8; }
 
     /* ── SECTION A: IDENTIFICATION CARD ── */
     .id-card {
       background: #ffffff;
-      border: 2px solid #e7e5e4;
-      border-radius: 12px;
+      border: 1px solid rgba(139,105,20,0.25);
+      border-radius: 4px;
       padding: 28px 24px 24px;
       margin-top: -16px;
       position: relative;
       z-index: 2;
     }
-    .id-label {
-      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
-      letter-spacing: 0.16em; text-transform: uppercase;
-      color: #15803d; margin-bottom: 12px;
+    .id-card.state-unresolved {
+      border-color: #e2e8f0;
     }
+    .id-card.state-probable {
+      border-color: #fde68a;
+    }
+
     .id-title {
       font-family: 'Spectral', serif; font-size: clamp(1.3rem, 5vw, 1.75rem);
       font-weight: 400; line-height: 1.25; color: #1a1a1a; margin-bottom: 20px;
@@ -167,6 +195,7 @@
     .id-field-label {
       font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600;
       letter-spacing: 0.12em; text-transform: uppercase; color: #78716c;
+      display: flex; align-items: center; gap: 5px;
     }
     .id-field-value {
       font-family: 'Spectral', serif; font-size: 15px;
@@ -177,7 +206,32 @@
     }
     .id-field-value .approx { color: #a8a29e; font-size: 12px; }
 
-    .id-divider { height: 1px; background: #e7e5e4; margin: 4px 0 18px; }
+    /* ── Evidence basis tags ── */
+    .basis-tag {
+      font-family: 'Inter', sans-serif;
+      font-size: 8px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 1px 5px;
+      border-radius: 3px;
+      vertical-align: middle;
+    }
+    .basis-tag.observed { background: #dcfce7; color: #15803d; }
+    .basis-tag.inferred { background: #fef3c7; color: #92400e; }
+    .basis-tag.corroborated { background: #dbeafe; color: #1e40af; }
+    .basis-tag.unresolved { background: #f1f5f9; color: #64748b; }
+
+    /* ── Corpus source tag ── */
+    .source-tag {
+      font-family: 'Inter', sans-serif;
+      font-size: 8px; font-weight: 500;
+      letter-spacing: 0.06em;
+      color: #6366f1;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: #eef2ff;
+    }
+
+    .id-divider { height: 1px; background: rgba(139,105,20,0.12); margin: 4px 0 18px; }
 
     .id-summary {
       font-family: 'Spectral', serif; font-size: 14px; line-height: 1.7;
@@ -190,6 +244,32 @@
       margin-top: 14px; padding: 10px 14px;
       background: #fafaf9; border-left: 2px solid #d6d3d1;
       border-radius: 0 6px 6px 0;
+    }
+
+    /* ── Contradictions card ── */
+    .contradictions-card {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      margin-top: 14px;
+      padding: 16px 18px;
+      display: none;
+    }
+    .contradictions-title {
+      font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: #dc2626; margin-bottom: 10px;
+    }
+    .contradiction-item {
+      font-family: 'Spectral', serif; font-size: 13px; line-height: 1.6;
+      color: #7f1d1d; margin-bottom: 8px; padding-left: 14px;
+      border-left: 2px solid #fca5a5;
+    }
+    .contradiction-item:last-child { margin-bottom: 0; }
+    .contradiction-field {
+      font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: #dc2626; margin-bottom: 2px;
     }
 
     /* ── SECTION B: CONVERSATION CARD ── */
@@ -243,30 +323,30 @@
 
     .btn-cta-primary {
       width: 100%; padding: 15px;
-      background: #15803d; color: #ffffff;
-      border: none; border-radius: 8px; cursor: pointer;
-      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
-      letter-spacing: 0.04em; text-align: center;
+      background: #1c2b3a; color: #f5f0e8;
+      border: none; border-radius: 0; cursor: pointer;
+      font-family: 'Cormorant SC', serif; font-size: 13px; font-weight: 400;
+      letter-spacing: 0.12em; text-align: center;
       text-decoration: none; display: block;
       transition: background 0.2s;
     }
-    .btn-cta-primary:hover { background: #166534; }
+    .btn-cta-primary:hover { background: #2d4459; }
 
     .btn-cta-secondary {
       width: 100%; padding: 14px;
-      background: transparent; color: #78716c;
-      border: 1px solid #d6d3d1; border-radius: 8px; cursor: pointer;
-      font-family: 'Inter', sans-serif; font-size: 13px;
-      letter-spacing: 0.04em;
+      background: transparent; color: #5a4e3c;
+      border: 1px solid rgba(139,105,20,0.25); border-radius: 0; cursor: pointer;
+      font-family: 'Cormorant SC', serif; font-size: 13px;
+      letter-spacing: 0.08em;
       transition: color 0.2s, border-color 0.2s;
     }
-    .btn-cta-secondary:hover { color: #1a1a1a; border-color: #a8a29e; }
+    .btn-cta-secondary:hover { color: #1a1712; border-color: #8b6914; }
 
     .result-footer {
       padding: 20px 24px;
       font-family: 'Spectral', serif; font-style: italic;
-      font-size: 12px; color: #a8a29e; text-align: center;
-      background: #fafaf9; border-top: 1px solid #e7e5e4;
+      font-size: 12px; color: rgba(90,78,60,0.5); text-align: center;
+      background: #f5f0e8; border-top: 1px solid rgba(139,105,20,0.12);
     }
 
     /* ── ERROR message inside loading ── */
@@ -312,12 +392,21 @@
   <div class="result-body">
     <!-- Section A: Identification -->
     <div class="id-card" id="id-card">
-      <div class="id-label">Map Identified</div>
+      <div class="resolution-badge" id="resolution-badge">
+        <span class="dot"></span>
+        <span id="resolution-label">Map Identified</span>
+      </div>
       <h2 class="id-title" id="result-title">—</h2>
       <div class="id-grid" id="id-grid"></div>
       <div class="id-divider"></div>
       <p class="id-summary" id="result-summary"></p>
       <div class="id-uncertainties" id="result-uncertainties" style="display:none"></div>
+    </div>
+
+    <!-- Section: Contradictions -->
+    <div class="contradictions-card" id="contradictions-card">
+      <div class="contradictions-title">⚠ Contradictions Detected</div>
+      <div id="contradictions-body"></div>
     </div>
 
     <!-- Section B: Conversation -->
@@ -369,8 +458,9 @@
     'Reading cartouche text…',
     'Analyzing cartographic style…',
     'Cross-referencing period & region…',
-    'Estimating market value…',
-    'Almost there…'
+    'Checking reference catalogues…',
+    'Corroborating attribution…',
+    'Refining identification…'
   ];
   let loadingInterval = null;
 
@@ -379,9 +469,12 @@
     const el = document.getElementById('loading-text');
     el.textContent = LOADING_MSGS[0];
     loadingInterval = setInterval(() => {
-      i = (i + 1) % LOADING_MSGS.length;
-      el.textContent = LOADING_MSGS[i];
-    }, 3000);
+      if (i < LOADING_MSGS.length - 1) {
+        i++;
+        el.textContent = LOADING_MSGS[i];
+      }
+      // Stay on last message — don't loop
+    }, 4000);
   }
 
   function stopLoadingMessages() {
@@ -389,12 +482,10 @@
   }
 
   // Memory-safe resize: createImageBitmap + OffscreenCanvas
-  // Avoids the canvas/FileReader approach that crashed iOS Safari
   async function resizeForUpload(file, maxDim = 1200) {
     const bitmap = await createImageBitmap(file);
     let w = bitmap.width, h = bitmap.height;
 
-    // Only resize if larger than maxDim
     if (w > maxDim || h > maxDim) {
       if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
       else       { w = Math.round(w * maxDim / h); h = maxDim; }
@@ -403,10 +494,42 @@
     const canvas = new OffscreenCanvas(w, h);
     const ctx = canvas.getContext('2d');
     ctx.drawImage(bitmap, 0, 0, w, h);
-    bitmap.close(); // Free memory immediately
+    bitmap.close();
 
     const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
     return new File([blob], 'scan.jpg', { type: 'image/jpeg' });
+  }
+
+  // ── Resolution state rendering ──
+  const RESOLUTION_CONFIG = {
+    identified: { label: 'Identified', cssClass: 'state-identified' },
+    probable:   { label: 'Probable Match', cssClass: 'state-probable' },
+    unresolved: { label: 'Unresolved', cssClass: 'state-unresolved' },
+  };
+
+  function renderResolutionBadge(state) {
+    const config = RESOLUTION_CONFIG[state] || RESOLUTION_CONFIG.unresolved;
+    const badge = document.getElementById('resolution-badge');
+    const label = document.getElementById('resolution-label');
+    const card = document.getElementById('id-card');
+
+    badge.className = `resolution-badge ${config.cssClass}`;
+    label.textContent = config.label;
+
+    // Set card border color
+    card.className = 'id-card';
+    if (state === 'unresolved') card.classList.add('state-unresolved');
+    if (state === 'probable') card.classList.add('state-probable');
+  }
+
+  function basisTag(basis) {
+    if (!basis || basis === 'unresolved') return '';
+    return `<span class="basis-tag ${basis}">${basis}</span>`;
+  }
+
+  function sourceTag(source) {
+    if (source === 'corpus') return '<span class="source-tag">corpus</span>';
+    return '';
   }
 
   async function handleScan(e) {
@@ -424,30 +547,68 @@
     startLoadingMessages();
 
     try {
-      // Resize image before upload (3-8MB → ~200-400KB)
       const resized = await resizeForUpload(file);
 
-      // Upload resized file
       const formData = new FormData();
       formData.append('image', resized);
 
-      const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
-        method: 'POST',
-        body: formData
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
+
+      let res;
+      try {
+        res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        });
+      } catch (fetchErr) {
+        clearTimeout(timeout);
+        stopLoadingMessages();
+        if (fetchErr.name === 'AbortError') {
+          showFriendly('The identification is taking longer than usual. Please try again in a moment.');
+        } else {
+          showFriendly('Could not reach the server. Please check your connection and try again.');
+        }
+        return;
+      }
+      clearTimeout(timeout);
+
       const data = await res.json();
       stopLoadingMessages();
 
       if (data.error) { showFriendly(data.error); return; }
 
-      // Build result — Section A: Identification
-      document.getElementById('result-title').textContent = data.title || 'Map Identified';
+      // ── Resolution state badge ──
+      const resState = data.resolution_state || 'unresolved';
+      renderResolutionBadge(resState);
 
-      const conf = data.confidence || {};
+      // ── Title ──
+      document.getElementById('result-title').textContent = data.title || 'Map Analysis';
+
+      // ── Attribution fields (structured) ──
       const grid = document.getElementById('id-grid');
       grid.innerHTML = '';
 
-      function addField(label, value, confLevel, opts = {}) {
+      const attrFields = data._attribution?.fields || {};
+      const conf = data.confidence || {};
+
+      function addStructuredField(label, fieldData, opts = {}) {
+        if (!fieldData || (!fieldData.value && !opts.forceShow)) return;
+        const value = fieldData.value || 'Not determined';
+        const basis = fieldData.evidence_basis || 'unresolved';
+        const isUncertain = basis === 'inferred' || basis === 'unresolved';
+        const src = fieldData.source === 'corpus' ? sourceTag('corpus') : '';
+        const bTag = basisTag(basis);
+        const prefix = (label === 'Year' && isUncertain && fieldData.value) ? '<span class="approx">c. </span>' : '';
+
+        grid.innerHTML += `<div class="id-field${opts.full ? ' full' : ''}">
+          <span class="id-field-label">${label} ${bTag} ${src}</span>
+          <span class="id-field-value${isUncertain ? ' uncertain' : ''}">${prefix}${value}</span>
+        </div>`;
+      }
+
+      function addFlatField(label, value, confLevel, opts = {}) {
         if (!value) return;
         const isUncertain = confLevel === 'low' || confLevel === 'medium';
         const prefix = (label === 'Year' && isUncertain) ? '<span class="approx">c. </span>' : '';
@@ -457,18 +618,53 @@
         </div>`;
       }
 
-      // Primary fields
-      addField('Cartographer', data.cartographer, conf.cartographer);
-      addField('Year', data.year, conf.year);
-      addField('Region', data.region, conf.region);
-      addField('Publisher', data.publisher);
-      addField('Edition / State', data.edition);
-      addField('Technique', data.technique);
-      addField('Dimensions', data.dimensions_estimate);
-      addField('Condition', data.condition_notes, null, { full: true });
-      addField('Rarity', data.rarity);
+      // Use structured attribution if available, otherwise fall back to flat fields
+      if (attrFields.title) {
+        addStructuredField('Cartographer', attrFields.cartographer);
+        addStructuredField('Year', attrFields.date);
+        addFlatField('Region', data.region);
+        addStructuredField('Publisher', attrFields.publisher);
+        addStructuredField('Engraver', attrFields.engraver);
+        addStructuredField('Edition / State', attrFields.edition_state);
+        addFlatField('Technique', data.technique);
+        addFlatField('Dimensions', data.dimensions_estimate);
+        addFlatField('Condition', data.condition_notes, null, { full: true });
+        addFlatField('Rarity', data.rarity);
 
-      // Uncertainties
+        // Supplementary corpus-sourced fields
+        const supp = data._attribution?.supplementary || {};
+        if (supp.parent_work) {
+          grid.innerHTML += `<div class="id-field">
+            <span class="id-field-label">Parent Work ${supp.parent_work_source === 'corpus' ? sourceTag('corpus') : ''}</span>
+            <span class="id-field-value">${supp.parent_work}</span>
+          </div>`;
+        }
+        if (supp.tradition) {
+          grid.innerHTML += `<div class="id-field">
+            <span class="id-field-label">Tradition ${sourceTag('corpus')}</span>
+            <span class="id-field-value">${supp.tradition}</span>
+          </div>`;
+        }
+        if (supp.edition_state_note) {
+          grid.innerHTML += `<div class="id-field full">
+            <span class="id-field-label">Edition Note ${sourceTag('corpus')}</span>
+            <span class="id-field-value">${supp.edition_state_note}</span>
+          </div>`;
+        }
+      } else {
+        // Legacy flat fields fallback
+        addFlatField('Cartographer', data.cartographer, conf.cartographer);
+        addFlatField('Year', data.year, conf.year);
+        addFlatField('Region', data.region, conf.region);
+        addFlatField('Publisher', data.publisher);
+        addFlatField('Edition / State', data.edition);
+        addFlatField('Technique', data.technique);
+        addFlatField('Dimensions', data.dimensions_estimate);
+        addFlatField('Condition', data.condition_notes, null, { full: true });
+        addFlatField('Rarity', data.rarity);
+      }
+
+      // ── Uncertainties ──
       const uncEl = document.getElementById('result-uncertainties');
       if (data.uncertainties) {
         uncEl.textContent = data.uncertainties;
@@ -477,15 +673,32 @@
         uncEl.style.display = 'none';
       }
 
-      // Summary
+      // ── Contradictions ──
+      const contradictions = data._attribution?.contradictions || [];
+      const contrCard = document.getElementById('contradictions-card');
+      const contrBody = document.getElementById('contradictions-body');
+      if (contradictions.length > 0) {
+        contrBody.innerHTML = contradictions.map(c =>
+          `<div class="contradiction-item">
+            <div class="contradiction-field">${c.field}</div>
+            <strong>Identified as:</strong> ${c.identify_value}<br>
+            <strong>Corpus says:</strong> ${c.corpus_value} <em>(${c.corpus_record_title})</em><br>
+            ${c.assessment}
+          </div>`
+        ).join('');
+        contrCard.style.display = 'block';
+      } else {
+        contrCard.style.display = 'none';
+      }
+
+      // ── Summary ──
       document.getElementById('result-summary').textContent = data.summary || '';
 
-      // Section B: Conversation
+      // ── Conversation card ──
       const convCard = document.getElementById('conv-card');
       if (data.conversation_prompt && data.conversation_response) {
         document.getElementById('conv-prompt-text').textContent = data.conversation_prompt;
         document.getElementById('conv-response').textContent = data.conversation_response;
-        // Reset state
         document.getElementById('conv-response').classList.remove('open');
         document.getElementById('conv-done').classList.remove('open');
         document.getElementById('conv-arrow').classList.remove('open');
@@ -496,7 +709,7 @@
 
       currentScanData = data;
 
-      // Upload resized image to Supabase Storage immediately
+      // Upload resized image to Supabase Storage
       try {
         const filename = `scans/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
         const { data: uploadData, error: uploadErr } = await db.storage
@@ -517,6 +730,23 @@
       const resultEl = document.getElementById('result');
       resultEl.style.display = 'flex';
       window.scrollTo(0, 0);
+
+      // Log audit trail to console for debugging
+      if (data._audit) {
+        console.group('🗺️ Attribution Audit Trail');
+        console.log('Identify state:', data._audit.identify_resolution_state);
+        console.log('Corroborate state:', data._audit.corroborate_adjusted_resolution_state);
+        console.log('Final state:', data._audit.final_resolution_state);
+        console.log('Corpus effect:', data._audit.corpus_effect);
+        if (data._audit.blocked_field_changes.length > 0) {
+          console.warn('Blocked changes:', data._audit.blocked_field_changes);
+        }
+        if (data._audit.contradictions_detected.length > 0) {
+          console.warn('Contradictions:', data._audit.contradictions_detected);
+        }
+        console.table(data._audit.rules_fired);
+        console.groupEnd();
+      }
 
     } catch(err) {
       stopLoadingMessages();

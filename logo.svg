@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 40" fill="none">
+  <!-- Compass Rose Logomark -->
+  <g transform="translate(20, 20)">
+    <!-- Outer ring -->
+    <circle cx="0" cy="0" r="16" fill="none" stroke="#c4a44a" stroke-width="0.8" opacity="0.5"/>
+    <!-- Cardinal N/S -->
+    <polygon points="0,-14 2,-3 -2,-3" fill="#f5f0e8"/>
+    <polygon points="0,14 2,3 -2,3" fill="#c4a44a"/>
+    <!-- Cardinal E/W -->
+    <polygon points="14,0 3,2 3,-2" fill="#c4a44a"/>
+    <polygon points="-14,0 -3,2 -3,-2" fill="#c4a44a"/>
+    <!-- Ordinal points -->
+    <polygon points="0,-7 3,-2 0,-4 -3,-2" fill="#8b6914" opacity="0.7"/>
+    <polygon points="0,7 3,2 0,4 -3,2" fill="#8b6914" opacity="0.7"/>
+    <polygon points="7,0 2,-3 4,0 2,3" fill="#8b6914" opacity="0.7"/>
+    <polygon points="-7,0 -2,-3 -4,0 -2,3" fill="#8b6914" opacity="0.7"/>
+    <!-- Center -->
+    <circle cx="0" cy="0" r="2.2" fill="#8b6914" stroke="#c4a44a" stroke-width="0.5"/>
+    <circle cx="0" cy="0" r="1" fill="#f5f0e8"/>
+  </g>
+  <!-- Wordmark: HOLOCENE MAPS -->
+  <text x="46" y="25" font-family="'Cormorant SC', serif" font-size="15" font-weight="400" letter-spacing="0.2em" fill="#1c2b3a">HOLOCENE MAPS</text>
+</svg>
