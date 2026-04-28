@@ -155,55 +155,62 @@ serve(async (req) => {
 
     const shouldRetrieve = computeShouldRetrieve(identified, extracted);
     log(`RETRIEVE_DECISION — shouldRetrieve: ${shouldRetrieve}`);
-    let retrievedCandidates: any[] = [];
 
-    if (shouldRetrieve && SUPABASE_SERVICE_KEY) {
-      retrievedCandidates = await queryReferenceCorpus(
-        identified,
-        extracted,
-        SUPABASE_URL,
-        SUPABASE_SERVICE_KEY
-      );
-      log(`RETRIEVE_DONE — ${retrievedCandidates.length} candidates`);
-    }
+    // Run corpus retrieval AND web search in parallel — zero added latency
+    const [retrievedCandidates, webResults] = await Promise.all([
+      (shouldRetrieve && SUPABASE_SERVICE_KEY)
+        ? queryReferenceCorpus(identified, extracted, SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        : Promise.resolve([]),
+      searchWeb(extracted, identified),
+    ]);
+    log(`RETRIEVE_DONE — ${retrievedCandidates.length} corpus, ${webResults.length} web`);
 
     // ══════════════════════════════════════════════════════════
-    // CALL 2: CORROBORATE (only if candidates found; text-only)
+    // CALL 2: CORROBORATE (corpus + web evidence; text-only)
     // ══════════════════════════════════════════════════════════
 
     let finalResult: MergedResult;
+    const hasEvidence = retrievedCandidates.length > 0 || webResults.length > 0;
 
-    if (retrievedCandidates.length > 0) {
-      // Shuffle to prevent positional anchoring
+    if (hasEvidence) {
+      // Build corpus block
       const shuffled = [...retrievedCandidates].sort(() => Math.random() - 0.5);
-      const candidateBlock = shuffled.map((c) => {
-        const meta = c.metadata || {};
-        return `— "${c.title}"\n  ${c.description || ""}\n  Cartographer: ${meta.cartographer || "?"}, Date: ${meta.year || "?"}, Region: ${meta.region || "?"}\n  Tradition: ${meta.tradition || "?"}, Parent work: ${meta.parent_work || "?"}`;
-      }).join("\n\n");
+      const candidateBlock = shuffled.length > 0
+        ? shuffled.map((c) => {
+            const meta = c.metadata || {};
+            return `— "${c.title}"\n  ${c.description || ""}\n  Cartographer: ${meta.cartographer || "?"}, Date: ${meta.year || "?"}, Region: ${meta.region || "?"}\n  Tradition: ${meta.tradition || "?"}, Parent work: ${meta.parent_work || "?"}`;
+          }).join("\n\n")
+        : null;
+
+      // Build web results block
+      const webBlock = webResults.length > 0
+        ? webResults.map((r: any, i: number) =>
+            `[${i + 1}] "${r.title}"\n  ${r.snippet}\n  Source: ${r.link}`
+          ).join("\n\n")
+        : null;
 
       const corroboratePrompt = buildCorroboratePrompt(
         JSON.stringify(extracted, null, 2),
         JSON.stringify(identified, null, 2),
         candidateBlock,
-        shuffled.length
+        shuffled.length,
+        webBlock
       );
 
       log("CORROBORATE_START");
       try {
-        const corroborated: CorroborateOutput = await callLLM(corroboratePrompt, false, 1400);
+        const corroborated: CorroborateOutput = await callLLM(corroboratePrompt, false, 1800);
         log("CORROBORATE_DONE");
-        // Server-side validation: merge with all 7 rules
+        // Server-side validation: merge with all rules
         log("MERGE_START");
         finalResult = mergeIdentifyCorroborate(identified, corroborated);
         log("MERGE_DONE");
       } catch (e) {
         log(`CORROBORATE_FAILED — ${(e as Error).message}`);
-        // Corroborate failed — use identify output only
         finalResult = mergeIdentifyOnly(identified);
       }
     } else {
-      log("NO_CANDIDATES — mergeIdentifyOnly");
-      // No candidates — use identify output only
+      log("NO_EVIDENCE — mergeIdentifyOnly");
       finalResult = mergeIdentifyOnly(identified);
     }
 
@@ -340,6 +347,77 @@ async function queryReferenceCorpus(
     if (!res.ok) return [];
     return await res.json();
   } catch {
+    return [];
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// Web Search: Google Custom Search for map identification
+// Runs in parallel with corpus retrieval — zero added latency
+// ════════════════════════════════════════════════════════════
+
+async function searchWeb(
+  extract: ExtractOutput,
+  identify: IdentifyOutput
+): Promise<{ title: string; snippet: string; link: string }[]> {
+  const GOOGLE_KEY = Deno.env.get("GOOGLE_SEARCH_API_KEY");
+  const GOOGLE_CX = Deno.env.get("GOOGLE_SEARCH_CX");
+  if (!GOOGLE_KEY || !GOOGLE_CX) return []; // Graceful fallback
+
+  // Build search query from extracted text — prioritize raw OCR
+  const parts: string[] = [];
+
+  // Primary: raw title text from the map (exact what you'd google)
+  const rawTitle = extract.observed?.title_text || "";
+  if (rawTitle && rawTitle.length > 3) {
+    parts.push(rawTitle);
+  }
+
+  // Secondary: cartographer text from map
+  const rawCartographer = extract.observed?.cartographer_text || "";
+  if (rawCartographer && rawCartographer.length > 3) {
+    parts.push(rawCartographer);
+  }
+
+  // Tertiary: resolved cartographer from identification (if different)
+  const resolvedCartographer = identify.attribution?.cartographer?.value || "";
+  if (resolvedCartographer && resolvedCartographer.length > 3 &&
+      resolvedCartographer.toLowerCase() !== rawCartographer.toLowerCase()) {
+    parts.push(resolvedCartographer);
+  }
+
+  // Fallback: use place names if no title/cartographer text
+  if (parts.length === 0) {
+    const places = extract.observed?.place_names || [];
+    if (places.length > 0) {
+      parts.push(places.slice(0, 3).join(" "));
+    }
+  }
+
+  // Always append context term
+  parts.push("antique map");
+
+  if (parts.length <= 1) return []; // Only had "antique map"
+
+  // Truncate to Google's practical limit
+  const query = parts.join(" ").slice(0, 150);
+
+  try {
+    const url = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(query)}&num=5`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.log(`[evaluate-map] Web search failed: ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    const items = data.items || [];
+    return items.map((item: any) => ({
+      title: item.title || "",
+      snippet: item.snippet || "",
+      link: item.link || "",
+    }));
+  } catch (e) {
+    console.log(`[evaluate-map] Web search error: ${(e as Error).message}`);
     return [];
   }
 }

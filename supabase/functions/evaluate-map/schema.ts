@@ -127,6 +127,12 @@ export interface Contradiction {
   assessment: string;
 }
 
+export interface WebPopulatedField {
+  value: string | null;
+  web_source: string | null;
+  match_basis: string | null;
+}
+
 export interface CorroborateOutput {
   field_effects: {
     title: FieldCorroboration;
@@ -142,6 +148,14 @@ export interface CorroborateOutput {
   adjusted_resolution_state: ResolutionState;
   state_change_reason: string | null;
 
+  web_populated_fields?: {
+    title?: WebPopulatedField;
+    cartographer?: WebPopulatedField;
+    publisher?: WebPopulatedField;
+    date?: WebPopulatedField;
+    engraver?: WebPopulatedField;
+  };
+
   supplementary: {
     parent_work: string | null;
     tradition: string | null;
@@ -153,6 +167,7 @@ export interface CorroborateOutput {
 
   adjusted_summary: string | null;
   adjusted_confidence_summary: string | null;
+  adjusted_headline?: string | null;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -695,21 +710,50 @@ export function mergeIdentifyCorroborate(
       audit
     );
 
-    // Value is ALWAYS from identify (Rule 2)
+    // Value is from identify, BUT may be overridden by web evidence
+    const webField = corroborate.web_populated_fields?.[field];
+    const webValue = webField?.value || null;
+    let finalValue = identifyField.value;
+    let finalBasis = newBasis;
+    let finalDetail = identifyField.evidence_detail;
+
+    // Web-populated field: apply if identify value was null/unresolved
+    if (webValue && (!identifyField.value || identifyField.evidence_basis === "unresolved")) {
+      finalValue = webValue;
+      finalBasis = "corroborated";
+      finalDetail = `Web search evidence: ${webField?.match_basis || "matched"} (source: ${webField?.web_source || "web"})`;
+      audit.rules_fired.push({
+        rule: "Web search: populate null field",
+        action: "fired",
+        detail: `"${field}": null → "${webValue}" from web search (${webField?.web_source || "web"}).`,
+      });
+    }
+    // Web-populated field: correct inferred value
+    else if (webValue && identifyField.evidence_basis === "inferred" && webValue !== identifyField.value) {
+      finalValue = webValue;
+      finalBasis = "corroborated";
+      finalDetail = `Web search corrected inferred value from "${identifyField.value}" to "${webValue}". ${webField?.match_basis || ""} (source: ${webField?.web_source || "web"})`;
+      audit.rules_fired.push({
+        rule: "Web search: correct inferred field",
+        action: "fired",
+        detail: `"${field}": "${identifyField.value}" (inferred) → "${webValue}" from web (${webField?.web_source || "web"}).`,
+      });
+    }
+
     finalAttribution[field] = {
-      value: identifyField.value,
-      evidence_basis: newBasis,
-      evidence_detail: identifyField.evidence_detail +
+      value: finalValue,
+      evidence_basis: finalBasis,
+      evidence_detail: finalDetail +
         (corroborateEffect === "confirmed" && corroborate.field_effects[field]?.matching_record_title
           ? ` Corroborated by: "${corroborate.field_effects[field].matching_record_title}".`
           : "") +
         (corroborateEffect === "contradicted"
-          ? ` ⚠ Contradiction: ${corroborate.field_effects[field]?.detail || "corpus record disagrees"}.`
+          ? ` ⚠ Contradiction: ${corroborate.field_effects[field]?.detail || "evidence disagrees"}.`
           : ""),
     };
 
-    // If basis was downgraded to unresolved on an inferred field, null the value
-    if (newBasis === "unresolved" && identifyField.evidence_basis === "inferred") {
+    // If basis was downgraded to unresolved on an inferred field AND no web evidence saved it, null the value
+    if (finalAttribution[field].evidence_basis === "unresolved" && identifyField.evidence_basis === "inferred" && !webValue) {
       finalAttribution[field].value = null;
       audit.blocked_field_changes.push({
         field,
@@ -744,9 +788,24 @@ export function mergeIdentifyCorroborate(
   }
 
   // ── Rule 8: identified requires specific named bibliographic identity ──
+  // Re-check with web-enriched attribution (web may have filled null fields)
+  const enrichedIdentify = {
+    ...identify,
+    attribution: {
+      ...identify.attribution,
+      title: finalAttribution.title,
+      cartographer: finalAttribution.cartographer,
+      publisher: finalAttribution.publisher,
+      date: finalAttribution.date,
+      engraver: finalAttribution.engraver,
+    },
+  };
+  // Allow web evidence to promote resolution state
+  const hasWebEvidence = corroborate.web_populated_fields && Object.values(corroborate.web_populated_fields).some(f => f?.value);
+  const stateForRule8 = hasWebEvidence ? corroborate.adjusted_resolution_state : finalState;
   finalState = validateIdentifiedRequiresBibliographicIdentity(
-    finalState,
-    identify,
+    stateForRule8,
+    enrichedIdentify,
     corroborate.contradictions,
     audit
   );
@@ -781,7 +840,7 @@ export function mergeIdentifyCorroborate(
     contradictions: corroborate.contradictions,
     evidence_summary: identify.evidence_summary,
     user_facing: {
-      headline: identify.user_facing.headline,
+      headline: corroborate.adjusted_headline || identify.user_facing.headline,
       summary,
       confidence_level: finalConfidence,
       confidence_summary: confidenceSummary,

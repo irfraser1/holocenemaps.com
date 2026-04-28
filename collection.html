@@ -795,6 +795,104 @@
     .detail-sheet { padding: 20px; }
     .list { padding: 12px 16px; }
   }
+
+  /* ── BRANDED ALERT / CONFIRM MODALS ── */
+  .hm-dialog-overlay {
+    position: fixed; inset: 0; z-index: 10000;
+    background: rgba(18,21,31,0.55);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
+  .hm-dialog-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .hm-dialog {
+    background: #faf7f0;
+    border: 1px solid rgba(139,105,20,0.18);
+    border-radius: 6px;
+    box-shadow: 0 12px 48px rgba(18,21,31,0.25), 0 2px 8px rgba(139,105,20,0.1);
+    width: 92%; max-width: 380px;
+    padding: 32px 28px 24px;
+    text-align: center;
+    transform: translateY(12px) scale(0.97);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
+    opacity: 0;
+  }
+  .hm-dialog-overlay.open .hm-dialog {
+    transform: translateY(0) scale(1); opacity: 1;
+  }
+
+  .hm-dialog-icon {
+    width: 40px; height: 40px; margin: 0 auto 16px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .hm-dialog-icon.warn {
+    background: rgba(139,105,20,0.12); color: var(--gold);
+  }
+  .hm-dialog-icon.danger {
+    background: rgba(122,59,46,0.12); color: var(--rust);
+  }
+  .hm-dialog-icon.info {
+    background: rgba(28,43,58,0.1); color: var(--navy);
+  }
+
+  .hm-dialog-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px; font-weight: 400;
+    color: var(--navy); margin-bottom: 8px;
+    letter-spacing: 0.01em;
+  }
+  .hm-dialog-message {
+    font-family: 'Spectral', serif;
+    font-size: 14px; font-weight: 300;
+    color: var(--text-secondary);
+    line-height: 1.55; margin-bottom: 24px;
+  }
+
+  .hm-dialog-actions {
+    display: flex; gap: 10px; justify-content: center;
+  }
+  .hm-dialog-btn {
+    font-family: 'Cormorant SC', serif;
+    font-size: 13px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 10px 24px; border-radius: 4px;
+    cursor: pointer; border: none;
+    transition: all 0.2s ease;
+  }
+  .hm-dialog-btn.primary {
+    background: var(--navy); color: var(--cream);
+    box-shadow: 0 2px 6px rgba(28,43,58,0.2);
+  }
+  .hm-dialog-btn.primary:hover {
+    background: var(--navy-mid);
+    box-shadow: 0 4px 12px rgba(28,43,58,0.3);
+  }
+  .hm-dialog-btn.secondary {
+    background: transparent; color: var(--text-secondary);
+    border: 1px solid var(--border-light);
+  }
+  .hm-dialog-btn.secondary:hover {
+    border-color: var(--border); color: var(--ink);
+  }
+  .hm-dialog-btn.danger {
+    background: var(--rust); color: #fff;
+    box-shadow: 0 2px 6px rgba(122,59,46,0.2);
+  }
+  .hm-dialog-btn.danger:hover {
+    background: #8a4535;
+    box-shadow: 0 4px 12px rgba(122,59,46,0.3);
+  }
+
+  @media (max-width: 600px) {
+    .hm-dialog { padding: 28px 22px 20px; max-width: 340px; }
+    .hm-dialog-actions { flex-direction: column-reverse; }
+    .hm-dialog-btn { width: 100%; padding: 12px; }
+  }
+
 </style>
 </head>
 <body>
@@ -1119,6 +1217,69 @@
   <div id="eval-loading-text">Analyzing image & extracting details...</div>
   <div id="eval-friendly-msg" style="display:none;font-size:1.1rem;text-align:center;padding:0 2rem;line-height:1.6;"></div>
 </div>
+
+<!-- BRANDED DIALOG -->
+<div class="hm-dialog-overlay" id="hm-dialog-overlay">
+  <div class="hm-dialog" id="hm-dialog">
+    <div class="hm-dialog-icon" id="hm-dialog-icon"></div>
+    <div class="hm-dialog-title" id="hm-dialog-title"></div>
+    <div class="hm-dialog-message" id="hm-dialog-msg"></div>
+    <div class="hm-dialog-actions" id="hm-dialog-actions"></div>
+  </div>
+</div>
+
+<script>
+// ── Branded Dialog System ──
+let _hmDialogResolve = null;
+
+function _hmShowDialog({ title, message, icon, iconType, buttons }) {
+  const overlay = document.getElementById('hm-dialog-overlay');
+  const iconEl = document.getElementById('hm-dialog-icon');
+  const titleEl = document.getElementById('hm-dialog-title');
+  const msgEl = document.getElementById('hm-dialog-msg');
+  const actEl = document.getElementById('hm-dialog-actions');
+
+  iconEl.className = 'hm-dialog-icon ' + (iconType || 'info');
+  iconEl.textContent = icon || '🗺️';
+  titleEl.textContent = title || '';
+  msgEl.textContent = message || '';
+  actEl.innerHTML = buttons.map(b =>
+    `<button class="hm-dialog-btn ${b.style || 'primary'}" onclick="_hmResolve(${JSON.stringify(b.value)})">${b.label}</button>`
+  ).join('');
+
+  overlay.classList.add('open');
+  return new Promise(resolve => { _hmDialogResolve = resolve; });
+}
+
+function _hmResolve(value) {
+  document.getElementById('hm-dialog-overlay').classList.remove('open');
+  if (_hmDialogResolve) { _hmDialogResolve(value); _hmDialogResolve = null; }
+}
+
+function hmAlert(message, { title, icon, iconType } = {}) {
+  return _hmShowDialog({
+    title: title || 'Notice',
+    message,
+    icon: icon || '📜',
+    iconType: iconType || 'warn',
+    buttons: [{ label: 'Understood', style: 'primary', value: true }]
+  });
+}
+
+function hmConfirm(message, { title, icon, iconType, confirmLabel, cancelLabel, confirmStyle } = {}) {
+  return _hmShowDialog({
+    title: title || 'Are you sure?',
+    message,
+    icon: icon || '⚠',
+    iconType: iconType || 'danger',
+    buttons: [
+      { label: cancelLabel || 'Cancel', style: 'secondary', value: false },
+      { label: confirmLabel || 'Confirm', style: confirmStyle || 'danger', value: true },
+    ]
+  });
+}
+</script>
+
 <script>
 const SUPABASE_URL = 'https://irfuhohbabtywbuchwpb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_EwBThey-4JHJII0aNAu1Lg_vPnFvsyG';
@@ -1503,7 +1664,7 @@ function resizeImageToCanvasAndBase64(file, callback) {
 async function handlePhotoUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-  if (!userThesis) { alert("Please define a collection thesis first!"); return; }
+  if (!userThesis) { await hmAlert('Please define your collection thesis before scanning.', { title: 'Thesis Required', icon: '📜', iconType: 'warn' }); return; }
 
   const overlay = document.getElementById('eval-loading-overlay');
   const spinner = document.getElementById('eval-spinner');
@@ -1576,7 +1737,7 @@ async function reEvaluateMap(id) {
 
   const m = maps.find(x => x.id === id);
   if (!m) return;
-  if (!userThesis) { alert('Please set your collection thesis first.'); return; }
+  if (!userThesis) { await hmAlert('Please set your collection thesis before re-evaluating.', { title: 'Thesis Required', icon: '📜', iconType: 'warn' }); return; }
 
   // Auth check — fail fast if session is gone
   let user;
@@ -1928,7 +2089,8 @@ async function saveMap() {
 }
 
 async function deleteMap(id) {
-  if (!confirm('Remove this map from your collection?')) return;
+  const yes = await hmConfirm('This map will be permanently removed from your collection.', { title: 'Remove Map', icon: '🗑', iconType: 'danger', confirmLabel: 'Remove', cancelLabel: 'Keep' });
+  if (!yes) return;
   await db.from('maps').delete().eq('id', id);
   maps = maps.filter(m => m.id !== id);
   renderAll();

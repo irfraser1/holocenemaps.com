@@ -144,59 +144,66 @@ export function buildIdentifyPrompt(_extractedJson: string): string {
 export function buildCorroboratePrompt(
   extractedJson: string,
   identifyJson: string,
-  candidateBlock: string,
-  candidateCount: number
+  candidateBlock: string | null,
+  candidateCount: number,
+  webResultsBlock: string | null
 ): string {
-  return `You are a senior map specialist reviewing an independent identification against reference records from a small internal corpus.
+  return `You are a senior map specialist reviewing an independent identification against external evidence.
 
-YOUR ROLE: Assess whether the reference records corroborate, weaken, or contradict the independent identification below. You are a reviewer, not a re-identifier.
+YOUR ROLE: Assess whether the evidence corroborates, refines, or contradicts the independent identification below.
 
 EXTRACTED OBSERVATIONS (from the original image — you cannot see the image):
 ${extractedJson}
 
-INDEPENDENT IDENTIFICATION (already completed — treat as SETTLED INPUT):
+INDEPENDENT IDENTIFICATION (already completed — treat as baseline):
 ${identifyJson}
 
-REFERENCE RECORDS (${candidateCount} records, unranked, arbitrary order — from a small, biased internal corpus):
-${candidateBlock}
+${candidateBlock ? `INTERNAL REFERENCE RECORDS (${candidateCount} records, unranked, from a small internal corpus):
+${candidateBlock}` : "INTERNAL REFERENCE RECORDS: None found."}
+
+${webResultsBlock ? `WEB SEARCH RESULTS (from searching the map's visible text on Google):
+${webResultsBlock}` : "WEB SEARCH RESULTS: None found."}
 
 ═══════════════════════════════════════════════════════════════
-ABSOLUTE RULES — VIOLATION OF THESE IS UNACCEPTABLE:
+RULES FOR INTERNAL CORPUS RECORDS:
 
-1. You CANNOT change the value of any core attribution field:
-   - title, cartographer, publisher, date, engraver
-   These values are set by the independent identification. You may only assess them.
+1. You CANNOT change a core field value based on corpus alone.
+2. You CANNOT populate a null core field from corpus alone.
+3. You CANNOT promote the resolution state based on corpus.
+4. The corpus is small and biased. Most maps are NOT in it.
 
-2. You CANNOT populate a core field that was null/unresolved in the identification.
-   If the identification could not determine a cartographer, you cannot supply one from corpus.
+RULES FOR WEB SEARCH RESULTS:
 
-3. You CANNOT promote the resolution state.
-   If the identification said "probable", you cannot upgrade to "identified".
-   You CAN downgrade: "identified" → "probable" → "unresolved".
+5. Web results CAN populate null/unresolved core fields IF:
+   - The web result clearly matches THIS specific map (same title text, region, style)
+   - The match is between the map's visible text (from extraction) and the web result
+   - You are confident the web result describes the same map, not a similar one
 
-4. You CANNOT replace the independent attribution with a different named
-   cartographer/publisher/title just because a corpus record looks plausible.
-   A weak or approximate corpus match must NEVER become the final answer.
+6. Web results CAN correct an inferred attribution IF:
+   - The identification was "inferred" (not "observed")
+   - A web result provides a stronger, more specific identification
+   - The web result matches the map's visible text unambiguously
 
-5. The corpus is a small, biased internal dataset. It is NOT the world of
-   possible answers. Most maps that exist are NOT in this corpus.
+7. Web results CAN promote the resolution state IF:
+   - A web result from a reputable source (museum, dealer catalogue, academic)
+     unambiguously matches the map's extracted text
+   - Example: map shows "ANGLIAE PARS" and a dealer catalogue lists that exact title
+     with cartographer, date, and dimensions — this is strong evidence
+
+8. When populating a field from web results, set:
+   - web_populated_fields.{field}.value = the value
+   - web_populated_fields.{field}.web_source = the URL
+   - web_populated_fields.{field}.match_basis = why you believe this matches
+
 ═══════════════════════════════════════════════════════════════
-
-WHAT YOU CAN DO:
-- Confirm: a corpus record matches the independent identification → mark as "confirmed"
-- Weaken: a corpus record raises doubt about an inferred attribution → mark as "weakened"
-- Contradict: a corpus record directly conflicts with the identification → mark as "contradicted", explain
-- Supplement: add parent_work, tradition, edition notes from corpus (clearly labeled)
-- Downgrade resolution state if warranted
-- Adjust the user-facing summary and confidence summary if the corpus changes the picture
 
 Return this JSON:
 {
   "field_effects": {
     "title": {
       "effect": "confirmed" | "weakened" | "contradicted" | "no_effect",
-      "detail": "What corpus evidence led to this assessment",
-      "matching_record_title": "Title of the matching corpus record, or null"
+      "detail": "What evidence led to this assessment",
+      "matching_record_title": "Title of matching record, or null"
     },
     "cartographer": { same structure },
     "publisher": { same structure },
@@ -205,37 +212,52 @@ Return this JSON:
   },
 
   "overall_effect": "corroborated" | "supplemented" | "contradicted" | "no_effect",
-  "corroboration_summary": "Brief summary of what the corpus comparison found",
+  "corroboration_summary": "Brief summary of what the evidence comparison found",
 
   "adjusted_resolution_state": "identified" | "probable" | "unresolved",
   "state_change_reason": "Why change, or null if no change",
 
+  "web_populated_fields": {
+    "title": { "value": "string or null", "web_source": "URL", "match_basis": "why this matches" },
+    "cartographer": { "value": "string or null", "web_source": "URL", "match_basis": "why" },
+    "publisher": { "value": "string or null", "web_source": "URL", "match_basis": "why" },
+    "date": { "value": "string or null", "web_source": "URL", "match_basis": "why" },
+    "engraver": { "value": "string or null", "web_source": "URL", "match_basis": "why" }
+  },
+
   "supplementary": {
-    "parent_work": "Parent publication from corpus, or null",
-    "tradition": "Cartographic tradition from corpus, or null",
-    "edition_state_note": "Edition/state detail from corpus that does NOT change core identity, or null",
-    "additional_context": "Brief factual supplement from corpus, or null"
+    "parent_work": "Parent publication, or null",
+    "tradition": "Cartographic tradition, or null",
+    "edition_state_note": "Edition/state detail, or null",
+    "additional_context": "Brief factual supplement, or null"
   },
 
   "contradictions": [
     {
       "field": "which core field",
       "identify_value": "what the identification said",
-      "corpus_value": "what the corpus says",
-      "corpus_record_title": "which record",
-      "assessment": "your analysis of the contradiction"
+      "corpus_value": "what the evidence says",
+      "corpus_record_title": "which record/source",
+      "assessment": "your analysis"
     }
   ],
 
-  "adjusted_summary": "Revised user-facing summary incorporating corpus findings, or null to keep original",
-  "adjusted_confidence_summary": "Revised confidence summary, or null to keep original"
+  "adjusted_summary": "REQUIRED if web evidence changes the identification. Rewrite the summary to reflect confirmed facts. Remove any uncertainty language about fields that are now resolved. Use dealer catalogue style.",
+  "adjusted_confidence_summary": "REQUIRED if web evidence resolves uncertainties. Rewrite to reflect what IS now known, not what was unknown before. Example: if web confirms cartographer and date, say so clearly.",
+  "adjusted_headline": "REQUIRED if web evidence changes the identification. Use the confirmed title/cartographer. Example: 'Lunar Map by Grimaldi and Riccioli, 1651'"
 }
+
+CRITICAL — SUMMARY CONSISTENCY:
+- If you populate web_populated_fields with values, you MUST also provide adjusted_summary, adjusted_confidence_summary, and adjusted_headline that reflect those confirmed values.
+- Do NOT leave summaries saying "details are unclear" or "publication details unknown" when the web evidence just resolved those details.
+- The summaries must match the field values. If date=1651 and cartographer=Grimaldi, the summary must not say "date is uncertain".
 
 Remember:
 - No market value, price ranges, or dollar figures.
-- Core field values are IMMUTABLE. You assess them, you do not replace them.
-- If no corpus record is relevant, overall_effect should be "no_effect".
-- If a corpus record is a near-match but not a true match, say so explicitly — do NOT treat it as confirmation.
+- Internal corpus values are NEVER used to replace core fields.
+- Web results ARE allowed to populate null fields when the match is unambiguous.
+- If no evidence is relevant, overall_effect should be "no_effect".
+- web_populated_fields should have null values for fields where web search provides no evidence.
 
 Return ONLY valid JSON.`;
 }
