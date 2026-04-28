@@ -611,6 +611,90 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* PHOTO STRIP */
+  .photo-strip {
+    display: flex; gap: 8px; align-items: center;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding: 12px 0; margin-bottom: 16px;
+    scrollbar-width: none;
+  }
+  .photo-strip::-webkit-scrollbar { display: none; }
+  .photo-thumb-wrap { position: relative; flex-shrink: 0; }
+  .photo-thumb {
+    width: 64px; height: 64px; object-fit: cover; border-radius: 4px;
+    border: 2px solid var(--border-light); cursor: pointer;
+    transition: border-color 0.2s, opacity 0.15s;
+  }
+  .photo-thumb:hover { border-color: var(--gold); }
+  .photo-thumb.active { border-color: var(--navy); }
+  .photo-thumb-wrap.primary .photo-thumb { border-color: var(--gold); }
+  .photo-thumb-badge {
+    position: absolute; top: -4px; right: -4px;
+    background: var(--gold); color: var(--navy-deep);
+    font-size: 10px; width: 16px; height: 16px; border-radius: 50%;
+    display: none; align-items: center; justify-content: center;
+    line-height: 1; pointer-events: none;
+  }
+  .photo-thumb-wrap.primary .photo-thumb-badge { display: flex; }
+  .photo-thumb-add {
+    width: 64px; height: 64px; flex-shrink: 0;
+    border: 1px dashed var(--border); border-radius: 4px;
+    background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); font-size: 24px;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .photo-thumb-add:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+  .photo-actions {
+    position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(28,43,58,0.12); z-index: 10;
+    padding: 4px; min-width: 140px; display: none;
+    animation: fadeDropdown 0.15s ease;
+  }
+  .photo-actions.open { display: block; }
+  .photo-action-btn {
+    display: block; width: 100%; padding: 8px 12px; border: none;
+    background: none; cursor: pointer; text-align: left; border-radius: 4px;
+    font-family: 'Inter', sans-serif; font-size: 13px; color: var(--ink);
+    transition: background 0.15s;
+  }
+  .photo-action-btn:hover { background: var(--cream-dark); }
+  .photo-action-btn.danger { color: var(--rust); }
+  .photo-action-btn.danger:hover { background: rgba(122,59,46,0.06); }
+  .photo-uploading {
+    width: 64px; height: 64px; flex-shrink: 0;
+    border: 2px solid var(--gold); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--cream-dark);
+  }
+  .photo-uploading .spinner-small {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(196,164,74,0.2);
+    border-top-color: var(--gold); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* MULTI-PHOTO IN MODAL */
+  .modal-photo-strip {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    margin-top: 8px;
+  }
+  .modal-photo-thumb {
+    width: 56px; height: 56px; object-fit: cover; border-radius: 4px;
+    border: 2px solid var(--border-light);
+  }
+  .modal-photo-thumb.primary { border-color: var(--gold); }
+  .modal-photo-add-btn {
+    width: 56px; height: 56px;
+    border: 1px dashed var(--border); border-radius: 4px;
+    background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); font-size: 20px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .modal-photo-add-btn:hover { border-color: var(--gold); color: var(--gold); }
+
   /* ONBOARDING */
   #onboarding-modal {
     position: fixed; inset: 0;
@@ -838,6 +922,7 @@
     </div>
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoUpload(event)">
     <input type="file" id="upload-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+    <input type="file" id="detail-photo-input" accept="image/*" multiple style="display:none" onchange="handleDetailPhotoUpload(event)">
     <div style="flex:1;"></div>
     <input class="search-input" type="text" placeholder="Search maps…" id="search-input" oninput="renderList()">
 
@@ -1002,9 +1087,12 @@
           <label class="lbl">Listing URL</label>
           <input type="url" id="f-url" placeholder="https://www.raremaps.com/gallery/detail/…">
         </div>
-        <div class="field full" id="f-photo-field" style="display:none;">
-          <label class="lbl">Photo</label>
-          <img id="f-photo-preview" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
+        <div class="field full" id="f-photo-field">
+          <label class="lbl">Photos</label>
+          <div class="modal-photo-strip" id="modal-photo-strip">
+            <!-- Thumbnails rendered by JS -->
+          </div>
+          <input type="file" id="modal-photo-input" accept="image/*" multiple style="display:none" onchange="handleModalPhotoMulti(event)">
           <input type="hidden" id="f-image-url">
         </div>
         <div class="field full">
@@ -1150,9 +1238,7 @@ async function showApp() {
       if (scan.cartographer) document.getElementById('f-cartographer').value = scan.cartographer;
       if (scan._owned) document.getElementById('f-status').value = 'owned';
       if (scan.image_url) {
-        document.getElementById('f-image-url').value = scan.image_url;
-        document.getElementById('f-photo-preview').src = scan.image_url;
-        document.getElementById('f-photo-field').style.display = '';
+        addImageToModalStrip(scan.image_url);
       }
       // Populate AI Analysis section (read-only)
       const aiText = [scan.summary, scan.confidence_summary].filter(Boolean).join(' ');
@@ -1323,9 +1409,7 @@ async function fetchFromUrl() {
 
     // Set image
     if (data.image_url) {
-      document.getElementById('f-image-url').value = data.image_url;
-      document.getElementById('f-photo-preview').src = data.image_url;
-      document.getElementById('f-photo-field').style.display = '';
+      addImageToModalStrip(data.image_url);
     }
 
     // Smart act detection
@@ -1385,9 +1469,7 @@ async function evaluateMap() {
 
     // Set backfilled image in the form
     if (imgRes && imgRes.image_url) {
-      document.getElementById('f-image-url').value = imgRes.image_url;
-      document.getElementById('f-photo-preview').src = imgRes.image_url;
-      document.getElementById('f-photo-field').style.display = '';
+      addImageToModalStrip(imgRes.image_url);
     }
   } catch(e) {
     notesEl.value = '';
@@ -1625,48 +1707,154 @@ async function reEvaluateMap(id) {
   }
 }
 
-// Handle manual photo upload in the Add/Edit modal
-async function handleModalPhoto(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+// ── MULTI-PHOTO SYSTEM ──────────────────────────────────────
 
-  const nameEl = document.getElementById('f-photo-name');
-  nameEl.textContent = 'Uploading…';
+let _modalPendingFiles = []; // files queued for upload on new maps (no map_id yet)
+let _modalExistingImages = []; // map_images rows for current edit
+let _detailMapId = null; // currently open detail panel map id
 
-  try {
-    // Resize for storage
-    const bitmap = await createImageBitmap(file);
-    let w = bitmap.width, h = bitmap.height;
-    const maxDim = 1200;
-    if (w > maxDim || h > maxDim) {
-      if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-      else       { w = Math.round(w * maxDim / h); h = maxDim; }
-    }
-    const canvas = new OffscreenCanvas(w, h);
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    bitmap.close();
-    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
-
-    // Upload to Supabase Storage
-    const filename = `manual/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
-    const { data: uploadData, error: uploadErr } = await db.storage
-      .from('map-images')
-      .upload(filename, blob, { contentType: 'image/jpeg', upsert: false });
-
-    if (uploadErr) throw uploadErr;
-
-    const { data: urlData } = db.storage.from('map-images').getPublicUrl(filename);
-    document.getElementById('f-image-url').value = urlData.publicUrl;
-
-    // Show preview
-    const preview = document.getElementById('f-photo-preview');
-    preview.src = urlData.publicUrl;
-    preview.style.display = 'block';
-    nameEl.textContent = 'Uploaded ✓';
-  } catch(err) {
-    nameEl.textContent = 'Upload failed — try again';
+async function resizeAndUploadFile(file) {
+  const bitmap = await createImageBitmap(file);
+  let w = bitmap.width, h = bitmap.height;
+  const maxDim = 1200;
+  if (w > maxDim || h > maxDim) {
+    if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+    else       { w = Math.round(w * maxDim / h); h = maxDim; }
   }
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+  const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
+  const storagePath = `photos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const { error: uploadErr } = await db.storage
+    .from('map-images')
+    .upload(storagePath, blob, { contentType: 'image/jpeg', upsert: false });
+  if (uploadErr) throw uploadErr;
+  const { data: urlData } = db.storage.from('map-images').getPublicUrl(storagePath);
+  return { publicUrl: urlData.publicUrl, storagePath };
+}
+
+async function loadMapImages(mapId) {
+  const { data } = await db.from('map_images')
+    .select('*').eq('map_id', mapId).order('sort_order').order('created_at');
+  return data || [];
+}
+
+async function ensureLazyMigration(mapId, imageUrl, userId) {
+  if (!imageUrl) return;
+  const { data } = await db.from('map_images')
+    .select('id').eq('map_id', mapId).limit(1);
+  if (data && data.length > 0) return;
+  await db.from('map_images').insert({
+    map_id: mapId, user_id: userId, image_url: imageUrl,
+    is_primary: true, sort_order: 0
+  });
+}
+
+async function uploadMapImage(mapId, file, makePrimary) {
+  const { data: { user } } = await db.auth.getUser();
+  const { publicUrl, storagePath } = await resizeAndUploadFile(file);
+  const { data: row } = await db.from('map_images').insert({
+    map_id: mapId, user_id: user.id, image_url: publicUrl,
+    storage_path: storagePath, is_primary: !!makePrimary, sort_order: 99
+  }).select().single();
+  if (makePrimary) {
+    await db.from('map_images').update({ is_primary: false })
+      .eq('map_id', mapId).neq('id', row.id);
+    await db.from('maps').update({ image_url: publicUrl }).eq('id', mapId);
+  }
+  return row;
+}
+
+async function setPrimaryImage(mapId, imageId, imageUrl) {
+  await db.from('map_images').update({ is_primary: false }).eq('map_id', mapId);
+  await db.from('map_images').update({ is_primary: true }).eq('id', imageId);
+  await db.from('maps').update({ image_url: imageUrl }).eq('id', mapId);
+  const idx = maps.findIndex(x => x.id === mapId);
+  if (idx >= 0) maps[idx].image_url = imageUrl;
+  renderList();
+}
+
+async function deleteMapImage(imageId, mapId, storagePath) {
+  await db.from('map_images').delete().eq('id', imageId);
+  if (storagePath) {
+    await db.storage.from('map-images').remove([storagePath]);
+  }
+  const remaining = await loadMapImages(mapId);
+  if (remaining.length > 0 && !remaining.some(r => r.is_primary)) {
+    await setPrimaryImage(mapId, remaining[0].id, remaining[0].image_url);
+  } else if (remaining.length === 0) {
+    await db.from('maps').update({ image_url: null }).eq('id', mapId);
+    const idx = maps.findIndex(x => x.id === mapId);
+    if (idx >= 0) maps[idx].image_url = null;
+    renderList();
+  }
+  return remaining;
+}
+
+// Detail panel: upload photos for an existing map
+async function handleDetailPhotoUpload(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length || !_detailMapId) return;
+  e.target.value = '';
+  const mapId = _detailMapId;
+  const images = await loadMapImages(mapId);
+  const isFirst = images.length === 0;
+  for (let i = 0; i < files.length; i++) {
+    try {
+      await uploadMapImage(mapId, files[i], isFirst && i === 0);
+    } catch(err) { console.error('Upload failed:', err); }
+  }
+  await loadMaps();
+  toggleCard(mapId);
+}
+
+// Modal: multi-photo upload (for edit mode — immediate upload)
+async function handleModalPhotoMulti(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  e.target.value = '';
+  if (editingId) {
+    const images = await loadMapImages(editingId);
+    const isFirst = images.length === 0;
+    for (let i = 0; i < files.length; i++) {
+      try {
+        await uploadMapImage(editingId, files[i], isFirst && i === 0);
+      } catch(err) { console.error('Upload failed:', err); }
+    }
+    _modalExistingImages = await loadMapImages(editingId);
+    renderModalPhotoStrip();
+    await loadMaps();
+  } else {
+    // New map — queue files
+    files.forEach(f => _modalPendingFiles.push(f));
+    renderModalPhotoStrip();
+  }
+}
+
+function renderModalPhotoStrip() {
+  const strip = document.getElementById('modal-photo-strip');
+  let html = '';
+  // Show existing images (edit mode)
+  _modalExistingImages.forEach(img => {
+    html += `<img class="modal-photo-thumb${img.is_primary ? ' primary' : ''}" src="${img.image_url}" alt="">`;
+  });
+  // Show pending files (add mode)
+  _modalPendingFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    html += `<img class="modal-photo-thumb${i === 0 && _modalExistingImages.length === 0 ? ' primary' : ''}" src="${url}" alt="">`;
+  });
+  // Add button
+  html += `<button type="button" class="modal-photo-add-btn" onclick="document.getElementById('modal-photo-input').click()">+</button>`;
+  strip.innerHTML = html;
+}
+
+// Helper: add image URL to modal strip (used by scan/import flows)
+function addImageToModalStrip(imageUrl) {
+  document.getElementById('f-image-url').value = imageUrl;
+  _modalExistingImages.push({ image_url: imageUrl, is_primary: _modalExistingImages.length === 0 });
+  renderModalPhotoStrip();
 }
 
 async function saveMap() {
@@ -1697,11 +1885,33 @@ async function saveMap() {
   if (!payload.title) { btn.textContent = editingId ? 'Update' : 'Add map'; return; }
 
   const wasEditing = editingId;
+  let newMapId = null;
   if (editingId) {
     await db.from('maps').update(payload).eq('id', editingId);
   } else {
-    await db.from('maps').insert(payload);
+    const { data: inserted } = await db.from('maps').insert(payload).select('id').single();
+    newMapId = inserted?.id;
   }
+
+  // Upload pending photos for new maps
+  if (newMapId && _modalPendingFiles.length > 0) {
+    for (let i = 0; i < _modalPendingFiles.length; i++) {
+      try {
+        const row = await uploadMapImage(newMapId, _modalPendingFiles[i], i === 0);
+        if (i === 0) {
+          // Set first uploaded image as cover
+          await db.from('maps').update({ image_url: row.image_url }).eq('id', newMapId);
+        }
+      } catch(err) { console.error('Photo upload failed:', err); }
+    }
+    _modalPendingFiles = [];
+  }
+
+  // Migrate existing image_url for new maps that came with an external image (scan/import)
+  if (newMapId && payload.image_url && _modalPendingFiles.length === 0) {
+    await ensureLazyMigration(newMapId, payload.image_url, user.id);
+  }
+
   closeModal();
   await loadMaps();
 
@@ -1860,13 +2070,17 @@ function collapseThesisPanel() {
 function toggleCard(id) {
   const m = maps.find(x => x.id === id);
   if (!m) return;
+  _detailMapId = id;
   const sheet = document.getElementById('detail-sheet');
   sheet.innerHTML = `
     <button class="detail-close" onclick="closeDetail()">✕</button>
     ${m.image_url
-      ? `<img class="detail-image" src="${m.image_url}" alt="" onerror="this.outerHTML='<div class=\'detail-placeholder\'>No image available</div>'">`
-      : '<div class="detail-placeholder">No image available</div>'
+      ? `<img class="detail-image" id="detail-main-img" src="${m.image_url}" alt="" onerror="this.outerHTML='<div class=\\'detail-placeholder\\'>No image available</div>'">`
+      : '<div class="detail-placeholder" id="detail-main-img">No image available</div>'
     }
+    <div class="photo-strip" id="detail-photo-strip">
+      <div style="font-family:'Spectral',serif;font-size:12px;color:var(--text-secondary);font-style:italic;">Loading photos…</div>
+    </div>
     <div class="detail-act">${actLabel(m.act)}${m.year ? ' · ' + m.year : ''} · ${stars(m.priority)}</div>
     <div class="detail-title">${m.title}</div>
     <div class="detail-meta">
@@ -1889,6 +2103,86 @@ function toggleCard(id) {
   document.body.style.top = `-${window._panelScrollY}px`;
   document.getElementById('detail-overlay').classList.add('open');
   _setupPanelTouch();
+  // Load photo strip async
+  _loadDetailPhotoStrip(id, m.image_url);
+}
+
+async function _loadDetailPhotoStrip(mapId, currentImageUrl) {
+  const { data: { user } } = await db.auth.getUser();
+  if (currentImageUrl) await ensureLazyMigration(mapId, currentImageUrl, user.id);
+  const images = await loadMapImages(mapId);
+  const strip = document.getElementById('detail-photo-strip');
+  if (!strip) return; // panel was closed
+  if (images.length === 0 && !currentImageUrl) {
+    // No images at all — just show add button
+    strip.innerHTML = `<button class="photo-thumb-add" onclick="document.getElementById('detail-photo-input').click()" title="Add photo">+</button>`;
+    return;
+  }
+  let html = '';
+  images.forEach((img, idx) => {
+    const isPrimary = img.is_primary;
+    const isActive = img.image_url === currentImageUrl;
+    html += `<div class="photo-thumb-wrap${isPrimary ? ' primary' : ''}" data-img-id="${img.id}">
+      <img class="photo-thumb${isActive ? ' active' : ''}" src="${img.image_url}" alt=""
+        onclick="_selectDetailImage('${img.image_url}', this)"
+        oncontextmenu="event.preventDefault();_togglePhotoActions('pa-${img.id}')">
+      <span class="photo-thumb-badge">★</span>
+      <div class="photo-actions" id="pa-${img.id}">
+        ${!isPrimary ? `<button class="photo-action-btn" onclick="_doSetPrimary('${mapId}','${img.id}','${img.image_url}')">Set as Cover</button>` : ''}
+        <button class="photo-action-btn danger" onclick="_doDeleteImage('${img.id}','${mapId}','${img.storage_path || ''}')">Delete</button>
+      </div>
+    </div>`;
+  });
+  html += `<button class="photo-thumb-add" onclick="document.getElementById('detail-photo-input').click()" title="Add photo">+</button>`;
+  strip.innerHTML = html;
+  // On mobile, use tap (not long-press) for actions — add click handler
+  strip.querySelectorAll('.photo-thumb').forEach(th => {
+    let tapTimer;
+    th.addEventListener('touchstart', () => { tapTimer = setTimeout(() => { const pa = th.parentElement.querySelector('.photo-actions'); if(pa) pa.classList.toggle('open'); }, 500); }, {passive: true});
+    th.addEventListener('touchend', () => clearTimeout(tapTimer), {passive: true});
+    th.addEventListener('touchmove', () => clearTimeout(tapTimer), {passive: true});
+  });
+}
+
+function _selectDetailImage(url, thumbEl) {
+  const mainImg = document.getElementById('detail-main-img');
+  if (mainImg && mainImg.tagName === 'IMG') {
+    mainImg.src = url;
+  } else if (mainImg) {
+    mainImg.outerHTML = `<img class="detail-image" id="detail-main-img" src="${url}" alt="">`;
+  }
+  document.querySelectorAll('#detail-photo-strip .photo-thumb').forEach(t => t.classList.remove('active'));
+  if (thumbEl) thumbEl.classList.add('active');
+  // Close any open action menus
+  document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
+}
+
+function _togglePhotoActions(id) {
+  document.querySelectorAll('.photo-actions.open').forEach(p => { if(p.id !== id) p.classList.remove('open'); });
+  document.getElementById(id)?.classList.toggle('open');
+}
+
+async function _doSetPrimary(mapId, imageId, imageUrl) {
+  document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
+  await setPrimaryImage(mapId, imageId, imageUrl);
+  _selectDetailImage(imageUrl);
+  await _loadDetailPhotoStrip(mapId, imageUrl);
+}
+
+async function _doDeleteImage(imageId, mapId, storagePath) {
+  document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
+  const remaining = await deleteMapImage(imageId, mapId, storagePath);
+  await loadMaps();
+  const m = maps.find(x => x.id === mapId);
+  const newPrimary = remaining.find(r => r.is_primary);
+  const mainUrl = newPrimary?.image_url || m?.image_url || null;
+  if (mainUrl) {
+    _selectDetailImage(mainUrl);
+  } else {
+    const mainImg = document.getElementById('detail-main-img');
+    if (mainImg) mainImg.outerHTML = '<div class="detail-placeholder" id="detail-main-img">No image available</div>';
+  }
+  await _loadDetailPhotoStrip(mapId, mainUrl);
 }
 
 // ── Panel touch scroll containment (iOS Safari) ──
@@ -1924,7 +2218,10 @@ function openAdd() {
   document.getElementById('f-act').value = '1';
   document.getElementById('f-status').value = 'watching';
   document.getElementById('f-image-url').value = '';
-  document.getElementById('f-photo-field').style.display = 'none';
+  // Reset multi-photo state
+  _modalPendingFiles = [];
+  _modalExistingImages = [];
+  renderModalPhotoStrip();
   document.getElementById('f-fetch-url').value = '';
   document.getElementById('fetch-status').textContent = '';
   // Hide import bar for manual add
@@ -2024,9 +2321,7 @@ async function fetchImportUrl() {
 
     // Set image
     if (data.image_url) {
-      document.getElementById('f-image-url').value = data.image_url;
-      document.getElementById('f-photo-preview').src = data.image_url;
-      document.getElementById('f-photo-field').style.display = '';
+      addImageToModalStrip(data.image_url);
     }
 
     // Smart act detection
@@ -2071,12 +2366,14 @@ function openEdit(id) {
   document.getElementById('f-url').value = m.url || '';
   document.getElementById('f-notes').value = m.notes || '';
   document.getElementById('f-image-url').value = m.image_url || '';
-  if (m.image_url) {
-    document.getElementById('f-photo-preview').src = m.image_url;
-    document.getElementById('f-photo-field').style.display = '';
-  } else {
-    document.getElementById('f-photo-field').style.display = 'none';
-  }
+  // Load photos into modal strip
+  _modalPendingFiles = [];
+  _modalExistingImages = [];
+  renderModalPhotoStrip();
+  loadMapImages(id).then(images => {
+    _modalExistingImages = images;
+    renderModalPhotoStrip();
+  });
   // Clear AI analysis for edit mode
   document.getElementById('ai-analysis-text').textContent = '';
   document.getElementById('ai-analysis').classList.add('empty');
@@ -2235,6 +2532,9 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.add-map-wrap')) closeAddDropdown();
   if (!e.target.closest('.custom-select')) {
     document.querySelectorAll('.custom-select.open').forEach(el => el.classList.remove('open'));
+  }
+  if (!e.target.closest('.photo-thumb-wrap')) {
+    document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
   }
 });
 </script>
