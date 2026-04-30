@@ -919,8 +919,8 @@
         Continue with Google
       </button>
       <div class="auth-divider"><span>or</span></div>
-      <input type="email" id="email" placeholder="Email address" autocomplete="email">
-      <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+      <input type="email" id="email" placeholder="Email address" autocomplete="off" data-form-type="other">
+      <input type="password" id="password" placeholder="Password" autocomplete="new-password" data-form-type="other">
       <button class="btn-primary" onclick="signIn()">Sign In</button>
       <div class="auth-error" id="auth-error"></div>
       <div class="auth-toggle">No account? <a onclick="showSignup()">Create one</a></div>
