@@ -646,22 +646,32 @@
   }
   .photo-thumb-add:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
   .photo-actions {
-    position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
-    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
-    box-shadow: 0 4px 16px rgba(28,43,58,0.12); z-index: 10;
-    padding: 4px; min-width: 140px; display: none;
+    position: absolute; inset: 0; z-index: 10;
+    background: rgba(18,21,31,0.5);
+    border-radius: 4px;
+    display: none;
+    align-items: center; justify-content: center;
+    gap: 8px;
     animation: fadeDropdown 0.15s ease;
   }
-  .photo-actions.open { display: block; }
+  .photo-actions.open { display: flex; }
   .photo-action-btn {
-    display: block; width: 100%; padding: 8px 12px; border: none;
-    background: none; cursor: pointer; text-align: left; border-radius: 4px;
-    font-family: 'Inter', sans-serif; font-size: 13px; color: var(--ink);
-    transition: background 0.15s;
+    width: 32px; height: 32px;
+    border: none; border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 1;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   }
-  .photo-action-btn:hover { background: var(--cream-dark); }
-  .photo-action-btn.danger { color: var(--rust); }
-  .photo-action-btn.danger:hover { background: rgba(122,59,46,0.06); }
+  .photo-action-btn:hover { transform: scale(1.1); }
+  .photo-action-btn:active { transform: scale(0.95); }
+  .photo-action-btn.cover {
+    background: var(--gold); color: var(--navy-deep);
+  }
+  .photo-action-btn.danger {
+    background: var(--rust); color: #fff;
+  }
   .photo-uploading {
     width: 64px; height: 64px; flex-shrink: 0;
     border: 2px solid var(--gold); border-radius: 4px;
@@ -2286,24 +2296,16 @@ async function _loadDetailPhotoStrip(mapId, currentImageUrl) {
     const isActive = img.image_url === currentImageUrl;
     html += `<div class="photo-thumb-wrap${isPrimary ? ' primary' : ''}" data-img-id="${img.id}">
       <img class="photo-thumb${isActive ? ' active' : ''}" src="${img.image_url}" alt=""
-        onclick="_selectDetailImage('${img.image_url}', this)"
-        oncontextmenu="event.preventDefault();_togglePhotoActions('pa-${img.id}')">
+        onclick="_onThumbTap(event, '${img.id}', '${mapId}', '${img.image_url}', ${isPrimary}, '${img.storage_path || ''}')">
       <span class="photo-thumb-badge">★</span>
       <div class="photo-actions" id="pa-${img.id}">
-        ${!isPrimary ? `<button class="photo-action-btn" onclick="_doSetPrimary('${mapId}','${img.id}','${img.image_url}')">Set as Cover</button>` : ''}
-        <button class="photo-action-btn danger" onclick="_doDeleteImage('${img.id}','${mapId}','${img.storage_path || ''}')">Delete</button>
+        ${!isPrimary ? `<button class="photo-action-btn cover" onclick="event.stopPropagation();_doSetPrimary('${mapId}','${img.id}','${img.image_url}')" title="Set as cover photo">★</button>` : ''}
+        <button class="photo-action-btn danger" onclick="event.stopPropagation();_doDeleteImage('${img.id}','${mapId}','${img.storage_path || ''}')" title="Delete photo">✕</button>
       </div>
     </div>`;
   });
   html += `<button class="photo-thumb-add" onclick="document.getElementById('detail-photo-input').click()" title="Add photo">+</button>`;
   strip.innerHTML = html;
-  // On mobile, use tap (not long-press) for actions — add click handler
-  strip.querySelectorAll('.photo-thumb').forEach(th => {
-    let tapTimer;
-    th.addEventListener('touchstart', () => { tapTimer = setTimeout(() => { const pa = th.parentElement.querySelector('.photo-actions'); if(pa) pa.classList.toggle('open'); }, 500); }, {passive: true});
-    th.addEventListener('touchend', () => clearTimeout(tapTimer), {passive: true});
-    th.addEventListener('touchmove', () => clearTimeout(tapTimer), {passive: true});
-  });
 }
 
 function _selectDetailImage(url, thumbEl) {
@@ -2317,6 +2319,27 @@ function _selectDetailImage(url, thumbEl) {
   if (thumbEl) thumbEl.classList.add('active');
   // Close any open action menus
   document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
+}
+
+let _activeThumbId = null;
+
+function _onThumbTap(event, imgId, mapId, imageUrl, isPrimary, storagePath) {
+  event.stopPropagation();
+  // First tap: select image for main display. Second tap on same: toggle actions.
+  const wasActive = _activeThumbId === imgId;
+  // Close any open action menus
+  document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
+  // Select image for main display
+  _selectDetailImage(imageUrl, event.target);
+  
+  if (wasActive || !isPrimary) {
+    // Show action overlay on this thumbnail
+    const pa = document.getElementById('pa-' + imgId);
+    if (pa) pa.classList.add('open');
+    _activeThumbId = wasActive ? null : imgId;
+  } else {
+    _activeThumbId = imgId;
+  }
 }
 
 function _togglePhotoActions(id) {
@@ -2333,6 +2356,8 @@ async function _doSetPrimary(mapId, imageId, imageUrl) {
 
 async function _doDeleteImage(imageId, mapId, storagePath) {
   document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
+  const yes = await hmConfirm('This photo will be permanently deleted.', { title: 'Delete Photo', icon: '🗑', iconType: 'danger', confirmLabel: 'Delete', cancelLabel: 'Keep' });
+  if (!yes) return;
   const remaining = await deleteMapImage(imageId, mapId, storagePath);
   await loadMaps();
   const m = maps.find(x => x.id === mapId);
