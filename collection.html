@@ -1325,10 +1325,22 @@ function renderStars(val) {
 renderStars(3);
 
 // AUTH — Google Identity Services (popup, no redirect)
+let _googleNonce = null;
+
+async function _generateNonce() {
+  const raw = crypto.randomUUID();
+  const encoder = new TextEncoder();
+  const hash = await crypto.subtle.digest('SHA-256', encoder.encode(raw));
+  const hashArray = Array.from(new Uint8Array(hash));
+  const hashedNonce = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return { raw, hashed: hashedNonce };
+}
+
 async function handleGoogleCredential(response) {
   const { data, error } = await db.auth.signInWithIdToken({
     provider: 'google',
-    token: response.credential
+    token: response.credential,
+    nonce: _googleNonce
   });
   if (error) {
     document.getElementById('auth-error').textContent = error.message;
@@ -1337,11 +1349,13 @@ async function handleGoogleCredential(response) {
   showApp();
 }
 
-function signInWithGoogle() {
-  // Use Google Identity Services popup
+async function signInWithGoogle() {
+  const { raw, hashed } = await _generateNonce();
+  _googleNonce = raw;
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: handleGoogleCredential,
+    nonce: hashed,
     auto_select: false,
     cancel_on_tap_outside: true
   });
