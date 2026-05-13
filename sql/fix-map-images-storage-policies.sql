@@ -1,10 +1,15 @@
--- Create the map-images storage bucket with public read access
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('map-images', 'map-images', true)
-ON CONFLICT (id) DO NOTHING;
+-- Fix map-images storage ownership policies.
+--
+-- Problem being fixed:
+-- The previous update/delete policies only checked bucket_id = 'map-images',
+-- so any authenticated user could update or delete any file in that bucket.
+--
+-- New rule:
+-- Users may update/delete files in their own top-level folder:
+--   map-images/{auth.uid()}/...
+-- Legacy files remain manageable only when public.map_images.storage_path
+-- links the file to the current user.
 
--- Replace legacy broad policies. The old update/delete rules only checked
--- bucket_id, which meant any signed-in user could mutate any map image file.
 DROP POLICY IF EXISTS "Allow anonymous scan uploads" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can upload map images" ON storage.objects;
 DROP POLICY IF EXISTS "Public read access for map images" ON storage.objects;
@@ -13,7 +18,6 @@ DROP POLICY IF EXISTS "Users can delete their own map images" ON storage.objects
 DROP POLICY IF EXISTS "Users can update their own images" ON storage.objects;
 DROP POLICY IF EXISTS "Users can delete their own images" ON storage.objects;
 
--- Public scan flow can upload temporary scan images, but only under scans/.
 CREATE POLICY "Allow anonymous scan uploads"
 ON storage.objects FOR INSERT
 TO anon
@@ -22,8 +26,6 @@ WITH CHECK (
   AND (storage.foldername(name))[1] = 'scans'
 );
 
--- Signed-in users upload owned files under their user-id folder.
--- The scans/ exception preserves the public scan flow for signed-in browsers.
 CREATE POLICY "Authenticated users can upload map images"
 ON storage.objects FOR INSERT
 TO authenticated
@@ -35,14 +37,11 @@ WITH CHECK (
   )
 );
 
--- Allow public read access to all map images
 CREATE POLICY "Public read access for map images"
 ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'map-images');
 
--- Users can update files in their user-id folder. The EXISTS clause keeps
--- legacy files manageable if map_images.storage_path already records ownership.
 CREATE POLICY "Users can update their own map images"
 ON storage.objects FOR UPDATE
 TO authenticated
@@ -71,8 +70,6 @@ WITH CHECK (
   )
 );
 
--- Users can delete only files in their user-id folder, or legacy files that
--- are linked to one of their map_images rows.
 CREATE POLICY "Users can delete their own map images"
 ON storage.objects FOR DELETE
 TO authenticated

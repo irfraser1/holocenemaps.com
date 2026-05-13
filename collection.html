@@ -2121,7 +2121,7 @@ let _modalPendingFiles = []; // files queued for upload on new maps (no map_id y
 let _modalExistingImages = []; // map_images rows for current edit
 let _detailMapId = null; // currently open detail panel map id
 
-async function resizeAndUploadFile(file) {
+async function resizeAndUploadFile(file, userId) {
   const bitmap = await createImageBitmap(file);
   let w = bitmap.width, h = bitmap.height;
   const maxDim = 1200;
@@ -2134,7 +2134,7 @@ async function resizeAndUploadFile(file) {
   ctx.drawImage(bitmap, 0, 0, w, h);
   bitmap.close();
   const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
-  const storagePath = `photos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const storagePath = `${userId}/photos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
   const { error: uploadErr } = await db.storage
     .from('map-images')
     .upload(storagePath, blob, { contentType: 'image/jpeg', upsert: false });
@@ -2149,20 +2149,20 @@ async function loadMapImages(mapId) {
   return data || [];
 }
 
-async function ensureLazyMigration(mapId, imageUrl, userId) {
+async function ensureLazyMigration(mapId, imageUrl, userId, storagePath = null) {
   if (!imageUrl) return;
   const { data } = await db.from('map_images')
     .select('id').eq('map_id', mapId).limit(1);
   if (data && data.length > 0) return;
   await db.from('map_images').insert({
     map_id: mapId, user_id: userId, image_url: imageUrl,
-    is_primary: true, sort_order: 0
+    storage_path: storagePath, is_primary: true, sort_order: 0
   });
 }
 
 async function uploadMapImage(mapId, file, makePrimary) {
   const { data: { user } } = await db.auth.getUser();
-  const { publicUrl, storagePath } = await resizeAndUploadFile(file);
+  const { publicUrl, storagePath } = await resizeAndUploadFile(file, user.id);
   const { data: row } = await db.from('map_images').insert({
     map_id: mapId, user_id: user.id, image_url: publicUrl,
     storage_path: storagePath, is_primary: !!makePrimary, sort_order: 99
@@ -2647,13 +2647,14 @@ async function _rotateCurrentImage() {
   try {
     const blob = await _rotateImageBlob(currentSrc);
 
-    const storagePath = imgRecord.storage_path || `map-photos/${mapId}/${crypto.randomUUID()}.jpg`;
-    const { error: upErr } = await db.storage.from('map-photos').upload(storagePath, blob, {
+    const { data: { user } } = await db.auth.getUser();
+    const storagePath = imgRecord.storage_path || `${user.id}/photos/${mapId}/${crypto.randomUUID()}.jpg`;
+    const { error: upErr } = await db.storage.from('map-images').upload(storagePath, blob, {
       contentType: 'image/jpeg', upsert: true
     });
     if (upErr) { console.error('Rotate upload failed:', upErr); await hmAlert('Upload failed: ' + upErr.message, { title: 'Rotate Error', iconType: 'danger' }); return; }
 
-    const { data: urlData } = db.storage.from('map-photos').getPublicUrl(storagePath);
+    const { data: urlData } = db.storage.from('map-images').getPublicUrl(storagePath);
     const newUrl = urlData.publicUrl + '?t=' + Date.now();
 
     await db.from('map_images').update({ image_url: newUrl, storage_path: storagePath }).eq('id', imgRecord.id);
@@ -2679,14 +2680,16 @@ async function _rotateLegacyImage(mapId, currentSrc, mainImg, rotateBtn) {
   if (rotateBtn) { rotateBtn.classList.add('spinning'); rotateBtn.style.pointerEvents = 'none'; }
   try {
     const blob = await _rotateImageBlob(currentSrc);
-    const storagePath = `map-photos/${mapId}/${crypto.randomUUID()}.jpg`;
-    const { error: upErr } = await db.storage.from('map-photos').upload(storagePath, blob, {
+    const { data: { user } } = await db.auth.getUser();
+    const storagePath = `${user.id}/photos/${mapId}/${crypto.randomUUID()}.jpg`;
+    const { error: upErr } = await db.storage.from('map-images').upload(storagePath, blob, {
       contentType: 'image/jpeg', upsert: true
     });
     if (upErr) { console.error('Rotate upload failed:', upErr); await hmAlert('Upload failed: ' + upErr.message, { title: 'Rotate Error', iconType: 'danger' }); return; }
-    const { data: urlData } = db.storage.from('map-photos').getPublicUrl(storagePath);
+    const { data: urlData } = db.storage.from('map-images').getPublicUrl(storagePath);
     const newUrl = urlData.publicUrl + '?t=' + Date.now();
     await db.from('maps').update({ image_url: newUrl }).eq('id', mapId);
+    await ensureLazyMigration(mapId, newUrl, user.id, storagePath);
     const m = maps.find(x => x.id === mapId);
     if (m) m.image_url = newUrl;
     mainImg.src = newUrl;
@@ -3398,4 +3401,3 @@ document.getElementById('chat-input')?.addEventListener('input', function() {
 
 </body>
 </html>
-
