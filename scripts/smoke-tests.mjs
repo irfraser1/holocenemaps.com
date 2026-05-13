@@ -1,0 +1,127 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const failures = [];
+
+const productionHtml = [
+  "index.html",
+  "scan.html",
+  "collection.html",
+  "gallery.html",
+  "bowen.html",
+  "chatelain.html",
+  "gibson.html",
+  "nyc.html",
+  "texas.html"
+];
+
+function read(relativePath) {
+  return fs.readFileSync(path.join(root, relativePath), "utf8");
+}
+
+function exists(relativePath) {
+  return fs.existsSync(path.join(root, relativePath));
+}
+
+function fail(message) {
+  failures.push(message);
+}
+
+function assertFile(relativePath) {
+  if (!exists(relativePath)) {
+    fail(`Missing required file: ${relativePath}`);
+  }
+}
+
+function isExternalReference(value) {
+  return /^(https?:)?\/\//i.test(value)
+    || /^(mailto|tel|javascript|data|blob|chrome-extension):/i.test(value)
+    || value.startsWith("#");
+}
+
+function normalizeLocalReference(fromFile, rawValue) {
+  const value = rawValue.trim();
+  if (!value || value.includes("${") || isExternalReference(value)) return null;
+
+  const withoutHash = value.split("#")[0];
+  const withoutQuery = withoutHash.split("?")[0];
+  if (!withoutQuery || withoutQuery.startsWith("/")) return null;
+
+  return path.normalize(path.join(path.dirname(fromFile), withoutQuery));
+}
+
+function checkLocalReferences(htmlFile) {
+  const html = read(htmlFile);
+  const referencePattern = /\b(?:src|href|poster)=["']([^"']+)["']/gi;
+  let match;
+
+  while ((match = referencePattern.exec(html)) !== null) {
+    const reference = normalizeLocalReference(htmlFile, match[1]);
+    if (!reference) continue;
+
+    if (!exists(reference)) {
+      fail(`${htmlFile} points to missing local file: ${match[1]}`);
+    }
+  }
+}
+
+function assertContains(relativePath, needle, reason) {
+  const contents = read(relativePath);
+  if (!contents.includes(needle)) {
+    fail(`${relativePath} should contain "${needle}" (${reason})`);
+  }
+}
+
+function assertNotContains(relativePath, needle, reason) {
+  const contents = read(relativePath);
+  if (contents.includes(needle)) {
+    fail(`${relativePath} should not contain "${needle}" (${reason})`);
+  }
+}
+
+for (const htmlFile of productionHtml) {
+  assertFile(htmlFile);
+  if (exists(htmlFile)) checkLocalReferences(htmlFile);
+}
+
+assertFile("sql/fix-map-images-storage-policies.sql");
+assertFile("sql/storage-bucket.sql");
+assertFile("collection.html");
+
+assertNotContains("collection.html", "map-photos", "the live bucket is map-images");
+assertContains("collection.html", ".from('map-images')", "map image uploads and rotation use the real storage bucket");
+assertContains("collection.html", "${userId}/photos/", "new authenticated uploads should live under a user-owned folder");
+assertContains("collection.html", "storage_path", "map image rows should track the underlying storage object");
+
+assertContains(
+  "sql/fix-map-images-storage-policies.sql",
+  "DROP POLICY IF EXISTS \"Users can delete their own map images\"",
+  "the live migration replaces the old broad delete policy"
+);
+assertContains(
+  "sql/fix-map-images-storage-policies.sql",
+  "(storage.foldername(name))[1] = auth.uid()::text",
+  "storage update/delete policy should check the user-owned folder"
+);
+assertContains(
+  "sql/fix-map-images-storage-policies.sql",
+  "public.map_images",
+  "legacy objects should be protected through the map_images ownership record"
+);
+assertContains(
+  "sql/fix-map-images-storage-policies.sql",
+  "bucket_id = 'map-images'",
+  "storage policies should be scoped to the map-images bucket"
+);
+
+if (failures.length > 0) {
+  console.error("\nSmoke tests failed:\n");
+  for (const failure of failures) {
+    console.error(`- ${failure}`);
+  }
+  process.exit(1);
+}
+
+console.log(`Smoke tests passed for ${productionHtml.length} production HTML files and storage policy guards.`);
