@@ -601,7 +601,8 @@
         const isUncertain = basis === 'inferred' || basis === 'unresolved';
         const src = fieldData.source === 'corpus' ? sourceTag('corpus') : '';
         const bTag = basisTag(basis);
-        const prefix = (label === 'Year' && isUncertain && fieldData.value) ? '<span class="approx">c. </span>' : '';
+        const alreadyApprox = fieldData.value && /^c\.\s?/i.test(fieldData.value);
+        const prefix = (label === 'Year' && isUncertain && fieldData.value && !alreadyApprox) ? '<span class="approx">c. </span>' : '';
 
         grid.innerHTML += `<div class="id-field${opts.full ? ' full' : ''}">
           <span class="id-field-label">${label} ${bTag} ${src}</span>
