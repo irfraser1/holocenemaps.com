@@ -94,6 +94,9 @@ assertNotContains("collection.html", "map-photos", "the live bucket is map-image
 assertContains("collection.html", ".from('map-images')", "map image uploads and rotation use the real storage bucket");
 assertContains("collection.html", "${userId}/photos/", "new authenticated uploads should live under a user-owned folder");
 assertContains("collection.html", "storage_path", "map image rows should track the underlying storage object");
+assertContains("collection.html", "window.history.pushState({ hmDetailMapId", "opening a map detail should add a collection-local history state");
+assertContains("collection.html", "window.addEventListener('popstate'", "browser Back should close the map detail panel before leaving the collection");
+assertContains("collection.html", "aria-label=\"Close map details\"", "the map detail close button should be accessible and wired to close the panel");
 
 assertContains(
   "sql/fix-map-images-storage-policies.sql",

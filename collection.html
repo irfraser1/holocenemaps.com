@@ -2120,6 +2120,7 @@ async function reEvaluateMap(id) {
 let _modalPendingFiles = []; // files queued for upload on new maps (no map_id yet)
 let _modalExistingImages = []; // map_images rows for current edit
 let _detailMapId = null; // currently open detail panel map id
+let _detailHistoryActive = false; // true when browser Back should close the detail panel
 
 async function resizeAndUploadFile(file, userId) {
   const bitmap = await createImageBitmap(file);
@@ -2476,13 +2477,14 @@ function collapseThesisPanel() {
   document.getElementById('thesis-prompt').classList.remove('visible');
 }
 
-function toggleCard(id) {
+function toggleCard(id, options = {}) {
+  const { pushHistory = true } = options;
   const m = maps.find(x => x.id === id);
   if (!m) return;
   _detailMapId = id;
   const sheet = document.getElementById('detail-sheet');
   sheet.innerHTML = `
-    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <button class="detail-close" type="button" aria-label="Close map details" onclick="closeDetail()">✕</button>
     ${m.image_url
       ? `<div class="detail-img-wrap">
            <img class="detail-image" id="detail-main-img" src="${m.image_url}" alt="" onerror="this.outerHTML='<div class=\\'detail-placeholder\\'>No image available</div>'">
@@ -2511,6 +2513,12 @@ function toggleCard(id) {
     </div>
     <div class="reeval-status" id="reeval-status"></div>
   `;
+  if (pushHistory && window.history && !window.history.state?.hmDetailMapId) {
+    window.history.pushState({ hmDetailMapId: id }, '', window.location.pathname + window.location.search + '#map-' + id);
+    _detailHistoryActive = true;
+  } else {
+    _detailHistoryActive = !!window.history.state?.hmDetailMapId;
+  }
   window._panelScrollY = window.scrollY;
   document.body.classList.add('panel-open');
   document.body.style.top = `-${window._panelScrollY}px`;
@@ -2743,13 +2751,38 @@ function _teardownPanelTouch() {
   sheet.removeEventListener('touchmove', _onSheetTouch);
 }
 
-function closeDetail() {
+function closeDetail(options = {}) {
+  const { skipHistory = false } = options;
+  const overlay = document.getElementById('detail-overlay');
+  if (!overlay.classList.contains('open')) return;
   _teardownPanelTouch();
-  document.getElementById('detail-overlay').classList.remove('open');
+  overlay.classList.remove('open');
   document.body.classList.remove('panel-open');
   document.body.style.top = '';
   window.scrollTo(0, window._panelScrollY || 0);
+  _detailMapId = null;
+
+  if (_detailHistoryActive && !skipHistory && window.history.state?.hmDetailMapId) {
+    _detailHistoryActive = false;
+    window.history.back();
+    return;
+  }
+
+  _detailHistoryActive = false;
 }
+
+window.addEventListener('popstate', () => {
+  const overlay = document.getElementById('detail-overlay');
+  if (overlay?.classList.contains('open')) {
+    closeDetail({ skipHistory: true });
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    closeDetail();
+  }
+});
 
 // MODAL
 function openAdd() {
