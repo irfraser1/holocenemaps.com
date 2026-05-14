@@ -91,6 +91,9 @@ assertFile("sql/map-detail-phase-1.sql");
 assertFile("sql/fix-map-images-storage-policies.sql");
 assertFile("sql/storage-bucket.sql");
 assertFile("collection.html");
+assertFile("css/collection-base.css");
+assertFile("css/collection-dialogs.css");
+assertFile("css/collection-chat.css");
 
 assertNotContains("collection.html", "map-photos", "the live bucket is map-images");
 assertContains("collection.html", ".from('map-images')", "map image uploads and rotation use the real storage bucket");
@@ -100,7 +103,10 @@ assertContains("collection.html", "window.history.pushState({ hmDetailMapId", "o
 assertContains("collection.html", "window.addEventListener('popstate'", "browser Back should close the map detail panel before leaving the collection");
 assertContains("collection.html", "aria-label=\"Close map details\"", "the map detail close button should be accessible and wired to close the panel");
 assertContains("collection.html", "ontouchend=\"event.preventDefault();event.stopPropagation();closeDetail()\"", "the map detail close button should handle iOS touch events directly");
-assertContains("collection.html", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");
+assertContains("collection.html", "css/collection-base.css", "collection styles should load from the extracted base stylesheet");
+assertContains("collection.html", "css/collection-dialogs.css", "collection dialog styles should load from the extracted dialog stylesheet");
+assertContains("collection.html", "css/collection-chat.css", "collection chat styles should load from the extracted chat stylesheet");
+assertContains("css/collection-base.css", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");
 assertContains("collection.html", "detail-tabs", "map detail should expose read-only tabs");
 assertContains("collection.html", "Photos & Files", "map detail should include the Phase 1 files tab");
 assertContains("collection.html", "map_catalog_details", "map detail should read collector catalogue metadata");
