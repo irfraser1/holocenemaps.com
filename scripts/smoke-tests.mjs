@@ -100,6 +100,20 @@ assertContains("collection.html", "aria-label=\"Close map details\"", "the map d
 assertContains("collection.html", "ontouchend=\"event.preventDefault();event.stopPropagation();closeDetail()\"", "the map detail close button should handle iOS touch events directly");
 assertContains("collection.html", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");
 
+assertFile("sql/edge-function-usage.sql");
+assertFile("supabase/functions/_shared/edge-auth.ts");
+assertContains("sql/edge-function-usage.sql", "CREATE TABLE IF NOT EXISTS edge_function_usage", "Edge Function calls should have a canonical usage log table");
+assertContains("supabase/functions/evaluate-text/index.ts", "identifyActor(req)", "evaluate-text should require an authenticated user");
+assertContains("supabase/functions/scrape-listing/index.ts", "identifyActor(req)", "scrape-listing should require an authenticated user");
+assertContains("supabase/functions/scrape-image/index.ts", "identifyActor(req)", "scrape-image should require an authenticated user");
+assertContains("supabase/functions/scrape-listing/index.ts", "validateDealerUrl", "scrape-listing should reject arbitrary URLs");
+assertContains("supabase/functions/scrape-image/index.ts", "validateDealerUrl", "scrape-image should reject arbitrary URLs");
+assertContains("supabase/functions/evaluate-map/index.ts", "allowAnonymous: true", "public map scans should be explicit and usage-limited");
+assertContains("supabase/functions/evaluate-map/index.ts", "anonymousDaily: 5", "anonymous map scans should have a daily cap");
+assertContains("supabase/functions/chat-advisor/index.ts", "enforceUsageLimit", "chat-advisor should be usage logged and limited");
+assertContains("collection.html", "async function getFunctionHeaders", "collection Edge Function calls should attach auth headers");
+assertContains("extension/popup.js", "async function getFunctionHeaders", "extension Edge Function calls should attach auth headers");
+
 assertContains(
   "sql/fix-map-images-storage-policies.sql",
   "DROP POLICY IF EXISTS \"Users can delete their own map images\"",
