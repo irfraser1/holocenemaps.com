@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS map_catalog_details (
   state TEXT,
   plate_number TEXT,
 
-  references JSONB DEFAULT '[]'::jsonb,
+  reference_entries JSONB DEFAULT '[]'::jsonb,
   bibliography_notes TEXT,
 
   summary TEXT,
@@ -49,8 +49,22 @@ CREATE POLICY "Users manage own map catalog details"
   ON map_catalog_details
   FOR ALL
   TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM maps
+      WHERE maps.id = map_id
+        AND maps.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM maps
+      WHERE maps.id = map_id
+        AND maps.user_id = auth.uid()
+    )
+  );
 
 CREATE TABLE IF NOT EXISTS map_notes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,8 +98,22 @@ CREATE POLICY "Users manage own map notes"
   ON map_notes
   FOR ALL
   TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM maps
+      WHERE maps.id = map_id
+        AND maps.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM maps
+      WHERE maps.id = map_id
+        AND maps.user_id = auth.uid()
+    )
+  );
 
 -- Preserve maps.notes as a legacy fallback. Copy it once into user_notes
 -- only for maps that do not already have a dedicated map_notes row.
@@ -127,8 +155,22 @@ CREATE POLICY "Users manage own map documents"
   ON map_documents
   FOR ALL
   TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM maps
+      WHERE maps.id = map_id
+        AND maps.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (
+      SELECT 1 FROM maps
+      WHERE maps.id = map_id
+        AND maps.user_id = auth.uid()
+    )
+  );
 
 -- Private bucket for invoices, COAs, condition reports, and provenance files.
 INSERT INTO storage.buckets (id, name, public)

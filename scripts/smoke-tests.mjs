@@ -101,6 +101,11 @@ assertContains("collection.html", "window.addEventListener('popstate'", "browser
 assertContains("collection.html", "aria-label=\"Close map details\"", "the map detail close button should be accessible and wired to close the panel");
 assertContains("collection.html", "ontouchend=\"event.preventDefault();event.stopPropagation();closeDetail()\"", "the map detail close button should handle iOS touch events directly");
 assertContains("collection.html", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");
+assertContains("collection.html", "detail-tabs", "map detail should expose read-only tabs");
+assertContains("collection.html", "Photos & Files", "map detail should include the Phase 1 files tab");
+assertContains("collection.html", "map_catalog_details", "map detail should read collector catalogue metadata");
+assertContains("collection.html", "map_documents", "map detail should read private document metadata");
+assertContains("collection.html", "ai_thesis_fit", "AI notes should be separated from user notes");
 
 assertFile("sql/edge-function-usage.sql");
 assertFile("supabase/functions/_shared/edge-auth.ts");
@@ -113,6 +118,7 @@ assertContains("sql/map-detail-phase-1.sql", "CREATE TABLE IF NOT EXISTS map_cat
 assertContains("sql/map-detail-phase-1.sql", "CREATE TABLE IF NOT EXISTS map_notes", "Phase 1 should separate user and AI notes");
 assertContains("sql/map-detail-phase-1.sql", "CREATE TABLE IF NOT EXISTS map_documents", "Phase 1 should add private document metadata");
 assertContains("sql/map-detail-phase-1.sql", "VALUES ('map-documents', 'map-documents', false)", "map documents bucket should be private by default");
+assertContains("sql/map-detail-phase-1.sql", "maps.user_id = auth.uid()", "Phase 1 detail policies should verify ownership of the parent map");
 assertContains("sql/map-detail-phase-1.sql", "ON CONFLICT (map_id) DO NOTHING", "legacy maps.notes backfill should not overwrite existing separated notes");
 assertContains("supabase/functions/evaluate-text/index.ts", "identifyActor(req)", "evaluate-text should require an authenticated user");
 assertContains("supabase/functions/scrape-listing/index.ts", "identifyActor(req)", "scrape-listing should require an authenticated user");
