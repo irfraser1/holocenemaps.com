@@ -106,6 +106,10 @@ assertContains("collection.html", "Photos & Files", "map detail should include t
 assertContains("collection.html", "map_catalog_details", "map detail should read collector catalogue metadata");
 assertContains("collection.html", "map_documents", "map detail should read private document metadata");
 assertContains("collection.html", "ai_thesis_fit", "AI notes should be separated from user notes");
+assertContains("collection.html", "Set Cover", "photo strip should expose a visible set-cover action");
+assertContains("collection.html", "_doDeleteImageFromButton", "photo strip should expose an obvious delete action with confirmation");
+assertContains("collection.html", "Rotating", "image rotation should show an in-progress state");
+assertContains("collection.html", "OffscreenCanvas", "image rotation should use faster offscreen canvas when available");
 
 assertFile("sql/edge-function-usage.sql");
 assertFile("supabase/functions/_shared/edge-auth.ts");
