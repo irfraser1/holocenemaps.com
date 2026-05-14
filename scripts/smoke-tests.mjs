@@ -86,6 +86,7 @@ for (const htmlFile of productionHtml) {
   if (exists(htmlFile)) checkLocalReferences(htmlFile);
 }
 
+assertFile("sql/core-schema.sql");
 assertFile("sql/fix-map-images-storage-policies.sql");
 assertFile("sql/storage-bucket.sql");
 assertFile("collection.html");
@@ -103,6 +104,10 @@ assertContains("collection.html", "width: 44px; height: 44px", "the map detail c
 assertFile("sql/edge-function-usage.sql");
 assertFile("supabase/functions/_shared/edge-auth.ts");
 assertContains("sql/edge-function-usage.sql", "CREATE TABLE IF NOT EXISTS edge_function_usage", "Edge Function calls should have a canonical usage log table");
+assertContains("sql/core-schema.sql", "CREATE TABLE IF NOT EXISTS profiles", "core schema SQL should define profiles");
+assertContains("sql/core-schema.sql", "CREATE TABLE IF NOT EXISTS maps", "core schema SQL should define maps");
+assertContains("sql/core-schema.sql", "DROP POLICY IF EXISTS \"Allow insert for known user\" ON maps", "core schema SQL should remove the prototype known-user map policy");
+assertContains("sql/core-schema.sql", "WITH CHECK (auth.uid() = user_id)", "core schema policies should enforce user ownership on writes");
 assertContains("supabase/functions/evaluate-text/index.ts", "identifyActor(req)", "evaluate-text should require an authenticated user");
 assertContains("supabase/functions/scrape-listing/index.ts", "identifyActor(req)", "scrape-listing should require an authenticated user");
 assertContains("supabase/functions/scrape-image/index.ts", "identifyActor(req)", "scrape-image should require an authenticated user");
