@@ -429,22 +429,31 @@
   }
   .detail-close:hover { color: var(--ink); border-color: var(--gold); }
   .detail-img-wrap { position: relative; margin-bottom: 20px; }
-  .detail-image { width: 100%; max-height: 300px; object-fit: contain; border-radius: 4px; border: 1px solid var(--border); display: block; }
+  .detail-image { width: 100%; max-height: 300px; object-fit: contain; border-radius: 4px; border: 1px solid var(--border); display: block; transition: opacity 0.2s, filter 0.2s; }
+  .detail-img-wrap.rotating .detail-image { opacity: 0.58; filter: saturate(0.8); }
   .detail-rotate-btn {
     position: absolute; bottom: 8px; right: 8px;
-    width: 36px; height: 36px; border-radius: 50%;
-    background: rgba(28,43,58,0.75); color: var(--cream);
-    border: 1px solid rgba(196,164,74,0.3);
+    min-width: 44px; height: 44px; border-radius: 22px;
+    background: rgba(28,43,58,0.78); color: var(--cream);
+    border: 1px solid rgba(196,164,74,0.36);
     font-size: 18px; line-height: 1;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 0 12px; touch-action: manipulation;
     backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s, opacity 0.2s;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   }
-  .detail-rotate-btn:hover { background: rgba(28,43,58,0.9); transform: scale(1.1); }
-  .detail-rotate-btn:active { transform: scale(0.95); }
-  .detail-rotate-btn.spinning { animation: spin360 0.4s ease; }
-  @keyframes spin360 { from { transform: rotate(0deg); } to { transform: rotate(90deg); } }
+  .detail-rotate-btn:hover { background: rgba(28,43,58,0.9); transform: scale(1.04); }
+  .detail-rotate-btn:active { transform: scale(0.98); }
+  .detail-rotate-btn[disabled] { cursor: wait; opacity: 0.92; transform: none; }
+  .detail-rotate-btn.spinning::before {
+    content: ''; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.35); border-top-color: var(--cream);
+    animation: spin 0.75s linear infinite;
+  }
+  .detail-rotate-btn.spinning .rotate-symbol { display: none; }
+  .detail-rotate-btn .rotate-label { display: none; font-family: 'Cormorant SC', serif; font-size: 10px; letter-spacing: 0.08em; }
+  .detail-rotate-btn.spinning .rotate-label { display: inline; }
   .detail-placeholder {
     width: 100%; height: 160px; margin-bottom: 20px; border-radius: 4px;
     background: var(--cream-dark); border: 1px solid var(--border);
@@ -690,15 +699,15 @@
 
   /* PHOTO STRIP */
   .photo-strip {
-    display: flex; gap: 8px; align-items: center;
+    display: flex; gap: 12px; align-items: flex-start;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     padding: 12px 0; margin-bottom: 16px;
     scrollbar-width: none;
   }
   .photo-strip::-webkit-scrollbar { display: none; }
-  .photo-thumb-wrap { position: relative; flex-shrink: 0; }
+  .photo-thumb-wrap { position: relative; flex: 0 0 88px; }
   .photo-thumb {
-    width: 64px; height: 64px; object-fit: cover; border-radius: 4px;
+    width: 88px; height: 88px; object-fit: cover; border-radius: 4px;
     border: 2px solid var(--border-light); cursor: pointer;
     transition: border-color 0.2s, opacity 0.15s;
   }
@@ -706,15 +715,15 @@
   .photo-thumb.active { border-color: var(--navy); }
   .photo-thumb-wrap.primary .photo-thumb { border-color: var(--gold); }
   .photo-thumb-badge {
-    position: absolute; top: -4px; right: -4px;
+    position: absolute; top: -5px; right: -5px;
     background: var(--gold); color: var(--navy-deep);
-    font-size: 10px; width: 16px; height: 16px; border-radius: 50%;
+    font-size: 11px; width: 20px; height: 20px; border-radius: 50%;
     display: none; align-items: center; justify-content: center;
     line-height: 1; pointer-events: none;
   }
   .photo-thumb-wrap.primary .photo-thumb-badge { display: flex; }
   .photo-thumb-add {
-    width: 64px; height: 64px; flex-shrink: 0;
+    width: 88px; height: 88px; flex-shrink: 0;
     border: 1px dashed var(--border); border-radius: 4px;
     background: transparent; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
@@ -723,31 +732,30 @@
   }
   .photo-thumb-add:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
   .photo-actions {
-    position: absolute; inset: 0; z-index: 10;
-    background: rgba(18,21,31,0.5);
-    border-radius: 4px;
-    display: none;
-    align-items: center; justify-content: center;
-    gap: 8px;
-    animation: fadeDropdown 0.15s ease;
+    display: grid; grid-template-columns: 1fr; gap: 6px;
+    margin-top: 6px;
   }
-  .photo-actions.open { display: flex; }
   .photo-action-btn {
-    width: 32px; height: 32px;
-    border: none; border-radius: 50%;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; line-height: 1;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    width: 100%; min-width: 0; height: 44px;
+    border: 1px solid var(--border-light); border-radius: 4px;
+    cursor: pointer; padding: 0 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant SC', serif; font-size: 10px; letter-spacing: 0.06em;
+    line-height: 1; transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    background: rgba(255,255,255,0.45); color: var(--navy);
   }
-  .photo-action-btn:hover { transform: scale(1.1); }
-  .photo-action-btn:active { transform: scale(0.95); }
+  .photo-action-btn:hover { transform: translateY(-1px); border-color: var(--gold); }
+  .photo-action-btn:active { transform: translateY(0); }
+  .photo-action-btn:disabled { opacity: 0.55; cursor: wait; transform: none; }
+  .photo-thumb-wrap.busy .photo-thumb { opacity: 0.62; }
   .photo-action-btn.cover {
-    background: var(--gold); color: var(--navy-deep);
+    background: var(--gold-glow); color: var(--navy-deep);
+  }
+  .photo-action-btn.cover.is-primary {
+    background: var(--gold); color: var(--navy-deep); cursor: default;
   }
   .photo-action-btn.danger {
-    background: var(--rust); color: #fff;
+    background: rgba(163,74,58,0.08); color: var(--rust); border-color: rgba(163,74,58,0.28);
   }
   .photo-uploading {
     width: 64px; height: 64px; flex-shrink: 0;
@@ -2722,7 +2730,7 @@ async function toggleCard(id, options = {}) {
     ${m.image_url
       ? `<div class="detail-img-wrap">
            <img class="detail-image" id="detail-main-img" src="${_escapeDetail(m.image_url)}" alt="" onerror="this.outerHTML='<div class=\'detail-placeholder\'>No image available</div>'">
-           <button class="detail-rotate-btn" id="detail-rotate-btn" onclick="_rotateCurrentImage()" title="Rotate 90°">↻</button>
+           <button class="detail-rotate-btn" id="detail-rotate-btn" onclick="_rotateCurrentImage()" title="Rotate 90°"><span class="rotate-symbol">↻</span><span class="rotate-label">Rotating</span></button>
          </div>`
       : '<div class="detail-placeholder" id="detail-main-img">No image available</div>'
     }
@@ -2781,16 +2789,19 @@ async function _loadDetailPhotoStrip(mapId, currentImageUrl) {
     return;
   }
   let html = '';
-  images.forEach((img, idx) => {
+  images.forEach((img) => {
     const isPrimary = img.is_primary;
     const isActive = img.image_url === currentImageUrl;
-    html += `<div class="photo-thumb-wrap${isPrimary ? ' primary' : ''}" data-img-id="${img.id}">
-      <img class="photo-thumb${isActive ? ' active' : ''}" src="${img.image_url}" alt=""
-        onclick="_onThumbTap(event, '${img.id}', '${mapId}', '${img.image_url}', ${isPrimary}, '${img.storage_path || ''}')">
+    const imageId = _escapeDetail(img.id);
+    const safeMapId = _escapeDetail(mapId);
+    const safeUrl = _escapeDetail(img.image_url);
+    const safePath = _escapeDetail(img.storage_path || '');
+    html += `<div class="photo-thumb-wrap${isPrimary ? ' primary' : ''}" data-img-id="${imageId}" data-map-id="${safeMapId}" data-image-url="${safeUrl}" data-storage-path="${safePath}">
+      <img class="photo-thumb${isActive ? ' active' : ''}" src="${safeUrl}" alt="" onclick="_onThumbTap(event)">
       <span class="photo-thumb-badge">★</span>
-      <div class="photo-actions" id="pa-${img.id}">
-        ${!isPrimary ? `<button class="photo-action-btn cover" onclick="event.stopPropagation();_doSetPrimary('${mapId}','${img.id}','${img.image_url}')" title="Set as cover photo">★</button>` : ''}
-        <button class="photo-action-btn danger" onclick="event.stopPropagation();_doDeleteImage('${img.id}','${mapId}','${img.storage_path || ''}')" title="Delete photo">✕</button>
+      <div class="photo-actions" id="pa-${imageId}">
+        <button class="photo-action-btn cover${isPrimary ? ' is-primary' : ''}" onclick="event.stopPropagation();_doSetPrimaryFromButton(this)" ${isPrimary ? 'disabled aria-disabled="true"' : ''} title="${isPrimary ? 'Current cover photo' : 'Set as cover photo'}">${isPrimary ? 'Cover' : 'Set Cover'}</button>
+        <button class="photo-action-btn danger" onclick="event.stopPropagation();_doDeleteImageFromButton(this)" title="Delete photo">Delete</button>
       </div>
     </div>`;
   });
@@ -2807,7 +2818,7 @@ function _selectDetailImage(url, thumbEl) {
     const wrap = document.createElement('div');
     wrap.className = 'detail-img-wrap';
     wrap.innerHTML = `<img class="detail-image" id="detail-main-img" src="${url}" alt="">
-      <button class="detail-rotate-btn" id="detail-rotate-btn" onclick="_rotateCurrentImage()" title="Rotate 90°">↻</button>`;
+      <button class="detail-rotate-btn" id="detail-rotate-btn" onclick="_rotateCurrentImage()" title="Rotate 90°"><span class="rotate-symbol">↻</span><span class="rotate-label">Rotating</span></button>`;
     mainImg.replaceWith(wrap);
   }
   document.querySelectorAll('#detail-photo-strip .photo-thumb').forEach(t => t.classList.remove('active'));
@@ -2816,61 +2827,86 @@ function _selectDetailImage(url, thumbEl) {
   document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
 }
 
-let _activeThumbId = null;
-
-function _onThumbTap(event, imgId, mapId, imageUrl, isPrimary, storagePath) {
-  event.stopPropagation();
-  // First tap: select image for main display. Second tap on same: toggle actions.
-  const wasActive = _activeThumbId === imgId;
-  // Close any open action menus
-  document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
-  // Select image for main display
-  _selectDetailImage(imageUrl, event.target);
-  
-  if (wasActive || !isPrimary) {
-    // Show action overlay on this thumbnail
-    const pa = document.getElementById('pa-' + imgId);
-    if (pa) pa.classList.add('open');
-    _activeThumbId = wasActive ? null : imgId;
-  } else {
-    _activeThumbId = imgId;
-  }
+function _photoDataFromButton(button) {
+  const wrap = button.closest('.photo-thumb-wrap');
+  return {
+    imageId: wrap?.dataset.imgId || '',
+    mapId: wrap?.dataset.mapId || '',
+    imageUrl: wrap?.dataset.imageUrl || '',
+    storagePath: wrap?.dataset.storagePath || ''
+  };
 }
 
-function _togglePhotoActions(id) {
-  document.querySelectorAll('.photo-actions.open').forEach(p => { if(p.id !== id) p.classList.remove('open'); });
-  document.getElementById(id)?.classList.toggle('open');
+function _onThumbTap(event) {
+  event.stopPropagation();
+  const wrap = event.target.closest('.photo-thumb-wrap');
+  if (!wrap) return;
+  _selectDetailImage(wrap.dataset.imageUrl || event.target.src, event.target);
+}
+
+function _doSetPrimaryFromButton(button) {
+  const { mapId, imageId, imageUrl } = _photoDataFromButton(button);
+  if (mapId && imageId && imageUrl) _doSetPrimary(mapId, imageId, imageUrl);
+}
+
+function _doDeleteImageFromButton(button) {
+  const { imageId, mapId, storagePath } = _photoDataFromButton(button);
+  if (imageId && mapId) _doDeleteImage(imageId, mapId, storagePath);
+}
+
+function _setPhotoActionsBusy(imageId, busy) {
+  const wrap = document.querySelector(`[data-img-id="${CSS.escape(imageId)}"]`);
+  if (!wrap) return;
+  wrap.classList.toggle('busy', busy);
+  wrap.querySelectorAll('.photo-action-btn').forEach(btn => { btn.disabled = busy || btn.classList.contains('is-primary'); });
 }
 
 async function _doSetPrimary(mapId, imageId, imageUrl) {
-  document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
-  await setPrimaryImage(mapId, imageId, imageUrl);
-  _selectDetailImage(imageUrl);
-  await _loadDetailPhotoStrip(mapId, imageUrl);
+  _setPhotoActionsBusy(imageId, true);
+  try {
+    await setPrimaryImage(mapId, imageId, imageUrl);
+    _selectDetailImage(imageUrl);
+    await _loadDetailPhotoStrip(mapId, imageUrl);
+  } finally {
+    _setPhotoActionsBusy(imageId, false);
+  }
 }
 
 async function _doDeleteImage(imageId, mapId, storagePath) {
-  document.querySelectorAll('.photo-actions.open').forEach(p => p.classList.remove('open'));
   const yes = await hmConfirm('This photo will be permanently deleted.', { title: 'Delete Photo', icon: '🗑', iconType: 'danger', confirmLabel: 'Delete', cancelLabel: 'Keep' });
   if (!yes) return;
-  const remaining = await deleteMapImage(imageId, mapId, storagePath);
-  await loadMaps();
-  const m = maps.find(x => x.id === mapId);
-  const newPrimary = remaining.find(r => r.is_primary);
-  const mainUrl = newPrimary?.image_url || m?.image_url || null;
-  if (mainUrl) {
-    _selectDetailImage(mainUrl);
-  } else {
-    const mainImg = document.getElementById('detail-main-img');
-    if (mainImg) mainImg.outerHTML = '<div class="detail-placeholder" id="detail-main-img">No image available</div>';
+  _setPhotoActionsBusy(imageId, true);
+  try {
+    const remaining = await deleteMapImage(imageId, mapId, storagePath);
+    await loadMaps();
+    const m = maps.find(x => x.id === mapId);
+    const newPrimary = remaining.find(r => r.is_primary);
+    const mainUrl = newPrimary?.image_url || m?.image_url || null;
+    if (mainUrl) {
+      _selectDetailImage(mainUrl);
+    } else {
+      const mainImg = document.getElementById('detail-main-img');
+      if (mainImg) mainImg.outerHTML = '<div class="detail-placeholder" id="detail-main-img">No image available</div>';
+    }
+    await _loadDetailPhotoStrip(mapId, mainUrl);
+  } finally {
+    _setPhotoActionsBusy(imageId, false);
   }
-  await _loadDetailPhotoStrip(mapId, mainUrl);
 }
 
 // ── Rotate image 90° CW — re-encode via canvas and re-upload ──
 
 function _stripQueryParams(url) {
   try { return new URL(url).origin + new URL(url).pathname; } catch { return url.split('?')[0]; }
+}
+
+function _setRotateBusy(rotateBtn, busy) {
+  if (!rotateBtn) return;
+  rotateBtn.classList.toggle('spinning', busy);
+  rotateBtn.disabled = busy;
+  rotateBtn.setAttribute('aria-busy', busy ? 'true' : 'false');
+  const wrap = rotateBtn.closest('.detail-img-wrap');
+  if (wrap) wrap.classList.toggle('rotating', busy);
 }
 
 async function _rotateCurrentImage() {
@@ -2891,9 +2927,10 @@ async function _rotateCurrentImage() {
     return;
   }
 
-  if (rotateBtn) { rotateBtn.classList.add('spinning'); rotateBtn.style.pointerEvents = 'none'; }
+  _setRotateBusy(rotateBtn, true);
 
   try {
+    await new Promise(requestAnimationFrame);
     const blob = await _rotateImageBlob(currentSrc);
 
     const { data: { user } } = await db.auth.getUser();
@@ -2921,13 +2958,14 @@ async function _rotateCurrentImage() {
     console.error('Rotate failed:', e);
     await hmAlert('Could not rotate image: ' + e.message, { title: 'Rotate Error', iconType: 'danger' });
   } finally {
-    if (rotateBtn) { rotateBtn.classList.remove('spinning'); rotateBtn.style.pointerEvents = ''; }
+    _setRotateBusy(rotateBtn, false);
   }
 }
 
 async function _rotateLegacyImage(mapId, currentSrc, mainImg, rotateBtn) {
-  if (rotateBtn) { rotateBtn.classList.add('spinning'); rotateBtn.style.pointerEvents = 'none'; }
+  _setRotateBusy(rotateBtn, true);
   try {
+    await new Promise(requestAnimationFrame);
     const blob = await _rotateImageBlob(currentSrc);
     const { data: { user } } = await db.auth.getUser();
     const storagePath = `${user.id}/photos/${mapId}/${crypto.randomUUID()}.jpg`;
@@ -2948,7 +2986,7 @@ async function _rotateLegacyImage(mapId, currentSrc, mainImg, rotateBtn) {
     console.error('Legacy rotate failed:', e);
     await hmAlert('Could not rotate image: ' + e.message, { title: 'Rotate Error', iconType: 'danger' });
   } finally {
-    if (rotateBtn) { rotateBtn.classList.remove('spinning'); rotateBtn.style.pointerEvents = ''; }
+    _setRotateBusy(rotateBtn, false);
   }
 }
 
@@ -2959,20 +2997,25 @@ async function _rotateImageBlob(src) {
   const srcBlob = await response.blob();
   const bitmapSrc = await createImageBitmap(srcBlob);
 
-  const canvas = document.createElement('canvas');
-  canvas.width = bitmapSrc.height;
-  canvas.height = bitmapSrc.width;
+  const width = bitmapSrc.height;
+  const height = bitmapSrc.width;
+  const canvas = typeof OffscreenCanvas !== 'undefined'
+    ? new OffscreenCanvas(width, height)
+    : Object.assign(document.createElement('canvas'), { width, height });
   const ctx = canvas.getContext('2d');
-  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.translate(width / 2, height / 2);
   ctx.rotate(Math.PI / 2);
   ctx.drawImage(bitmapSrc, -bitmapSrc.width / 2, -bitmapSrc.height / 2);
   bitmapSrc.close();
 
+  if (canvas.convertToBlob) {
+    return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.86 });
+  }
   return new Promise((resolve, reject) => {
     canvas.toBlob(blob => {
       if (blob) resolve(blob);
       else reject(new Error('Canvas encoding failed'));
-    }, 'image/jpeg', 0.92);
+    }, 'image/jpeg', 0.86);
   });
 }
 
