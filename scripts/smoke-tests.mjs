@@ -97,6 +97,8 @@ assertContains("collection.html", "storage_path", "map image rows should track t
 assertContains("collection.html", "window.history.pushState({ hmDetailMapId", "opening a map detail should add a collection-local history state");
 assertContains("collection.html", "window.addEventListener('popstate'", "browser Back should close the map detail panel before leaving the collection");
 assertContains("collection.html", "aria-label=\"Close map details\"", "the map detail close button should be accessible and wired to close the panel");
+assertContains("collection.html", "ontouchend=\"event.preventDefault();event.stopPropagation();closeDetail()\"", "the map detail close button should handle iOS touch events directly");
+assertContains("collection.html", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");
 
 assertContains(
   "sql/fix-map-images-storage-policies.sql",
