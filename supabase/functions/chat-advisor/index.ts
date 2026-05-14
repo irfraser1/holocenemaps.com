@@ -1,11 +1,12 @@
 // ════════════════════════════════════════════════════════════
 // Supabase Edge Function: chat-advisor
 // Streaming conversational AI with web search + vision
-// Deploy: supabase functions deploy chat-advisor --no-verify-jwt
+// Deploy: supabase functions deploy chat-advisor
 // ════════════════════════════════════════════════════════════
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enforceUsageLimit } from "../_shared/edge-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -107,6 +108,14 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const limitResponse = await enforceUsageLimit({
+      user,
+      userId: user.id,
+      anonKey: null,
+      isAuthenticated: true,
+    }, "chat-advisor", { authenticatedDaily: 100 });
+    if (limitResponse) return limitResponse;
 
     const body = await req.json();
     const {

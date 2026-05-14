@@ -54,11 +54,18 @@ document.getElementById('stars').addEventListener('click', e => {
 });
 setStars(3);
 
+async function getFunctionHeaders(extraHeaders = {}) {
+  const { data: { session } } = await db.auth.getSession();
+  return session?.access_token
+    ? { ...extraHeaders, 'Authorization': 'Bearer ' + session.access_token }
+    : extraHeaders;
+}
+
 // AI evaluation via Edge Function
 async function getAIEvaluation(data, thesis) {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/evaluate-text`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await getFunctionHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       thesis: thesis || '',
       mapTitle: data.title || 'Unknown',

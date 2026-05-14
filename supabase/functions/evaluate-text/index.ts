@@ -1,36 +1,31 @@
 // Supabase Edge Function: evaluate-text
-// Deploy with: supabase functions deploy evaluate-text --no-verify-jwt
+// Deploy with: supabase functions deploy evaluate-text
 // This handles thesis-based text re-evaluation (no image required)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, enforceUsageLimit, identifyActor, jsonResponse, optionsResponse } from "../_shared/edge-auth.ts";
 
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return optionsResponse();
   }
 
   try {
+    const actor = await identifyActor(req);
+    if (actor instanceof Response) return actor;
+    const limitResponse = await enforceUsageLimit(actor, "evaluate-text", { authenticatedDaily: 100 });
+    if (limitResponse) return limitResponse;
+
     const { thesis, mapTitle, mapYear, mapCartographer, dealer, price } = await req.json();
 
     if (!mapTitle) {
-      return new Response(JSON.stringify({ error: "Map title is required." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
+      return jsonResponse({ error: "Map title is required." }, 400);
     }
 
     const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_KEY) {
-      return new Response(JSON.stringify({ error: "API key not configured." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
+      return jsonResponse({ error: "API key not configured." }, 500);
     }
 
     const mapDesc = [
@@ -73,14 +68,8 @@ Be direct. No headers, no bullet points, just 3 flowing sentences.`;
     const openaiData = await openaiRes.json();
     const evaluation = openaiData?.choices?.[0]?.message?.content || "";
 
-    return new Response(
-      JSON.stringify({ evaluation, title: mapTitle }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ evaluation, title: mapTitle });
   } catch (e) {
-    return new Response(
-      JSON.stringify({ error: "Evaluation failed: " + e.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
+    return jsonResponse({ error: "Evaluation failed: " + e.message }, 500);
   }
 });

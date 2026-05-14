@@ -1,9 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, enforceUsageLimit, identifyActor, optionsResponse } from "../_shared/edge-auth.ts";
 
 function scrapeGeographicus(html: string, url: string) {
   const data: Record<string, any> = { dealer: "Geographicus", url };
@@ -97,20 +93,48 @@ function scrapeRuderman(html: string, url: string) {
   return data;
 }
 
+
+function validateDealerUrl(rawUrl: string) {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error("Invalid URL");
+  }
+
+  if (!["https:", "http:"].includes(parsed.protocol)) {
+    throw new Error("Only http and https URLs are supported");
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  const allowed = ["geographicus.com", "raremaps.com"];
+  if (!allowed.some((domain) => host === domain || host.endsWith("." + domain))) {
+    throw new Error("This dealer domain is not supported for automatic scraping yet");
+  }
+
+  return parsed.toString();
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return optionsResponse();
   }
 
   try {
-    const { url } = await req.json();
+    const actor = await identifyActor(req);
+    if (actor instanceof Response) return actor;
+    const limitResponse = await enforceUsageLimit(actor, "scrape-listing", { authenticatedDaily: 100 });
+    if (limitResponse) return limitResponse;
 
-    if (!url) {
+    const { url: rawUrl } = await req.json();
+
+    if (!rawUrl) {
       return new Response(
         JSON.stringify({ error: "Missing url parameter" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const url = validateDealerUrl(rawUrl);
 
     // Fetch the dealer page with full browser-like headers
     const res = await fetch(url, {

@@ -1525,6 +1525,13 @@ const GOOGLE_CLIENT_ID = '695591998996-7fr2k9i455mbbmmvgtsp0lb2ufe0e14o.apps.goo
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+async function getFunctionHeaders(extraHeaders = {}) {
+  const { data: { session } } = await db.auth.getSession();
+  return session?.access_token
+    ? { ...extraHeaders, 'Authorization': 'Bearer ' + session.access_token }
+    : extraHeaders;
+}
+
 let maps = [];
 let actFilter = 0;
 let editingId = null;
@@ -1803,7 +1810,7 @@ async function fetchFromUrl() {
   try {
     const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/scrape-listing', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getFunctionHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ url })
     });
     const data = await res.json();
@@ -1854,7 +1861,7 @@ async function evaluateMap() {
     // Run evaluation
     const evalPromise = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getFunctionHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         thesis: userThesis,
         mapTitle: title,
@@ -1870,7 +1877,7 @@ async function evaluateMap() {
     if (listingUrl && !existingImage) {
       imageBackfill = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/scrape-image', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getFunctionHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ url: listingUrl })
       }).then(r => r.json()).catch(() => null);
     }
@@ -1933,7 +1940,7 @@ async function handlePhotoUpload(e) {
     try {
       const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-map', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getFunctionHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ imageBase64: base64Data, thesis: userThesis })
       });
 
@@ -2028,7 +2035,7 @@ async function reEvaluateMap(id) {
     console.log('evaluate-text payload:', evalPayload);
     const evalPromise = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/evaluate-text', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getFunctionHeaders({ 'Content-Type': 'application/json' }),
       signal: controller.signal,
       body: JSON.stringify(evalPayload)
     });
@@ -2038,7 +2045,7 @@ async function reEvaluateMap(id) {
     if (!m.image_url && listingUrl) {
       imageBackfill = fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/scrape-image', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getFunctionHeaders({ 'Content-Type': 'application/json' }),
         signal: controller.signal,
         body: JSON.stringify({ url: listingUrl })
       }).then(r => r.json()).catch(() => null);
@@ -2871,7 +2878,7 @@ async function fetchImportUrl() {
   try {
     const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/scrape-listing', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getFunctionHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ url })
     });
     const data = await res.json();

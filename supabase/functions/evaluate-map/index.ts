@@ -18,6 +18,7 @@ import {
   mergeIdentifyOnly,
   mergeIdentifyCorroborate,
 } from "./schema.ts";
+import { enforceUsageLimit, identifyActor } from "../_shared/edge-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,6 +35,14 @@ serve(async (req) => {
   }
 
   try {
+    const actor = await identifyActor(req, { allowAnonymous: true });
+    if (actor instanceof Response) return actor;
+    const limitResponse = await enforceUsageLimit(actor, "evaluate-map", {
+      authenticatedDaily: 40,
+      anonymousDaily: 5,
+    });
+    if (limitResponse) return limitResponse;
+
     let base64Image: string;
     let mimeType = "image/jpeg";
 
