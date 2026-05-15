@@ -55,6 +55,17 @@ function _conditionGradeLabel(value) {
   return labels[value] || value;
 }
 
+function _physicalHasStructuredData(physical) {
+  if (!physical) return false;
+  return [
+    physical.sheet_width, physical.sheet_height, physical.image_width, physical.image_height,
+    physical.plate_width, physical.plate_height, physical.medium, physical.materials,
+    physical.coloring, physical.coloring_notes, physical.condition_grade, physical.condition_summary,
+    physical.condition_details, physical.margins, physical.backing_lining, physical.restoration_notes,
+    physical.framing_status, physical.inspected_at
+  ].some(_hasDetailValue);
+}
+
 function _section(title, body, emptyText) {
   return `<div class="detail-section">
     <div class="detail-section-title">${_escapeDetail(title)}</div>
@@ -206,11 +217,8 @@ function _detailTabHasData(tabName, m, detail) {
   }
   if (tabName === 'physical') {
     return [
-      catalog.physical_summary, physical.sheet_width, physical.sheet_height, physical.image_width, physical.image_height,
-      physical.plate_width, physical.plate_height, physical.dimension_unit, physical.medium, physical.materials,
-      physical.coloring, physical.coloring_notes, physical.condition_grade, physical.condition_summary,
-      physical.condition_details, physical.margins, physical.backing_lining, physical.restoration_notes,
-      physical.framing_status, physical.inspected_at
+      catalog.physical_summary,
+      _physicalHasStructuredData(physical)
     ].some(_hasDetailValue);
   }
   if (tabName === 'ai') {
@@ -381,23 +389,24 @@ function _renderDetailPanels(m, detail, activeTab = 'overview') {
     ? _renderDetailTabControl('catalogue', m, detail) + _fieldGridSection('Catalogue Details', catalogueFields, 'No catalogue details added yet.')
     : _actionEmptySection('Catalogue Details', 'No catalogue details added yet.', 'Add catalogue details', 'catalogue');
 
+  const hasStructuredPhysicalData = _physicalHasStructuredData(physicalDetail);
   const physicalFields = [
     _field('Physical Summary', catalog.physical_summary, { full: true }),
-    _dimensionField('Sheet Size', physicalDetail.sheet_width, physicalDetail.sheet_height, physicalDetail.dimension_unit),
-    _dimensionField('Image Size', physicalDetail.image_width, physicalDetail.image_height, physicalDetail.dimension_unit),
-    _dimensionField('Plate Size', physicalDetail.plate_width, physicalDetail.plate_height, physicalDetail.dimension_unit),
-    _field('Medium', physicalDetail.medium),
-    _field('Materials', physicalDetail.materials),
-    _field('Coloring', physicalDetail.coloring),
-    _field('Coloring Notes', physicalDetail.coloring_notes, { full: true }),
-    _field('Condition Grade', _conditionGradeLabel(physicalDetail.condition_grade)),
-    _field('Condition Summary', physicalDetail.condition_summary, { full: true }),
-    _field('Condition Details', physicalDetail.condition_details, { full: true }),
-    _field('Margins', physicalDetail.margins),
-    _field('Backing / Lining', physicalDetail.backing_lining),
-    _field('Restoration Notes', physicalDetail.restoration_notes, { full: true }),
-    _field('Framing Status', physicalDetail.framing_status),
-    _field('Inspected Date', physicalDetail.inspected_at)
+    hasStructuredPhysicalData ? _dimensionField('Sheet Size', physicalDetail.sheet_width, physicalDetail.sheet_height, physicalDetail.dimension_unit) : '',
+    hasStructuredPhysicalData ? _dimensionField('Image Size', physicalDetail.image_width, physicalDetail.image_height, physicalDetail.dimension_unit) : '',
+    hasStructuredPhysicalData ? _dimensionField('Plate Size', physicalDetail.plate_width, physicalDetail.plate_height, physicalDetail.dimension_unit) : '',
+    hasStructuredPhysicalData ? _field('Medium', physicalDetail.medium) : '',
+    hasStructuredPhysicalData ? _field('Materials', physicalDetail.materials) : '',
+    hasStructuredPhysicalData ? _field('Coloring', physicalDetail.coloring) : '',
+    hasStructuredPhysicalData ? _field('Coloring Notes', physicalDetail.coloring_notes, { full: true }) : '',
+    hasStructuredPhysicalData ? _field('Condition Grade', _conditionGradeLabel(physicalDetail.condition_grade)) : '',
+    hasStructuredPhysicalData ? _field('Condition Summary', physicalDetail.condition_summary, { full: true }) : '',
+    hasStructuredPhysicalData ? _field('Condition Details', physicalDetail.condition_details, { full: true }) : '',
+    hasStructuredPhysicalData ? _field('Margins', physicalDetail.margins) : '',
+    hasStructuredPhysicalData ? _field('Backing / Lining', physicalDetail.backing_lining) : '',
+    hasStructuredPhysicalData ? _field('Restoration Notes', physicalDetail.restoration_notes, { full: true }) : '',
+    hasStructuredPhysicalData ? _field('Framing Status', physicalDetail.framing_status) : '',
+    hasStructuredPhysicalData ? _field('Inspected Date', physicalDetail.inspected_at) : ''
   ];
   const hasPhysicalFields = physicalFields.some(field => field && field.trim());
   const physical = editingTab === 'physical' ? _renderPhysicalForm(detail) : hasPhysicalFields
