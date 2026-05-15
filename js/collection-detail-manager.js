@@ -7,6 +7,7 @@ let _detailActiveTab = 'overview';
 let _detailEditState = { tab: null, dirty: false, saving: false };
 
 const DETAIL_EDITABLE_TABS = ['overview', 'catalogue', 'physical', 'ai'];
+const DETAIL_PHYSICAL_DEBUG_MAP_ID = '998384c6-9210-4540-a1f0-abf909b77705';
 
 function _field(label, value, options = {}) {
   if (!_hasDetailValue(value)) return '';
@@ -515,6 +516,29 @@ function _detailFormValues(form) {
   return values;
 }
 
+function _detailPhysicalDebugSnapshot(form, values) {
+  if (_detailMapId !== DETAIL_PHYSICAL_DEBUG_MAP_ID) return;
+  const controls = Array.from(form.querySelectorAll('input[name], textarea[name], select[name]')).map(field => ({
+    tag: field.tagName.toLowerCase(),
+    name: field.name,
+    type: field.type || '',
+    disabled: field.disabled,
+    value: field.value
+  }));
+  const snapshot = {
+    map_id: _detailMapId,
+    activeTab: _detailActiveTab,
+    editingTab: _detailEditState.tab,
+    controls,
+    values
+  };
+  window.__nicolasPhysicalFormDebug = snapshot;
+  try {
+    localStorage.setItem('hm-nicolas-physical-form-debug', JSON.stringify(snapshot));
+  } catch (_) {}
+  console.info('Nicolas physical form controls', snapshot);
+}
+
 function _physicalValuesHaveStructuredInput(values) {
   return [
     values.sheet_width, values.sheet_height, values.image_width, values.image_height,
@@ -695,6 +719,7 @@ async function _saveDetailEdit() {
   const form = document.querySelector(`.detail-edit-form[data-edit-tab="${tabName}"]`);
   if (!tabName || !form || !_detailMapId || _detailEditState.saving || !_detailEditState.dirty) return;
   const values = _detailFormValues(form);
+  if (tabName === 'physical') _detailPhysicalDebugSnapshot(form, values);
   _setDetailEditStatus(form, 'Saving...');
   _setDetailEditSaving(form, true);
   try {
@@ -755,6 +780,19 @@ async function _loadMapDetailData(mapId) {
       hasNotes: !!notesRes.data,
       documentCount: docsRes.data?.length || 0
     });
+    if (mapId === DETAIL_PHYSICAL_DEBUG_MAP_ID) {
+      const snapshot = {
+        mapId,
+        catalog: catalogRes.data,
+        physical: physicalRes.data,
+        notes: notesRes.data
+      };
+      window.__nicolasPhysicalLoadDebug = snapshot;
+      try {
+        localStorage.setItem('hm-nicolas-physical-load-debug', JSON.stringify(snapshot));
+      } catch (_) {}
+      console.info('Nicolas physical load data', snapshot);
+    }
     return {
       catalog: catalogRes.data || null,
       physical: physicalRes.data || null,
