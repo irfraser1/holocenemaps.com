@@ -607,12 +607,29 @@ async function _savePhysicalDetail(values, userId) {
     inspected_at: _cleanDetailDate(values.inspected_at),
     updated_at: new Date().toISOString()
   };
+  console.info('Saving physical details', {
+    map_id: _detailMapId,
+    catalogPayload,
+    physicalPayload
+  });
   const [catalogRes, physicalRes] = await Promise.all([
     db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single(),
     db.from('map_physical_details').upsert(physicalPayload, { onConflict: 'map_id' }).select('*').single()
   ]);
-  if (catalogRes.error) throw catalogRes.error;
-  if (physicalRes.error) throw physicalRes.error;
+  if (catalogRes.error) {
+    console.error('Physical tab legacy summary save failed', catalogRes.error);
+    throw catalogRes.error;
+  }
+  if (physicalRes.error) {
+    console.error('Structured physical details save failed', physicalRes.error);
+    throw physicalRes.error;
+  }
+  if (!physicalRes.data?.map_id) {
+    const error = new Error('Physical details save did not return a saved row.');
+    console.error(error.message, physicalRes);
+    throw error;
+  }
+  console.info('Structured physical details saved', physicalRes.data);
   return { catalog: catalogRes.data, physical: physicalRes.data };
 }
 
@@ -667,13 +684,32 @@ async function _saveDetailEdit() {
 async function _loadMapDetailData(mapId) {
   const empty = { catalog: null, physical: null, notes: null, documents: [] };
   try {
+    const safeDetailQuery = async (label, query, fallback) => {
+      try {
+        const res = await query;
+        if (res.error) {
+          console.warn(`${label} unavailable`, res.error);
+          return { data: fallback, error: res.error };
+        }
+        return res;
+      } catch (error) {
+        console.warn(`${label} unavailable`, error);
+        return { data: fallback, error };
+      }
+    };
     const [catalogRes, physicalRes, notesRes, docsRes] = await Promise.all([
-      db.from('map_catalog_details').select('*').eq('map_id', mapId).maybeSingle().catch(error => ({ data: null, error })),
-      db.from('map_physical_details').select('*').eq('map_id', mapId).maybeSingle().catch(error => ({ data: null, error })),
-      db.from('map_notes').select('*').eq('map_id', mapId).maybeSingle().catch(error => ({ data: null, error })),
-      db.from('map_documents').select('id,map_id,user_id,document_type,title,file_url,storage_path,mime_type,file_size,notes,created_at').eq('map_id', mapId).order('created_at', { ascending: false }).catch(error => ({ data: [], error }))
+      safeDetailQuery('Catalog details', db.from('map_catalog_details').select('*').eq('map_id', mapId).maybeSingle(), null),
+      safeDetailQuery('Physical details', db.from('map_physical_details').select('*').eq('map_id', mapId).maybeSingle(), null),
+      safeDetailQuery('Map notes', db.from('map_notes').select('*').eq('map_id', mapId).maybeSingle(), null),
+      safeDetailQuery('Map documents', db.from('map_documents').select('id,map_id,user_id,document_type,title,file_url,storage_path,mime_type,file_size,notes,created_at').eq('map_id', mapId).order('created_at', { ascending: false }), [])
     ]);
-    if (physicalRes.error) console.warn('Physical details unavailable:', physicalRes.error);
+    console.info('Loaded map detail metadata', {
+      mapId,
+      hasCatalog: !!catalogRes.data,
+      hasPhysical: !!physicalRes.data,
+      hasNotes: !!notesRes.data,
+      documentCount: docsRes.data?.length || 0
+    });
     return {
       catalog: catalogRes.data || null,
       physical: physicalRes.data || null,
