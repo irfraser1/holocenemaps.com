@@ -109,6 +109,7 @@ async function handleDetailPhotoUpload(e) {
   if (!files.length || !_detailMapId) return;
   e.target.value = '';
   const mapId = _detailMapId;
+  const activeDetailTab = document.querySelector('.detail-tab.active')?.dataset.detailTab || 'overview';
   const images = await loadMapImages(mapId);
   const isFirst = images.length === 0;
   for (let i = 0; i < files.length; i++) {
@@ -117,7 +118,8 @@ async function handleDetailPhotoUpload(e) {
     } catch(err) { console.error('Upload failed:', err); }
   }
   await loadMaps();
-  toggleCard(mapId);
+  await toggleCard(mapId, { pushHistory: false });
+  setDetailTab(activeDetailTab);
 }
 
 async function handleModalPhotoMulti(e) {

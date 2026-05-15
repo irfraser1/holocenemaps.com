@@ -115,6 +115,8 @@ assertContains("js/collection-photo-manager.js", ".from('map-images')", "photo m
 assertContains("js/collection-photo-manager.js", "Set Cover", "photo manager should preserve the visible set-cover action");
 assertContains("js/collection-photo-manager.js", "Rotating", "photo manager should preserve the rotate loading label");
 assertContains("js/collection-photo-manager.js", "async function _rotateCurrentImage", "photo manager should own detail image rotation");
+assertContains("js/collection-photo-manager.js", "const activeDetailTab = document.querySelector('.detail-tab.active')?.dataset.detailTab || 'overview'", "detail photo upload should preserve the active detail tab");
+assertContains("js/collection-photo-manager.js", "setDetailTab(activeDetailTab)", "detail photo upload should restore the active detail tab after refresh");
 assertContains("collection.html", "detail-tabs", "map detail should expose read-only tabs");
 assertContains("collection.html", "Photos & Files", "map detail should include the Phase 1 files tab");
 assertContains("collection.html", "map_catalog_details", "map detail should read collector catalogue metadata");
