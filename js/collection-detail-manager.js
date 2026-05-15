@@ -36,6 +36,25 @@ function _referenceField(label, value) {
   return _field(label, rendered, { full: true });
 }
 
+function _dimensionField(label, width, height, unit) {
+  const hasWidth = _hasDetailValue(width);
+  const hasHeight = _hasDetailValue(height);
+  if (!hasWidth && !hasHeight) return '';
+  const size = hasWidth && hasHeight ? `${width} x ${height}` : (hasWidth ? String(width) : String(height));
+  return _field(label, `${size}${unit ? ' ' + unit : ''}`);
+}
+
+function _conditionGradeLabel(value) {
+  const labels = {
+    excellent: 'Excellent',
+    very_good: 'Very Good',
+    good: 'Good',
+    fair: 'Fair',
+    poor: 'Poor'
+  };
+  return labels[value] || value;
+}
+
 function _section(title, body, emptyText) {
   return `<div class="detail-section">
     <div class="detail-section-title">${_escapeDetail(title)}</div>
@@ -81,6 +100,18 @@ function _editValue(value) {
 function _cleanDetailText(value) {
   const text = String(value ?? '').trim();
   return text || null;
+}
+
+function _cleanDetailNumber(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return null;
+  const num = Number(text);
+  return Number.isFinite(num) ? num : null;
+}
+
+function _cleanDetailDate(value) {
+  const text = String(value ?? '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 }
 
 function _parseDetailList(value) {
@@ -139,8 +170,29 @@ function _inputField(label, name, value, options = {}) {
   </label>`;
 }
 
+function _selectField(label, name, value, choices, options = {}) {
+  const full = options.full ? ' full' : '';
+  const safeLabel = _escapeDetail(label);
+  const safeName = _escapeDetail(name);
+  const selectedValue = String(value ?? '');
+  const optionsHtml = choices.map(choice => {
+    const optionValue = typeof choice === 'string' ? choice : choice.value;
+    const optionLabel = typeof choice === 'string' ? choice : choice.label;
+    return `<option value="${_escapeDetail(optionValue)}"${String(optionValue) === selectedValue ? ' selected' : ''}>${_escapeDetail(optionLabel)}</option>`;
+  }).join('');
+  return `<label class="detail-edit-field${full}">
+    <span>${safeLabel}</span>
+    <select name="${safeName}" onchange="_markDetailEditDirty()">${optionsHtml}</select>
+  </label>`;
+}
+
+function _editGroupTitle(title) {
+  return `<div class="detail-edit-group-title">${_escapeDetail(title)}</div>`;
+}
+
 function _detailTabHasData(tabName, m, detail) {
   const catalog = detail.catalog || {};
+  const physical = detail.physical || {};
   const notes = detail.notes || {};
   if (tabName === 'overview') {
     return [m.title, m.cartographer, m.year, catalog.region, m.act, m.status, m.priority, catalog.summary, catalog.subject_tags].some(_hasDetailValue);
@@ -153,7 +205,13 @@ function _detailTabHasData(tabName, m, detail) {
     ].some(_hasDetailValue);
   }
   if (tabName === 'physical') {
-    return [catalog.physical_summary, catalog.condition_summary].some(_hasDetailValue);
+    return [
+      catalog.physical_summary, physical.sheet_width, physical.sheet_height, physical.image_width, physical.image_height,
+      physical.plate_width, physical.plate_height, physical.dimension_unit, physical.medium, physical.materials,
+      physical.coloring, physical.coloring_notes, physical.condition_grade, physical.condition_summary,
+      physical.condition_details, physical.margins, physical.backing_lining, physical.restoration_notes,
+      physical.framing_status, physical.inspected_at
+    ].some(_hasDetailValue);
   }
   if (tabName === 'ai') {
     return [
@@ -223,8 +281,45 @@ function _renderCatalogueForm(detail) {
 
 function _renderPhysicalForm(detail) {
   const catalog = detail.catalog || {};
+  const physical = detail.physical || {};
   return _renderEditShell('physical', 'Edit Physical Record', `
-    ${_inputField('Physical Summary', 'physical_summary', catalog.physical_summary || catalog.condition_summary, { full: true, type: 'textarea', rows: 5 })}
+    ${_editGroupTitle('Legacy Summary')}
+    ${_inputField('Physical Summary', 'physical_summary', catalog.physical_summary, { full: true, type: 'textarea', rows: 4 })}
+    ${_editGroupTitle('Dimensions')}
+    ${_inputField('Sheet Width', 'sheet_width', physical.sheet_width)}
+    ${_inputField('Sheet Height', 'sheet_height', physical.sheet_height)}
+    ${_inputField('Image Width', 'image_width', physical.image_width)}
+    ${_inputField('Image Height', 'image_height', physical.image_height)}
+    ${_inputField('Plate Width', 'plate_width', physical.plate_width)}
+    ${_inputField('Plate Height', 'plate_height', physical.plate_height)}
+    ${_selectField('Unit', 'dimension_unit', physical.dimension_unit || 'in', [
+      { value: '', label: 'Unspecified' },
+      { value: 'in', label: 'Inches' },
+      { value: 'cm', label: 'Centimeters' },
+      { value: 'mm', label: 'Millimeters' }
+    ])}
+    ${_editGroupTitle('Material / Production')}
+    ${_inputField('Medium', 'medium', physical.medium)}
+    ${_inputField('Materials', 'materials', physical.materials)}
+    ${_inputField('Coloring', 'coloring', physical.coloring)}
+    ${_inputField('Coloring Notes', 'coloring_notes', physical.coloring_notes, { full: true, type: 'textarea', rows: 3 })}
+    ${_editGroupTitle('Condition')}
+    ${_selectField('Condition Grade', 'condition_grade', physical.condition_grade, [
+      { value: '', label: 'Unspecified' },
+      { value: 'excellent', label: 'Excellent' },
+      { value: 'very_good', label: 'Very Good' },
+      { value: 'good', label: 'Good' },
+      { value: 'fair', label: 'Fair' },
+      { value: 'poor', label: 'Poor' }
+    ])}
+    ${_inputField('Condition Summary', 'condition_summary', physical.condition_summary, { full: true, type: 'textarea', rows: 3 })}
+    ${_inputField('Condition Details', 'condition_details', physical.condition_details, { full: true, type: 'textarea', rows: 4 })}
+    ${_inputField('Margins', 'margins', physical.margins)}
+    ${_inputField('Backing / Lining', 'backing_lining', physical.backing_lining)}
+    ${_inputField('Restoration Notes', 'restoration_notes', physical.restoration_notes, { full: true, type: 'textarea', rows: 3 })}
+    ${_editGroupTitle('Display / Storage')}
+    ${_inputField('Framing Status', 'framing_status', physical.framing_status)}
+    ${_inputField('Inspected Date', 'inspected_at', physical.inspected_at, { type: 'date' })}
   `);
 }
 
@@ -247,6 +342,7 @@ function _renderAiForm(m, detail) {
 
 function _renderDetailPanels(m, detail, activeTab = 'overview') {
   const catalog = detail.catalog || {};
+  const physicalDetail = detail.physical || {};
   const notes = detail.notes || {};
   const documents = detail.documents || [];
   const title = catalog.display_title || m.title;
@@ -286,7 +382,22 @@ function _renderDetailPanels(m, detail, activeTab = 'overview') {
     : _actionEmptySection('Catalogue Details', 'No catalogue details added yet.', 'Add catalogue details', 'catalogue');
 
   const physicalFields = [
-    _field('Physical Summary', catalog.physical_summary || catalog.condition_summary, { full: true })
+    _field('Physical Summary', catalog.physical_summary, { full: true }),
+    _dimensionField('Sheet Size', physicalDetail.sheet_width, physicalDetail.sheet_height, physicalDetail.dimension_unit),
+    _dimensionField('Image Size', physicalDetail.image_width, physicalDetail.image_height, physicalDetail.dimension_unit),
+    _dimensionField('Plate Size', physicalDetail.plate_width, physicalDetail.plate_height, physicalDetail.dimension_unit),
+    _field('Medium', physicalDetail.medium),
+    _field('Materials', physicalDetail.materials),
+    _field('Coloring', physicalDetail.coloring),
+    _field('Coloring Notes', physicalDetail.coloring_notes, { full: true }),
+    _field('Condition Grade', _conditionGradeLabel(physicalDetail.condition_grade)),
+    _field('Condition Summary', physicalDetail.condition_summary, { full: true }),
+    _field('Condition Details', physicalDetail.condition_details, { full: true }),
+    _field('Margins', physicalDetail.margins),
+    _field('Backing / Lining', physicalDetail.backing_lining),
+    _field('Restoration Notes', physicalDetail.restoration_notes, { full: true }),
+    _field('Framing Status', physicalDetail.framing_status),
+    _field('Inspected Date', physicalDetail.inspected_at)
   ];
   const hasPhysicalFields = physicalFields.some(field => field && field.trim());
   const physical = editingTab === 'physical' ? _renderPhysicalForm(detail) : hasPhysicalFields
@@ -393,7 +504,7 @@ function _detailFormValues(form) {
 
 function _setDetailEditSaving(form, saving) {
   _detailEditState.saving = saving;
-  form.querySelectorAll('input, textarea, button').forEach(el => {
+  form.querySelectorAll('input, textarea, select, button').forEach(el => {
     if (el.classList.contains('detail-save-btn')) {
       el.disabled = saving || !_detailEditState.dirty;
     } else {
@@ -472,9 +583,37 @@ async function _savePhysicalDetail(values, userId) {
     physical_summary: _cleanDetailText(values.physical_summary),
     updated_at: new Date().toISOString()
   };
-  const res = await db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single();
-  if (res.error) throw res.error;
-  return { catalog: res.data };
+  const physicalPayload = {
+    map_id: _detailMapId,
+    user_id: userId,
+    sheet_width: _cleanDetailNumber(values.sheet_width),
+    sheet_height: _cleanDetailNumber(values.sheet_height),
+    image_width: _cleanDetailNumber(values.image_width),
+    image_height: _cleanDetailNumber(values.image_height),
+    plate_width: _cleanDetailNumber(values.plate_width),
+    plate_height: _cleanDetailNumber(values.plate_height),
+    dimension_unit: _cleanDetailText(values.dimension_unit),
+    medium: _cleanDetailText(values.medium),
+    materials: _cleanDetailText(values.materials),
+    coloring: _cleanDetailText(values.coloring),
+    coloring_notes: _cleanDetailText(values.coloring_notes),
+    condition_grade: _cleanDetailText(values.condition_grade),
+    condition_summary: _cleanDetailText(values.condition_summary),
+    condition_details: _cleanDetailText(values.condition_details),
+    margins: _cleanDetailText(values.margins),
+    backing_lining: _cleanDetailText(values.backing_lining),
+    restoration_notes: _cleanDetailText(values.restoration_notes),
+    framing_status: _cleanDetailText(values.framing_status),
+    inspected_at: _cleanDetailDate(values.inspected_at),
+    updated_at: new Date().toISOString()
+  };
+  const [catalogRes, physicalRes] = await Promise.all([
+    db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single(),
+    db.from('map_physical_details').upsert(physicalPayload, { onConflict: 'map_id' }).select('*').single()
+  ]);
+  if (catalogRes.error) throw catalogRes.error;
+  if (physicalRes.error) throw physicalRes.error;
+  return { catalog: catalogRes.data, physical: physicalRes.data };
 }
 
 async function _saveAiUserNotes(values, userId) {
@@ -512,6 +651,7 @@ async function _saveDetailEdit() {
       renderList();
     }
     if (saved.catalog) _detailCurrentData.catalog = saved.catalog;
+    if (saved.physical) _detailCurrentData.physical = saved.physical;
     if (saved.notes) _detailCurrentData.notes = saved.notes;
     _detailEditState = { tab: null, dirty: false, saving: false };
     _renderDetailPanelContainer();
@@ -525,15 +665,18 @@ async function _saveDetailEdit() {
 }
 
 async function _loadMapDetailData(mapId) {
-  const empty = { catalog: null, notes: null, documents: [] };
+  const empty = { catalog: null, physical: null, notes: null, documents: [] };
   try {
-    const [catalogRes, notesRes, docsRes] = await Promise.all([
-      db.from('map_catalog_details').select('*').eq('map_id', mapId).maybeSingle(),
-      db.from('map_notes').select('*').eq('map_id', mapId).maybeSingle(),
-      db.from('map_documents').select('id,map_id,user_id,document_type,title,file_url,storage_path,mime_type,file_size,notes,created_at').eq('map_id', mapId).order('created_at', { ascending: false })
+    const [catalogRes, physicalRes, notesRes, docsRes] = await Promise.all([
+      db.from('map_catalog_details').select('*').eq('map_id', mapId).maybeSingle().catch(error => ({ data: null, error })),
+      db.from('map_physical_details').select('*').eq('map_id', mapId).maybeSingle().catch(error => ({ data: null, error })),
+      db.from('map_notes').select('*').eq('map_id', mapId).maybeSingle().catch(error => ({ data: null, error })),
+      db.from('map_documents').select('id,map_id,user_id,document_type,title,file_url,storage_path,mime_type,file_size,notes,created_at').eq('map_id', mapId).order('created_at', { ascending: false }).catch(error => ({ data: [], error }))
     ]);
+    if (physicalRes.error) console.warn('Physical details unavailable:', physicalRes.error);
     return {
       catalog: catalogRes.data || null,
+      physical: physicalRes.data || null,
       notes: notesRes.data || null,
       documents: docsRes.data || []
     };

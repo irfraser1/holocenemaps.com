@@ -126,6 +126,48 @@ function checkDetailEmptyStates() {
     fail("Empty physical tab should show an obvious Add physical details action");
   }
 
+  const physicalRendered = vm.runInContext(`
+    _renderDetailPanels({
+      id: 'physical-map',
+      title: 'Physical Map',
+      act: 1,
+      status: 'owned',
+      priority: 3
+    }, {
+      catalog: { physical_summary: 'Legacy physical note' },
+      physical: {
+        sheet_width: 12,
+        sheet_height: 18,
+        image_width: 10,
+        image_height: 15,
+        dimension_unit: 'in',
+        medium: 'Copper engraving',
+        materials: 'Laid paper',
+        coloring: 'Original hand color',
+        condition_grade: 'very_good',
+        condition_summary: 'Clean example',
+        inspected_at: '2026-05-15'
+      },
+      notes: {},
+      documents: []
+    }, 'physical')
+  `, context);
+
+  [
+    "Legacy physical note",
+    "Sheet Size",
+    "12 x 18 in",
+    "Copper engraving",
+    "Laid paper",
+    "Original hand color",
+    "Clean example",
+    "2026-05-15"
+  ].forEach(expected => {
+    if (!physicalRendered.includes(expected)) {
+      fail(`Physical tab should render structured physical metadata: missing ${expected}`);
+    }
+  });
+
   const aiEditRendered = vm.runInContext(`
     _detailEditState = { tab: 'ai', dirty: false, saving: false };
     _renderDetailPanels({
