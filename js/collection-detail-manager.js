@@ -48,6 +48,16 @@ function _fieldGridSection(title, fields, emptyText) {
   return _section(title, body ? `<div class="detail-field-grid">${body}</div>` : '', emptyText);
 }
 
+function _actionEmptySection(title, message, buttonLabel, tabName) {
+  return `<div class="detail-section">
+    <div class="detail-section-title">${_escapeDetail(title)}</div>
+    <div class="detail-empty detail-empty-action">
+      <div class="detail-empty-message">${_escapeDetail(message)}</div>
+      <button class="detail-empty-cta" type="button" onclick="_startDetailEdit('${tabName}')">${_escapeDetail(buttonLabel)}</button>
+    </div>
+  </div>`;
+}
+
 function _documentRows(documents) {
   if (!documents || documents.length === 0) {
     return '<div class="detail-empty">No private documents have been attached yet. Invoices, COAs, condition reports, and provenance files will live here.</div>';
@@ -255,27 +265,33 @@ function _renderDetailPanels(m, detail, activeTab = 'overview') {
       _tagField('Subject Tags', catalog.subject_tags)
     ], 'No expanded overview metadata has been added yet.');
 
-  const catalogue = editingTab === 'catalogue' ? _renderCatalogueForm(detail) : _renderDetailTabControl('catalogue', m, detail) +
-    _fieldGridSection('Catalogue Details', [
-      _field('Full Title Transcription', catalog.full_title_transcription, { full: true }),
-      _field('Publisher', catalog.publisher),
-      _field('Engraver', catalog.engraver),
-      _field('Place of Publication', catalog.place_of_publication),
-      _field('Publication Source', catalog.publication_source),
-      _field('Edition', catalog.edition),
-      _field('State', catalog.state),
-      _field('Plate Number', catalog.plate_number),
-      _field('Map Type', catalog.map_type),
-      _field('Language', catalog.language),
-      _tagField('Alternate Titles', catalog.alternate_titles),
-      _referenceField('References', catalog.reference_entries),
-      _field('Bibliography Notes', catalog.bibliography_notes, { full: true })
-    ], 'No catalogue details added yet.');
+  const catalogueFields = [
+    _field('Full Title Transcription', catalog.full_title_transcription, { full: true }),
+    _field('Publisher', catalog.publisher),
+    _field('Engraver', catalog.engraver),
+    _field('Place of Publication', catalog.place_of_publication),
+    _field('Publication Source', catalog.publication_source),
+    _field('Edition', catalog.edition),
+    _field('State', catalog.state),
+    _field('Plate Number', catalog.plate_number),
+    _field('Map Type', catalog.map_type),
+    _field('Language', catalog.language),
+    _tagField('Alternate Titles', catalog.alternate_titles),
+    _referenceField('References', catalog.reference_entries),
+    _field('Bibliography Notes', catalog.bibliography_notes, { full: true })
+  ];
+  const hasCatalogueFields = catalogueFields.some(field => field && field.trim());
+  const catalogue = editingTab === 'catalogue' ? _renderCatalogueForm(detail) : hasCatalogueFields
+    ? _renderDetailTabControl('catalogue', m, detail) + _fieldGridSection('Catalogue Details', catalogueFields, 'No catalogue details added yet.')
+    : _actionEmptySection('Catalogue Details', 'No catalogue details added yet.', 'Add catalogue details', 'catalogue');
 
-  const physical = editingTab === 'physical' ? _renderPhysicalForm(detail) : _renderDetailTabControl('physical', m, detail) +
-    _fieldGridSection('Physical Record', [
-      _field('Physical Summary', catalog.physical_summary || catalog.condition_summary, { full: true })
-    ], 'No physical details recorded yet.');
+  const physicalFields = [
+    _field('Physical Summary', catalog.physical_summary || catalog.condition_summary, { full: true })
+  ];
+  const hasPhysicalFields = physicalFields.some(field => field && field.trim());
+  const physical = editingTab === 'physical' ? _renderPhysicalForm(detail) : hasPhysicalFields
+    ? _renderDetailTabControl('physical', m, detail) + _fieldGridSection('Physical Record', physicalFields, 'No physical details recorded yet.')
+    : _actionEmptySection('Physical Record', 'No physical details recorded yet.', 'Add physical details', 'physical');
 
   const aiNotes = editingTab === 'ai' ? _renderAiForm(m, detail) : _renderDetailTabControl('ai', m, detail) +
     _fieldGridSection('Collector Notes', [
