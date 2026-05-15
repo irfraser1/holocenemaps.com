@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -81,10 +82,54 @@ function assertNotContains(relativePath, needle, reason) {
   }
 }
 
+function checkDetailEmptyStates() {
+  const context = {
+    console,
+    document: {
+      addEventListener() {}
+    },
+    window: {
+      addEventListener() {}
+    },
+    addEventListener() {},
+    setTimeout,
+    clearTimeout
+  };
+  vm.createContext(context);
+  vm.runInContext(read("js/collection-ui-helpers.js"), context, { filename: "js/collection-ui-helpers.js" });
+  vm.runInContext(read("js/collection-detail-manager.js"), context, { filename: "js/collection-detail-manager.js" });
+
+  const rendered = vm.runInContext(`
+    _renderDetailPanels({
+      id: 'empty-map',
+      title: 'Empty Map',
+      act: 1,
+      status: 'owned',
+      priority: 3
+    }, {
+      catalog: {},
+      notes: {},
+      documents: []
+    }, 'catalogue')
+  `, context);
+
+  if (!rendered.includes("No catalogue details added yet.")) {
+    fail("Catalogue tab should render the promised empty-state message when catalog detail fields are blank");
+  }
+  if (!rendered.includes("No physical details recorded yet.")) {
+    fail("Physical tab should render the promised empty-state message when physical detail fields are blank");
+  }
+  if (!rendered.includes(">Add details</button>")) {
+    fail("Empty editable detail tabs should keep the Add details action visible");
+  }
+}
+
 for (const htmlFile of productionHtml) {
   assertFile(htmlFile);
   if (exists(htmlFile)) checkLocalReferences(htmlFile);
 }
+
+checkDetailEmptyStates();
 
 assertFile("sql/core-schema.sql");
 assertFile("sql/map-detail-phase-1.sql");
