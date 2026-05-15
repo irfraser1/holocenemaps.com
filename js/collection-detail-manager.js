@@ -508,7 +508,21 @@ async function _deleteMapFromDetail(id) {
 }
 
 function _detailFormValues(form) {
-  return Object.fromEntries(new FormData(form).entries());
+  const values = {};
+  form.querySelectorAll('input[name], textarea[name], select[name]').forEach(field => {
+    values[field.name] = field.value;
+  });
+  return values;
+}
+
+function _physicalValuesHaveStructuredInput(values) {
+  return [
+    values.sheet_width, values.sheet_height, values.image_width, values.image_height,
+    values.plate_width, values.plate_height, values.medium, values.materials,
+    values.coloring, values.coloring_notes, values.condition_grade, values.condition_summary,
+    values.condition_details, values.margins, values.backing_lining, values.restoration_notes,
+    values.framing_status, values.inspected_at
+  ].some(_hasDetailValue);
 }
 
 function _setDetailEditSaving(form, saving) {
@@ -616,11 +630,33 @@ async function _savePhysicalDetail(values, userId) {
     inspected_at: _cleanDetailDate(values.inspected_at),
     updated_at: new Date().toISOString()
   };
+  const hasStructuredInput = _physicalValuesHaveStructuredInput(values);
+  const physicalDebug = {
+    map_id: _detailMapId,
+    rawValues: values,
+    hasStructuredInput,
+    catalogPayload,
+    physicalPayload
+  };
+  window.__lastPhysicalSaveDebug = physicalDebug;
+  try {
+    localStorage.setItem('hm-last-physical-save-debug', JSON.stringify(physicalDebug));
+  } catch (_) {}
   console.info('Saving physical details', {
     map_id: _detailMapId,
+    rawValues: values,
+    hasStructuredInput,
     catalogPayload,
     physicalPayload
   });
+  if (!hasStructuredInput) {
+    const catalogRes = await db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single();
+    if (catalogRes.error) {
+      console.error('Physical tab legacy summary save failed', catalogRes.error);
+      throw catalogRes.error;
+    }
+    return { catalog: catalogRes.data };
+  }
   const [catalogRes, physicalRes] = await Promise.all([
     db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single(),
     db.from('map_physical_details').upsert(physicalPayload, { onConflict: 'map_id' }).select('*').single()
