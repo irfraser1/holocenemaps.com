@@ -510,7 +510,8 @@
     color: var(--text-secondary); text-transform: uppercase;
   }
   .detail-edit-field input,
-  .detail-edit-field textarea {
+  .detail-edit-field textarea,
+  .detail-edit-field select {
     width: 100%; box-sizing: border-box; border: 1px solid var(--border);
     border-radius: 4px; background: var(--card); color: var(--ink);
     padding: 10px 12px; font-family: 'Inter', sans-serif; font-size: 14px;
@@ -520,7 +521,13 @@
     resize: vertical; min-height: 88px; font-family: 'Spectral', serif; line-height: 1.55;
   }
   .detail-edit-field input:focus,
-  .detail-edit-field textarea:focus { border-color: var(--gold); }
+  .detail-edit-field textarea:focus,
+  .detail-edit-field select:focus { border-color: var(--gold); }
+  .detail-edit-group-title {
+    grid-column: 1 / -1; margin-top: 4px;
+    font-family: 'Cormorant SC', serif; font-size: 10px; letter-spacing: 0.1em;
+    color: var(--gold); text-transform: uppercase;
+  }
   .detail-save-btn:not(:disabled) {
     border-color: var(--gold); color: var(--navy); background: var(--gold-glow);
   }
