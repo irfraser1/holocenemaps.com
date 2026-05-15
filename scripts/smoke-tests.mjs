@@ -168,6 +168,56 @@ function checkDetailEmptyStates() {
     }
   });
 
+  const structuredReferenceRendered = vm.runInContext(`
+    _renderDetailPanels({
+      id: 'reference-map',
+      title: 'Reference Map',
+      act: 1,
+      status: 'owned',
+      priority: 3
+    }, {
+      catalog: {
+        reference_entries: ['Legacy reference'],
+        bibliography_notes: 'Legacy bibliography note'
+      },
+      references: [
+        {
+          citation: 'Phillips, Maps of America, entry 123',
+          reference_type: 'bibliography',
+          author: 'Phillips',
+          title: 'Maps of America',
+          year: '1901',
+          page_or_entry: 'entry 123',
+          url: 'https://example.com/reference',
+          notes: 'Primary bibliographic reference'
+        },
+        {
+          citation: 'Burden, Mapping of North America, no. 45',
+          reference_type: 'book',
+          author: 'Burden',
+          title: 'Mapping of North America',
+          page_or_entry: 'no. 45'
+        }
+      ],
+      notes: {},
+      documents: []
+    }, 'catalogue')
+  `, context);
+
+  [
+    "Structured References",
+    "Phillips, Maps of America, entry 123",
+    "Bibliography · Phillips · Maps of America · 1901 · entry 123",
+    "Primary bibliographic reference",
+    "Burden, Mapping of North America, no. 45",
+    "Legacy reference",
+    "Legacy bibliography note"
+  ].forEach(expected => {
+    if (!structuredReferenceRendered.includes(expected)) {
+      fail(`Catalogue tab should render structured and legacy references: missing ${expected}`);
+    }
+  });
+
   const aiEditRendered = vm.runInContext(`
     _detailEditState = { tab: 'ai', dirty: false, saving: false };
     _renderDetailPanels({
@@ -259,6 +309,8 @@ assertContains("sql/core-schema.sql", "CREATE TABLE IF NOT EXISTS maps", "core s
 assertContains("sql/core-schema.sql", "DROP POLICY IF EXISTS \"Allow insert for known user\" ON maps", "core schema SQL should remove the prototype known-user map policy");
 assertContains("sql/core-schema.sql", "WITH CHECK (auth.uid() = user_id)", "core schema policies should enforce user ownership on writes");
 assertContains("sql/map-detail-phase-1.sql", "CREATE TABLE IF NOT EXISTS map_catalog_details", "Phase 1 should add catalog detail metadata");
+assertContains("sql/map-references.sql", "CREATE TABLE IF NOT EXISTS map_references", "Structured references table should be present");
+assertContains("sql/map-references.sql", "Users manage own map references", "Structured references should enforce owner RLS");
 assertContains("sql/map-detail-phase-1.sql", "CREATE TABLE IF NOT EXISTS map_notes", "Phase 1 should separate user and AI notes");
 assertContains("sql/map-detail-phase-1.sql", "CREATE TABLE IF NOT EXISTS map_documents", "Phase 1 should add private document metadata");
 assertContains("sql/map-detail-phase-1.sql", "VALUES ('map-documents', 'map-documents', false)", "map documents bucket should be private by default");

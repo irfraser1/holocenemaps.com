@@ -37,6 +37,46 @@ function _referenceField(label, value) {
   return _field(label, rendered, { full: true });
 }
 
+function _referenceTypeLabel(value) {
+  const labels = {
+    bibliography: 'Bibliography',
+    dealer: 'Dealer',
+    institutional_catalog: 'Institutional Catalog',
+    auction_record: 'Auction Record',
+    collection_catalog: 'Collection Catalog',
+    article: 'Article',
+    book: 'Book',
+    website: 'Website',
+    other: 'Other'
+  };
+  return labels[value] || value;
+}
+
+function _structuredReferenceRows(references) {
+  const refs = Array.isArray(references) ? references : [];
+  if (!refs.length) return '';
+  return refs.map(ref => {
+    const meta = [
+      _referenceTypeLabel(ref.reference_type),
+      ref.author,
+      ref.title,
+      ref.publisher,
+      ref.year,
+      ref.page_or_entry
+    ].filter(_hasDetailValue).map(_escapeDetail).join(' · ');
+    const citation = ref.url
+      ? `<a href="${_escapeDetail(ref.url)}" target="_blank" rel="noopener">${_escapeDetail(ref.citation)}</a>`
+      : _escapeDetail(ref.citation);
+    return `<div class="detail-doc-row detail-reference-row">
+      <div>
+        <div class="detail-doc-title">${citation}</div>
+        ${meta ? `<div class="detail-doc-meta">${meta}</div>` : ''}
+        ${_hasDetailValue(ref.notes) ? `<div class="detail-doc-meta">${_escapeDetail(ref.notes)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function _dimensionField(label, width, height, unit) {
   const hasWidth = _hasDetailValue(width);
   const hasHeight = _hasDetailValue(height);
@@ -213,7 +253,8 @@ function _detailTabHasData(tabName, m, detail) {
     return [
       catalog.full_title_transcription, catalog.publisher, catalog.engraver, catalog.place_of_publication,
       catalog.publication_source, catalog.edition, catalog.state, catalog.plate_number, catalog.map_type,
-      catalog.language, catalog.alternate_titles, catalog.reference_entries, catalog.bibliography_notes
+      catalog.language, catalog.alternate_titles, catalog.reference_entries, catalog.bibliography_notes,
+      detail.references?.length
     ].some(_hasDetailValue);
   }
   if (tabName === 'physical') {
@@ -354,6 +395,7 @@ function _renderDetailPanels(m, detail, activeTab = 'overview') {
   const physicalDetail = detail.physical || {};
   const notes = detail.notes || {};
   const documents = detail.documents || [];
+  const references = detail.references || [];
   const title = catalog.display_title || m.title;
   const legacyNotes = !notes.user_notes && m.notes ? m.notes : '';
   const editingTab = _detailEditState.tab;
@@ -386,8 +428,16 @@ function _renderDetailPanels(m, detail, activeTab = 'overview') {
     _field('Bibliography Notes', catalog.bibliography_notes, { full: true })
   ];
   const hasCatalogueFields = catalogueFields.some(field => field && field.trim());
+  const structuredReferences = _structuredReferenceRows(references);
+  const catalogueReadOnly = [
+    _renderDetailTabControl('catalogue', m, detail),
+    hasCatalogueFields ? _fieldGridSection('Catalogue Details', catalogueFields, 'No catalogue details added yet.') : '',
+    structuredReferences ? _section('Structured References', structuredReferences, 'No structured references added yet.') : ''
+  ].join('');
   const catalogue = editingTab === 'catalogue' ? _renderCatalogueForm(detail) : hasCatalogueFields
-    ? _renderDetailTabControl('catalogue', m, detail) + _fieldGridSection('Catalogue Details', catalogueFields, 'No catalogue details added yet.')
+    ? catalogueReadOnly
+    : structuredReferences
+      ? catalogueReadOnly
     : _actionEmptySection('Catalogue Details', 'No catalogue details added yet.', 'Add catalogue details', 'catalogue');
 
   const hasStructuredPhysicalData = _physicalHasStructuredData(physicalDetail);
@@ -752,7 +802,7 @@ async function _saveDetailEdit() {
 }
 
 async function _loadMapDetailData(mapId) {
-  const empty = { catalog: null, physical: null, notes: null, documents: [] };
+  const empty = { catalog: null, physical: null, notes: null, documents: [], references: [] };
   try {
     const safeDetailQuery = async (label, query, fallback) => {
       try {
@@ -767,10 +817,11 @@ async function _loadMapDetailData(mapId) {
         return { data: fallback, error };
       }
     };
-    const [catalogRes, physicalRes, notesRes, docsRes] = await Promise.all([
+    const [catalogRes, physicalRes, notesRes, refsRes, docsRes] = await Promise.all([
       safeDetailQuery('Catalog details', db.from('map_catalog_details').select('*').eq('map_id', mapId).maybeSingle(), null),
       safeDetailQuery('Physical details', db.from('map_physical_details').select('*').eq('map_id', mapId).maybeSingle(), null),
       safeDetailQuery('Map notes', db.from('map_notes').select('*').eq('map_id', mapId).maybeSingle(), null),
+      safeDetailQuery('Map references', db.from('map_references').select('*').eq('map_id', mapId).order('sort_order', { ascending: true }).order('created_at', { ascending: true }), []),
       safeDetailQuery('Map documents', db.from('map_documents').select('id,map_id,user_id,document_type,title,file_url,storage_path,mime_type,file_size,notes,created_at').eq('map_id', mapId).order('created_at', { ascending: false }), [])
     ]);
     console.info('Loaded map detail metadata', {
@@ -778,6 +829,7 @@ async function _loadMapDetailData(mapId) {
       hasCatalog: !!catalogRes.data,
       hasPhysical: !!physicalRes.data,
       hasNotes: !!notesRes.data,
+      referenceCount: refsRes.data?.length || 0,
       documentCount: docsRes.data?.length || 0
     });
     if (mapId === DETAIL_PHYSICAL_DEBUG_MAP_ID) {
@@ -797,6 +849,7 @@ async function _loadMapDetailData(mapId) {
       catalog: catalogRes.data || null,
       physical: physicalRes.data || null,
       notes: notesRes.data || null,
+      references: refsRes.data || [],
       documents: docsRes.data || []
     };
   } catch (e) {
