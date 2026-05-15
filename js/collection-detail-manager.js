@@ -4,7 +4,7 @@ let _detailHistoryActive = false; // true when browser Back should close the det
 let _detailCurrentMap = null;
 let _detailCurrentData = null;
 let _detailActiveTab = 'overview';
-let _detailEditState = { tab: null, dirty: false };
+let _detailEditState = { tab: null, dirty: false, saving: false };
 
 const DETAIL_EDITABLE_TABS = ['overview', 'catalogue', 'physical', 'ai'];
 
@@ -68,6 +68,49 @@ function _editValue(value) {
   return String(value);
 }
 
+function _cleanDetailText(value) {
+  const text = String(value ?? '').trim();
+  return text || null;
+}
+
+function _parseDetailList(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return [];
+  if (text.startsWith('[') || text.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(text);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (_) {
+      // Fall through to line/comma parsing.
+    }
+  }
+  return text.split(/\n|,/).map(item => item.trim()).filter(Boolean);
+}
+
+function _parseDetailAct(value, fallback) {
+  const text = String(value ?? '').trim().toLowerCase();
+  if (['1', 'act 1', 'act i', 'i'].includes(text)) return 1;
+  if (['2', 'act 2', 'act ii', 'ii'].includes(text)) return 2;
+  if (['3', 'act 3', 'act iii', 'iii'].includes(text)) return 3;
+  return fallback || 1;
+}
+
+function _parseDetailStatus(value, fallback) {
+  const text = String(value ?? '').trim().toLowerCase();
+  const labels = { owned: 'owned', negotiating: 'negotiating', target: 'target', watching: 'watching', passed: 'passed' };
+  const fromLabel = { 'owned': 'owned', 'negotiating': 'negotiating', 'target': 'target', 'watching': 'watching', 'passed': 'passed' };
+  return labels[text] || fromLabel[text] || fallback || 'watching';
+}
+
+function _parseDetailPriority(value, fallback) {
+  const text = String(value ?? '').trim();
+  const starCount = (text.match(/★/g) || []).length;
+  if (starCount > 0) return Math.max(1, Math.min(5, starCount));
+  const num = parseInt(text, 10);
+  if (!Number.isNaN(num)) return Math.max(1, Math.min(5, num));
+  return fallback || 3;
+}
+
 function _inputField(label, name, value, options = {}) {
   const full = options.full ? ' full' : '';
   const rows = options.rows || 3;
@@ -126,10 +169,11 @@ function _renderEditShell(tabName, title, fields) {
       <div class="detail-section-title">${_escapeDetail(title)}</div>
       <div class="detail-edit-actions">
         <button class="btn-action" type="button" onclick="_cancelDetailEdit()">Cancel</button>
-        <button class="btn-action detail-save-disabled" type="button" disabled>Save coming next</button>
+        <button class="btn-action detail-save-btn" type="button" onclick="_saveDetailEdit()" disabled>Save</button>
       </div>
     </div>
     <div class="detail-edit-grid">${fields}</div>
+    <div class="detail-edit-status" aria-live="polite"></div>
   </form>`;
 }
 
@@ -179,13 +223,16 @@ function _renderAiForm(m, detail) {
   const legacyNotes = !notes.user_notes && m.notes ? m.notes : '';
   return _renderEditShell('ai', 'Edit AI Notes', `
     ${_inputField('User Notes', 'user_notes', notes.user_notes || legacyNotes, { full: true, type: 'textarea', rows: 4 })}
-    ${_inputField('AI Summary', 'ai_summary', notes.ai_summary, { full: true, type: 'textarea', rows: 4 })}
-    ${_inputField('Thesis Fit', 'ai_thesis_fit', notes.ai_thesis_fit, { full: true, type: 'textarea', rows: 5 })}
-    ${_inputField('Recommendation', 'ai_recommendation', notes.ai_recommendation)}
-    ${_inputField('Confidence', 'ai_confidence', notes.ai_confidence)}
-    ${_inputField('Uncertainties', 'ai_uncertainties', notes.ai_uncertainties, { full: true, type: 'textarea', rows: 3 })}
-    ${_inputField('Sources', 'ai_sources', notes.ai_sources, { full: true, type: 'textarea', rows: 3 })}
-  `);
+  `) + _fieldGridSection('AI Notes', [
+    _field('AI Summary', notes.ai_summary, { full: true }),
+    _field('Thesis Fit', notes.ai_thesis_fit, { full: true }),
+    _field('Recommendation', notes.ai_recommendation),
+    _field('Confidence', notes.ai_confidence),
+    _referenceField('Uncertainties', notes.ai_uncertainties),
+    _referenceField('Sources', notes.ai_sources),
+    _field('Last Evaluated', notes.last_ai_evaluated_at ? new Date(notes.last_ai_evaluated_at).toLocaleString() : ''),
+    _field('Model', notes.last_ai_model)
+  ], 'No AI notes have been generated for this separated record yet.');
 }
 
 function _renderDetailPanels(m, detail, activeTab = 'overview') {
@@ -277,12 +324,21 @@ async function _confirmDiscardDetailEdit() {
 async function _discardDetailEditIfAllowed() {
   const ok = await _confirmDiscardDetailEdit();
   if (!ok) return false;
-  _detailEditState = { tab: null, dirty: false };
+  _detailEditState = { tab: null, dirty: false, saving: false };
   return true;
 }
 
 function _markDetailEditDirty() {
-  if (_detailEditState.tab) _detailEditState.dirty = true;
+  if (!_detailEditState.tab) return;
+  _detailEditState.dirty = true;
+  const form = document.querySelector(`.detail-edit-form[data-edit-tab="${_detailEditState.tab}"]`);
+  const saveBtn = form?.querySelector('.detail-save-btn');
+  if (saveBtn) saveBtn.disabled = false;
+  const status = form?.querySelector('.detail-edit-status');
+  if (status) {
+    status.textContent = '';
+    status.className = 'detail-edit-status';
+  }
 }
 
 async function _startDetailEdit(tabName) {
@@ -292,7 +348,7 @@ async function _startDetailEdit(tabName) {
     if (!ok) return;
   }
   _detailActiveTab = tabName;
-  _detailEditState = { tab: tabName, dirty: false };
+  _detailEditState = { tab: tabName, dirty: false, saving: false };
   _renderDetailPanelContainer();
   setDetailTab(tabName, { skipDirtyCheck: true });
 }
@@ -313,6 +369,143 @@ async function _deleteMapFromDetail(id) {
   const closed = await closeDetail();
   if (closed === false) return;
   deleteMap(id);
+}
+
+function _detailFormValues(form) {
+  return Object.fromEntries(new FormData(form).entries());
+}
+
+function _setDetailEditSaving(form, saving) {
+  _detailEditState.saving = saving;
+  form.querySelectorAll('input, textarea, button').forEach(el => {
+    if (el.classList.contains('detail-save-btn')) {
+      el.disabled = saving || !_detailEditState.dirty;
+    } else {
+      el.disabled = saving;
+    }
+  });
+}
+
+function _setDetailEditStatus(form, message, type = '') {
+  const status = form.querySelector('.detail-edit-status');
+  if (!status) return;
+  status.textContent = message;
+  status.className = `detail-edit-status${type ? ' ' + type : ''}`;
+}
+
+async function _detailUserId() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user?.id) throw new Error('Sign in again to save changes.');
+  return user.id;
+}
+
+async function _saveOverviewDetail(values, userId) {
+  const title = _cleanDetailText(values.title);
+  if (!title) throw new Error('Title is required.');
+  const mapPayload = {
+    title,
+    cartographer: _cleanDetailText(values.cartographer),
+    year: _cleanDetailText(values.year),
+    act: _parseDetailAct(values.act, _detailCurrentMap?.act),
+    status: _parseDetailStatus(values.status, _detailCurrentMap?.status),
+    priority: _parseDetailPriority(values.priority, _detailCurrentMap?.priority)
+  };
+  const catalogPayload = {
+    map_id: _detailMapId,
+    user_id: userId,
+    region: _cleanDetailText(values.region),
+    summary: _cleanDetailText(values.summary),
+    subject_tags: _parseDetailList(values.subject_tags),
+    updated_at: new Date().toISOString()
+  };
+  const mapRes = await db.from('maps').update(mapPayload).eq('id', _detailMapId).select('*').single();
+  if (mapRes.error) throw mapRes.error;
+  const catalogRes = await db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single();
+  if (catalogRes.error) throw catalogRes.error;
+  return { map: mapRes.data, catalog: catalogRes.data };
+}
+
+async function _saveCatalogueDetail(values, userId) {
+  const catalogPayload = {
+    map_id: _detailMapId,
+    user_id: userId,
+    full_title_transcription: _cleanDetailText(values.full_title_transcription),
+    publisher: _cleanDetailText(values.publisher),
+    engraver: _cleanDetailText(values.engraver),
+    place_of_publication: _cleanDetailText(values.place_of_publication),
+    publication_source: _cleanDetailText(values.publication_source),
+    edition: _cleanDetailText(values.edition),
+    state: _cleanDetailText(values.state),
+    plate_number: _cleanDetailText(values.plate_number),
+    map_type: _cleanDetailText(values.map_type),
+    language: _cleanDetailText(values.language),
+    alternate_titles: _parseDetailList(values.alternate_titles),
+    reference_entries: _parseDetailList(values.reference_entries),
+    bibliography_notes: _cleanDetailText(values.bibliography_notes),
+    updated_at: new Date().toISOString()
+  };
+  const res = await db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single();
+  if (res.error) throw res.error;
+  return { catalog: res.data };
+}
+
+async function _savePhysicalDetail(values, userId) {
+  const catalogPayload = {
+    map_id: _detailMapId,
+    user_id: userId,
+    physical_summary: _cleanDetailText(values.physical_summary),
+    updated_at: new Date().toISOString()
+  };
+  const res = await db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single();
+  if (res.error) throw res.error;
+  return { catalog: res.data };
+}
+
+async function _saveAiUserNotes(values, userId) {
+  const notesPayload = {
+    map_id: _detailMapId,
+    user_id: userId,
+    user_notes: _cleanDetailText(values.user_notes),
+    updated_at: new Date().toISOString()
+  };
+  const res = await db.from('map_notes').upsert(notesPayload, { onConflict: 'map_id' }).select('*').single();
+  if (res.error) throw res.error;
+  return { notes: res.data };
+}
+
+async function _saveDetailEdit() {
+  const tabName = _detailEditState.tab;
+  const form = document.querySelector(`.detail-edit-form[data-edit-tab="${tabName}"]`);
+  if (!tabName || !form || !_detailMapId || _detailEditState.saving || !_detailEditState.dirty) return;
+  const values = _detailFormValues(form);
+  _setDetailEditStatus(form, 'Saving...');
+  _setDetailEditSaving(form, true);
+  try {
+    const userId = await _detailUserId();
+    let saved = {};
+    if (tabName === 'overview') saved = await _saveOverviewDetail(values, userId);
+    else if (tabName === 'catalogue') saved = await _saveCatalogueDetail(values, userId);
+    else if (tabName === 'physical') saved = await _savePhysicalDetail(values, userId);
+    else if (tabName === 'ai') saved = await _saveAiUserNotes(values, userId);
+    else throw new Error('This tab cannot be saved.');
+
+    if (saved.map) {
+      const idx = maps.findIndex(map => map.id === _detailMapId);
+      if (idx >= 0) maps[idx] = { ...maps[idx], ...saved.map };
+      _detailCurrentMap = idx >= 0 ? maps[idx] : { ..._detailCurrentMap, ...saved.map };
+      renderList();
+    }
+    if (saved.catalog) _detailCurrentData.catalog = saved.catalog;
+    if (saved.notes) _detailCurrentData.notes = saved.notes;
+    _detailEditState = { tab: null, dirty: false, saving: false };
+    _renderDetailPanelContainer();
+    setDetailTab(tabName, { skipDirtyCheck: true });
+    hmAlert('Changes saved.', { title: 'Saved', icon: '✓', iconType: 'info' });
+  } catch (e) {
+    console.error('Detail save failed:', e);
+    _setDetailEditSaving(form, false);
+    _setDetailEditStatus(form, e.message || 'Save failed. Try again.', 'error');
+  }
 }
 
 async function _loadMapDetailData(mapId) {
@@ -441,7 +634,7 @@ async function closeDetail(options = {}) {
   _detailCurrentMap = null;
   _detailCurrentData = null;
   _detailActiveTab = 'overview';
-  _detailEditState = { tab: null, dirty: false };
+  _detailEditState = { tab: null, dirty: false, saving: false };
 
   if (_detailHistoryActive && !skipHistory && window.history.state?.hmDetailMapId) {
     _detailHistoryActive = false;

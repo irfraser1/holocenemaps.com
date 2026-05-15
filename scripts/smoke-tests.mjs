@@ -122,6 +122,38 @@ function checkDetailEmptyStates() {
   if (!rendered.includes(">Add details</button>")) {
     fail("Empty editable detail tabs should keep the Add details action visible");
   }
+
+  const aiEditRendered = vm.runInContext(`
+    _detailEditState = { tab: 'ai', dirty: false, saving: false };
+    _renderDetailPanels({
+      id: 'ai-map',
+      title: 'AI Map',
+      act: 1,
+      status: 'owned',
+      priority: 3
+    }, {
+      catalog: {},
+      notes: {
+        user_notes: 'User note',
+        ai_summary: 'Generated summary',
+        ai_thesis_fit: 'Generated fit',
+        ai_recommendation: 'WATCH',
+        ai_confidence: 'high',
+        ai_uncertainties: ['Generated uncertainty'],
+        ai_sources: ['Generated source']
+      },
+      documents: []
+    }, 'ai')
+  `, context);
+
+  if (!aiEditRendered.includes('name="user_notes"')) {
+    fail("AI edit form should keep user_notes editable");
+  }
+  for (const generatedField of ['ai_summary', 'ai_thesis_fit', 'ai_recommendation', 'ai_confidence', 'ai_uncertainties', 'ai_sources']) {
+    if (aiEditRendered.includes(`name="${generatedField}"`)) {
+      fail(`AI edit form should not render editable ${generatedField}`);
+    }
+  }
 }
 
 for (const htmlFile of productionHtml) {

@@ -521,11 +521,23 @@
   }
   .detail-edit-field input:focus,
   .detail-edit-field textarea:focus { border-color: var(--gold); }
-  .detail-save-disabled,
-  .detail-save-disabled:hover {
+  .detail-save-btn:not(:disabled) {
+    border-color: var(--gold); color: var(--navy); background: var(--gold-glow);
+  }
+  .detail-save-btn:not(:disabled):hover {
+    background: var(--cream-dark); border-color: var(--gold); color: var(--ink);
+  }
+  .detail-save-btn:disabled,
+  .detail-save-btn:disabled:hover {
     opacity: 0.58; cursor: default; border-color: var(--border-light);
     color: var(--text-secondary); background: transparent;
   }
+  .detail-edit-status {
+    min-height: 18px; margin-top: 10px;
+    font-family: 'Spectral', serif; font-size: 13px; color: var(--text-secondary);
+  }
+  .detail-edit-status.error { color: var(--rust); }
+  .detail-edit-status.success { color: var(--gold); }
   .detail-field-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
   .detail-field {
     border: 1px solid var(--border-light); background: rgba(255,255,255,0.28);
