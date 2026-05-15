@@ -119,8 +119,11 @@ function checkDetailEmptyStates() {
   if (!rendered.includes("No physical details recorded yet.")) {
     fail("Physical tab should render the promised empty-state message when physical detail fields are blank");
   }
-  if (!rendered.includes(">Add details</button>")) {
-    fail("Empty editable detail tabs should keep the Add details action visible");
+  if (!rendered.includes(">Add catalogue details</button>")) {
+    fail("Empty catalogue tab should show an obvious Add catalogue details action");
+  }
+  if (!rendered.includes(">Add physical details</button>")) {
+    fail("Empty physical tab should show an obvious Add physical details action");
   }
 
   const aiEditRendered = vm.runInContext(`
