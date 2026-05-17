@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/collection-base.css?v=20260517-map-references-edit">
+<link rel="stylesheet" href="css/collection-base.css?v=20260517-home-nav-a">
 <link rel="stylesheet" href="css/collection-dialogs.css">
 <link rel="stylesheet" href="css/collection-chat.css">
 
@@ -82,12 +82,79 @@
 
   <!-- TAB NAVIGATION -->
   <div class="tab-nav" id="tab-nav">
-    <button class="tab-btn active" id="tab-collection" onclick="switchTab('collection')">My Collection</button>
-    <button class="tab-btn" id="tab-radar" onclick="switchTab('radar')">Watching <span class="tab-badge" id="radar-badge" style="display:none">0</span></button>
+    <button class="tab-btn active" id="tab-home" onclick="switchTab('home')">Home</button>
+    <button class="tab-btn" id="tab-collection" onclick="switchTab('collection')">Collection</button>
+    <button class="tab-btn" id="tab-radar" onclick="switchTab('radar')">Watchlist <span class="tab-badge" id="radar-badge" style="display:none">0</span></button>
+    <button class="tab-btn" id="tab-advisor" onclick="openCollectionAdvisor()">Advisor</button>
+    <div class="add-map-wrap nav-add-wrap">
+      <button class="btn-add" onclick="toggleAddDropdown(event)">+ Add Map <svg class="add-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg></button>
+      <div class="add-dropdown">
+        <button class="add-dropdown-item" onclick="closeAddDropdown();document.getElementById('camera-input').click()">
+          <svg class="add-dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"/></svg>
+          <div><div class="add-dropdown-label">Scan Map</div><div class="add-dropdown-desc">Use camera to capture</div></div>
+        </button>
+        <button class="add-dropdown-item" onclick="closeAddDropdown();document.getElementById('upload-photo-input').click()">
+          <svg class="add-dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+          <div><div class="add-dropdown-label">Upload Photo</div><div class="add-dropdown-desc">Select from device</div></div>
+        </button>
+        <button class="add-dropdown-item" onclick="closeAddDropdown();openAdd()">
+          <svg class="add-dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/></svg>
+          <div><div class="add-dropdown-label">Add Manually</div><div class="add-dropdown-desc">Type all details</div></div>
+        </button>
+        <button class="add-dropdown-item" onclick="closeAddDropdown();openImport()">
+          <svg class="add-dropdown-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m9.86-1.06 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>
+          <div><div class="add-dropdown-label">Import from URL</div><div class="add-dropdown-desc">Paste dealer website link</div></div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME VIEW -->
+  <div class="home-view active" id="home-view">
+    <div class="home-grid">
+      <section class="home-panel home-panel-wide">
+        <div class="home-panel-kicker">Collection Thesis</div>
+        <div class="home-thesis-text" id="home-thesis-text">Loading thesis...</div>
+        <div class="home-panel-actions">
+          <button class="home-link-btn" onclick="switchTab('collection');startEditThesis()">Edit Thesis</button>
+          <button class="home-link-btn" onclick="openCollectionAdvisor()">Ask Advisor</button>
+        </div>
+      </section>
+
+      <section class="home-panel">
+        <div class="home-panel-title">Collection Snapshot</div>
+        <div class="home-stat-grid" id="home-snapshot"></div>
+      </section>
+
+      <section class="home-panel">
+        <div class="home-panel-title">Quick Add</div>
+        <div class="home-actions">
+          <button class="home-action-btn" onclick="document.getElementById('camera-input').click()">Scan photo</button>
+          <button class="home-action-btn" onclick="document.getElementById('upload-photo-input').click()">Upload photo</button>
+          <button class="home-action-btn" onclick="openImport()">Import listing URL</button>
+          <button class="home-action-btn" onclick="openAdd()">Add manually</button>
+        </div>
+      </section>
+
+      <section class="home-panel">
+        <div class="home-panel-title">Watchlist Summary</div>
+        <div class="home-list" id="home-watchlist-summary"></div>
+      </section>
+
+      <section class="home-panel">
+        <div class="home-panel-title">Recent Maps</div>
+        <div class="home-list" id="home-recent-maps"></div>
+      </section>
+
+      <section class="home-panel">
+        <div class="home-panel-title">Needs Cataloguing</div>
+        <div class="home-list" id="home-cataloguing"></div>
+      </section>
+    </div>
   </div>
 
   <!-- COLLECTION VIEW -->
-  <div id="collection-view">
+  <div id="collection-view" style="display:none">
   <div class="thesis-panel" id="thesis-panel">
     <div class="thesis-header">
       <div class="thesis-header-left" onclick="toggleThesisExpand()" style="flex:1;cursor:pointer;display:flex;align-items:center;gap:8px;">
@@ -376,7 +443,7 @@ let starValue = 3;
 let expandedId = null;
 let userThesis = '';
 let radarMatches = [];
-let currentTab = 'collection';
+let currentTab = 'home';
 let needsThesisPrompt = false;
 
 // STAR PICKER
@@ -573,6 +640,7 @@ function renderThesisPanel() {
   document.getElementById('thesis-display').textContent = userThesis;
   document.getElementById('thesis-edit-input').value = userThesis;
   document.getElementById('thesis-preview').textContent = userThesis;
+  renderHome();
 }
 
 function toggleThesisPanel() { toggleThesisExpand(); }
@@ -1041,6 +1109,96 @@ function renderStats() {
   ).join('') + `<div class="stat"><span class="stat-num">${maps.length}</span>Total</div>`;
 }
 
+function escapeHomeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
+}
+
+function countMapsByStatus() {
+  const counts = { owned: 0, negotiating: 0, target: 0, watching: 0, passed: 0 };
+  maps.forEach(m => {
+    if (counts[m.status] !== undefined) counts[m.status]++;
+  });
+  return counts;
+}
+
+function renderHomeStat(label, value) {
+  return `<div class="home-stat"><span>${value}</span>${label}</div>`;
+}
+
+function renderHomeListItem(title, meta, actionHtml = '') {
+  return `<div class="home-list-item">
+    <div>
+      <div class="home-list-title">${escapeHomeHtml(title)}</div>
+      ${meta ? `<div class="home-list-meta">${escapeHomeHtml(meta)}</div>` : ''}
+    </div>
+    ${actionHtml}
+  </div>`;
+}
+
+function renderHome() {
+  const home = document.getElementById('home-view');
+  if (!home) return;
+
+  const counts = countMapsByStatus();
+  const thesisEl = document.getElementById('home-thesis-text');
+  if (thesisEl) {
+    thesisEl.textContent = userThesis && userThesis.trim()
+      ? userThesis
+      : 'Add a thesis to guide AI review, acquisitions, and cataloguing priorities.';
+  }
+
+  const priorityCount = maps.filter(m => (m.priority || 0) >= 4).length;
+  const snapshot = document.getElementById('home-snapshot');
+  if (snapshot) {
+    snapshot.innerHTML = [
+      renderHomeStat('Total maps', maps.length),
+      renderHomeStat('Owned', counts.owned),
+      renderHomeStat('Targets', counts.target),
+      renderHomeStat('Watching', counts.watching),
+      renderHomeStat('High priority', priorityCount)
+    ].join('');
+  }
+
+  const watchlist = document.getElementById('home-watchlist-summary');
+  if (watchlist) {
+    const newRadarCount = radarMatches.filter(m => m.status === 'new').length;
+    watchlist.innerHTML = [
+      renderHomeListItem('Maps marked watching', `${counts.watching} in collection`, `<button class="home-mini-btn" onclick="switchTab('collection');selectCustom('cs-status','watching','Watching')">View</button>`),
+      renderHomeListItem('Market Radar', newRadarCount ? `${newRadarCount} new match${newRadarCount === 1 ? '' : 'es'}` : 'No new matches loaded', `<button class="home-mini-btn" onclick="switchTab('radar')">Open</button>`)
+    ].join('');
+  }
+
+  const recent = document.getElementById('home-recent-maps');
+  if (recent) {
+    const recentMaps = maps.slice(0, 3);
+    recent.innerHTML = recentMaps.length
+      ? recentMaps.map(m => renderHomeListItem(
+          m.title || 'Untitled map',
+          [m.cartographer, m.year, statusLabel(m.status)].filter(Boolean).join(' · '),
+          `<button class="home-mini-btn" onclick="switchTab('collection');toggleCard('${m.id}')">Open</button>`
+        )).join('')
+      : '<div class="home-empty">No maps added yet.</div>';
+  }
+
+  const missingIdentity = maps.filter(m => !m.cartographer || !m.year).length;
+  const missingImages = maps.filter(m => !m.image_url).length;
+  const noThesis = !userThesis || !userThesis.trim() || userThesis === 'Antique and vintage maps';
+  const cataloguing = document.getElementById('home-cataloguing');
+  if (cataloguing) {
+    cataloguing.innerHTML = [
+      renderHomeListItem('Missing cartographer or year', `${missingIdentity} map${missingIdentity === 1 ? '' : 's'}`, `<button class="home-mini-btn" onclick="switchTab('collection')">Review</button>`),
+      renderHomeListItem('Missing image', `${missingImages} map${missingImages === 1 ? '' : 's'}`, `<button class="home-mini-btn" onclick="switchTab('collection')">Review</button>`),
+      renderHomeListItem('Thesis guidance', noThesis ? 'Thesis needs attention' : 'Thesis present', `<button class="home-mini-btn" onclick="switchTab('collection');startEditThesis()">Edit</button>`)
+    ].join('');
+  }
+}
+
 function renderCard(m) {
   return `<div class="card" id="card-${m.id}" onclick="toggleCard('${m.id}')">
     ${m.image_url
@@ -1109,6 +1267,7 @@ function renderList() {
 function renderAll() {
   renderStats();
   renderList();
+  renderHome();
 }
 
 function collapseThesisPanel() {
@@ -1316,10 +1475,14 @@ function overlayClick(e) { if (e.target === e.currentTarget) closeModal(); }
 
 function switchTab(tab) {
   currentTab = tab;
+  document.getElementById('tab-home').classList.toggle('active', tab === 'home');
   document.getElementById('tab-collection').classList.toggle('active', tab === 'collection');
   document.getElementById('tab-radar').classList.toggle('active', tab === 'radar');
+  document.getElementById('tab-advisor').classList.remove('active');
+  document.getElementById('home-view').classList.toggle('active', tab === 'home');
   document.getElementById('collection-view').style.display = tab === 'collection' ? '' : 'none';
   document.getElementById('radar-view').className = tab === 'radar' ? 'radar-view active' : 'radar-view';
+  if (tab === 'home') renderHome();
   if (tab === 'radar' && radarMatches.length === 0) loadRadar();
 }
 
@@ -1348,6 +1511,7 @@ async function loadRadar() {
   } else {
     badge.style.display = 'none';
   }
+  renderHome();
 }
 
 function renderRadar() {
@@ -1394,6 +1558,7 @@ async function dismissRadar(matchId) {
   const newCount = radarMatches.filter(m => m.status === 'new').length;
   if (newCount > 0) { badge.textContent = newCount; badge.style.display = ''; }
   else { badge.style.display = 'none'; }
+  renderHome();
 }
 
 // Auto-load radar badge count on app load
@@ -1407,6 +1572,7 @@ async function checkRadarBadge() {
     .eq('status', 'new');
   const badge = document.getElementById('radar-badge');
   if (count > 0) { badge.textContent = count; badge.style.display = ''; }
+  renderHome();
 }
 
 // --- ADD MAP DROPDOWN ---
@@ -1414,14 +1580,21 @@ function toggleAddDropdown(e) {
   e.stopPropagation();
   // Close other open dropdowns first
   document.querySelectorAll('.custom-select.open').forEach(el => el.classList.remove('open'));
-  const wrap = document.querySelector('.add-map-wrap');
-  const dd = document.getElementById('add-dropdown');
+  document.querySelectorAll('.add-map-wrap.open').forEach(el => {
+    if (!el.contains(e.currentTarget)) el.classList.remove('open');
+  });
+  document.querySelectorAll('.add-dropdown.open').forEach(el => {
+    if (!el.contains(e.currentTarget)) el.classList.remove('open');
+  });
+  const wrap = e.currentTarget.closest('.add-map-wrap');
+  const dd = wrap?.querySelector('.add-dropdown');
+  if (!wrap || !dd) return;
   const isOpen = dd.classList.toggle('open');
   wrap.classList.toggle('open', isOpen);
 }
 function closeAddDropdown() {
-  document.getElementById('add-dropdown').classList.remove('open');
-  document.querySelector('.add-map-wrap').classList.remove('open');
+  document.querySelectorAll('.add-dropdown.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.add-map-wrap.open').forEach(el => el.classList.remove('open'));
 }
 
 // --- CUSTOM SELECT DROPDOWNS ---
@@ -1525,6 +1698,16 @@ function toggleChat() {
     document.getElementById('chat-input').focus();
     _loadThreadList();
   }
+}
+
+function openCollectionAdvisor() {
+  document.getElementById('tab-home')?.classList.remove('active');
+  document.getElementById('tab-collection')?.classList.remove('active');
+  document.getElementById('tab-radar')?.classList.remove('active');
+  document.getElementById('tab-advisor')?.classList.add('active');
+  startNewThread();
+  if (!_chatOpen) toggleChat();
+  document.getElementById('chat-input').focus();
 }
 
 function openChatForMap(mapId, mapTitle) {
