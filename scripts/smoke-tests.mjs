@@ -326,6 +326,15 @@ assertContains("collection.html", "css/collection-chat.css", "collection chat st
 assertContains("collection.html", "js/collection-ui-helpers.js", "collection shared UI helpers should load before the main app script");
 assertContains("collection.html", "js/collection-detail-manager.js", "collection detail manager should load before the photo manager and main app script");
 assertContains("collection.html", "js/collection-photo-manager.js", "collection photo manager should load before the main app script");
+assertContains("collection.html", "id=\"home-view\"", "collection app should expose the new lightweight Home view");
+assertContains("collection.html", "id=\"tab-home\"", "primary navigation should include Home");
+assertContains("collection.html", ">Collection</button>", "primary navigation should include Collection");
+assertContains("collection.html", "Watchlist <span class=\"tab-badge\" id=\"radar-badge\"", "Watching should be relabeled to Watchlist while preserving the radar badge");
+assertContains("collection.html", "id=\"tab-advisor\" onclick=\"openCollectionAdvisor()\"", "primary navigation should include an Advisor entry point");
+assertContains("collection.html", "nav-add-wrap", "primary navigation should keep Add Map prominent");
+assertContains("collection.html", "function renderHome()", "Home dashboard should be rendered from existing app state");
+assertContains("collection.html", "function openCollectionAdvisor()", "Advisor navigation should focus the existing chat advisor");
+assertContains("css/collection-base.css", ".home-view", "Home view should have conservative app-shell styling");
 assertContains("css/collection-base.css", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");
 assertContains("js/collection-photo-manager.js", ".from('map-images')", "photo manager should continue using the map-images storage bucket");
 assertContains("js/collection-photo-manager.js", "Set Cover", "photo manager should preserve the visible set-cover action");
