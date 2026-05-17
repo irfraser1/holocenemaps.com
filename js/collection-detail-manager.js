@@ -8,6 +8,18 @@ let _detailEditState = { tab: null, dirty: false, saving: false };
 
 const DETAIL_EDITABLE_TABS = ['overview', 'catalogue', 'physical', 'ai'];
 const DETAIL_PHYSICAL_DEBUG_MAP_ID = '998384c6-9210-4540-a1f0-abf909b77705';
+const DETAIL_REFERENCE_TYPES = [
+  { value: '', label: 'Unspecified' },
+  { value: 'bibliography', label: 'Bibliography' },
+  { value: 'dealer', label: 'Dealer' },
+  { value: 'institutional_catalog', label: 'Institutional Catalog' },
+  { value: 'auction_record', label: 'Auction Record' },
+  { value: 'collection_catalog', label: 'Collection Catalog' },
+  { value: 'article', label: 'Article' },
+  { value: 'book', label: 'Book' },
+  { value: 'website', label: 'Website' },
+  { value: 'other', label: 'Other' }
+];
 
 function _field(label, value, options = {}) {
   if (!_hasDetailValue(value)) return '';
@@ -75,6 +87,41 @@ function _structuredReferenceRows(references) {
       </div>
     </div>`;
   }).join('');
+}
+
+function _referenceEditBlock(ref = {}) {
+  const idAttr = ref.id ? ` data-reference-id="${_escapeDetail(ref.id)}"` : '';
+  return `<div class="detail-reference-edit" data-reference-block${idAttr}>
+    <div class="detail-reference-edit-head">
+      <div class="detail-edit-group-title">Reference</div>
+      <button class="btn-action btn-danger" type="button" onclick="_removeReferenceBlock(this)">Delete</button>
+    </div>
+    <div class="detail-reference-edit-grid">
+      ${_inputField('Citation', 'ref_citation', ref.citation, { full: true })}
+      ${_selectField('Type', 'ref_reference_type', ref.reference_type, DETAIL_REFERENCE_TYPES)}
+      ${_inputField('Author', 'ref_author', ref.author)}
+      ${_inputField('Title', 'ref_title', ref.title)}
+      ${_inputField('Publisher', 'ref_publisher', ref.publisher)}
+      ${_inputField('Year', 'ref_year', ref.year)}
+      ${_inputField('Page / Entry', 'ref_page_or_entry', ref.page_or_entry)}
+      ${_inputField('URL', 'ref_url', ref.url, { full: true })}
+      ${_inputField('Notes', 'ref_notes', ref.notes, { full: true, type: 'textarea', rows: 3 })}
+    </div>
+  </div>`;
+}
+
+function _renderStructuredReferenceEditor(references) {
+  const refs = Array.isArray(references) ? references : [];
+  const blocks = refs.map(ref => _referenceEditBlock(ref)).join('');
+  return `<div class="detail-reference-editor full">
+    <div class="detail-reference-editor-head">
+      <div class="detail-section-title">Structured References</div>
+      <button class="detail-edit-toggle" type="button" onclick="_addReferenceBlock(this)">Add reference</button>
+    </div>
+    <div class="detail-reference-blocks" data-reference-blocks>
+      ${blocks || '<div class="detail-empty">No structured references added yet.</div>'}
+    </div>
+  </div>`;
 }
 
 function _dimensionField(label, width, height, unit) {
@@ -312,6 +359,7 @@ function _renderOverviewForm(m, detail) {
 
 function _renderCatalogueForm(detail) {
   const catalog = detail.catalog || {};
+  const references = detail.references || [];
   return _renderEditShell('catalogue', 'Edit Catalogue Details', `
     ${_inputField('Full Title Transcription', 'full_title_transcription', catalog.full_title_transcription, { full: true, type: 'textarea', rows: 4 })}
     ${_inputField('Publisher', 'publisher', catalog.publisher)}
@@ -326,6 +374,7 @@ function _renderCatalogueForm(detail) {
     ${_inputField('Alternate Titles', 'alternate_titles', catalog.alternate_titles, { full: true, type: 'textarea', rows: 3 })}
     ${_inputField('References', 'reference_entries', catalog.reference_entries, { full: true, type: 'textarea', rows: 4 })}
     ${_inputField('Bibliography Notes', 'bibliography_notes', catalog.bibliography_notes, { full: true, type: 'textarea', rows: 4 })}
+    ${_renderStructuredReferenceEditor(references)}
   `);
 }
 
@@ -528,6 +577,32 @@ function _markDetailEditDirty() {
   }
 }
 
+function _addReferenceBlock(button) {
+  const form = button.closest('.detail-edit-form');
+  const container = form?.querySelector('[data-reference-blocks]');
+  if (!container) return;
+  const empty = container.querySelector('.detail-empty');
+  if (empty) empty.remove();
+  container.insertAdjacentHTML('beforeend', _referenceEditBlock());
+  _markDetailEditDirty();
+}
+
+function _removeReferenceBlock(button) {
+  const block = button.closest('[data-reference-block]');
+  if (!block) return;
+  const container = block.parentElement;
+  if (block.dataset.referenceId) {
+    block.dataset.deleted = 'true';
+    block.style.display = 'none';
+  } else {
+    block.remove();
+  }
+  if (container && !container.querySelector('[data-reference-block]:not([data-deleted="true"])')) {
+    container.insertAdjacentHTML('beforeend', '<div class="detail-empty">No structured references added yet.</div>');
+  }
+  _markDetailEditDirty();
+}
+
 async function _startDetailEdit(tabName) {
   if (!DETAIL_EDITABLE_TABS.includes(tabName)) return;
   if (_detailEditState.tab && _detailEditState.tab !== tabName) {
@@ -564,6 +639,40 @@ function _detailFormValues(form) {
     values[field.name] = field.value;
   });
   return values;
+}
+
+function _collectReferenceFormBlocks(form) {
+  const active = [];
+  const deletedIds = [];
+  form.querySelectorAll('[data-reference-block]').forEach((block, index) => {
+    const id = block.dataset.referenceId || null;
+    if (block.dataset.deleted === 'true') {
+      if (id) deletedIds.push(id);
+      return;
+    }
+    const read = field => block.querySelector(`[name="${field}"]`)?.value ?? '';
+    const ref = {
+      id,
+      citation: _cleanDetailText(read('ref_citation')),
+      reference_type: _cleanDetailText(read('ref_reference_type')),
+      author: _cleanDetailText(read('ref_author')),
+      title: _cleanDetailText(read('ref_title')),
+      publisher: _cleanDetailText(read('ref_publisher')),
+      year: _cleanDetailText(read('ref_year')),
+      page_or_entry: _cleanDetailText(read('ref_page_or_entry')),
+      url: _cleanDetailText(read('ref_url')),
+      notes: _cleanDetailText(read('ref_notes')),
+      sort_order: index
+    };
+    const hasAnyValue = [
+      ref.citation, ref.reference_type, ref.author, ref.title, ref.publisher,
+      ref.year, ref.page_or_entry, ref.url, ref.notes
+    ].some(_hasDetailValue);
+    if (!hasAnyValue && !id) return;
+    if (!ref.citation) throw new Error('Citation is required for each structured reference.');
+    active.push(ref);
+  });
+  return { active, deletedIds };
 }
 
 function _detailPhysicalDebugSnapshot(form, values) {
@@ -649,7 +758,43 @@ async function _saveOverviewDetail(values, userId) {
   return { map: mapRes.data, catalog: catalogRes.data };
 }
 
-async function _saveCatalogueDetail(values, userId) {
+async function _saveCatalogueReferences(referenceChanges, userId) {
+  const { active, deletedIds } = referenceChanges;
+  const saved = [];
+
+  for (const id of deletedIds) {
+    const res = await db.from('map_references').delete().eq('id', id).eq('map_id', _detailMapId);
+    if (res.error) throw res.error;
+  }
+
+  for (const ref of active) {
+    const payload = {
+      map_id: _detailMapId,
+      user_id: userId,
+      citation: ref.citation,
+      reference_type: ref.reference_type,
+      author: ref.author,
+      title: ref.title,
+      publisher: ref.publisher,
+      year: ref.year,
+      page_or_entry: ref.page_or_entry,
+      url: ref.url,
+      notes: ref.notes,
+      sort_order: ref.sort_order,
+      updated_at: new Date().toISOString()
+    };
+    const res = ref.id
+      ? await db.from('map_references').update(payload).eq('id', ref.id).eq('map_id', _detailMapId).select('*').single()
+      : await db.from('map_references').insert(payload).select('*').single();
+    if (res.error) throw res.error;
+    saved.push(res.data);
+  }
+
+  return saved.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+}
+
+async function _saveCatalogueDetail(values, userId, form) {
+  const referenceChanges = form ? _collectReferenceFormBlocks(form) : { active: [], deletedIds: [] };
   const catalogPayload = {
     map_id: _detailMapId,
     user_id: userId,
@@ -670,7 +815,8 @@ async function _saveCatalogueDetail(values, userId) {
   };
   const res = await db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single();
   if (res.error) throw res.error;
-  return { catalog: res.data };
+  const references = form ? await _saveCatalogueReferences(referenceChanges, userId) : (_detailCurrentData.references || []);
+  return { catalog: res.data, references };
 }
 
 async function _savePhysicalDetail(values, userId) {
@@ -776,7 +922,7 @@ async function _saveDetailEdit() {
     const userId = await _detailUserId();
     let saved = {};
     if (tabName === 'overview') saved = await _saveOverviewDetail(values, userId);
-    else if (tabName === 'catalogue') saved = await _saveCatalogueDetail(values, userId);
+    else if (tabName === 'catalogue') saved = await _saveCatalogueDetail(values, userId, form);
     else if (tabName === 'physical') saved = await _savePhysicalDetail(values, userId);
     else if (tabName === 'ai') saved = await _saveAiUserNotes(values, userId);
     else throw new Error('This tab cannot be saved.');
@@ -788,6 +934,7 @@ async function _saveDetailEdit() {
       renderList();
     }
     if (saved.catalog) _detailCurrentData.catalog = saved.catalog;
+    if (saved.references) _detailCurrentData.references = saved.references;
     if (saved.physical) _detailCurrentData.physical = saved.physical;
     if (saved.notes) _detailCurrentData.notes = saved.notes;
     _detailEditState = { tab: null, dirty: false, saving: false };

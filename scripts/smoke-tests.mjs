@@ -218,6 +218,48 @@ function checkDetailEmptyStates() {
     }
   });
 
+  const structuredReferenceEditRendered = vm.runInContext(`
+    _detailEditState = { tab: 'catalogue', dirty: false, saving: false };
+    _renderDetailPanels({
+      id: 'reference-edit-map',
+      title: 'Reference Edit Map',
+      act: 1,
+      status: 'owned',
+      priority: 3
+    }, {
+      catalog: {
+        reference_entries: ['Legacy reference'],
+        bibliography_notes: 'Legacy bibliography note'
+      },
+      references: [
+        {
+          id: 'ref-1',
+          citation: 'Existing citation',
+          reference_type: 'book',
+          author: 'Existing author'
+        }
+      ],
+      notes: {},
+      documents: []
+    }, 'catalogue')
+  `, context);
+  vm.runInContext(`_detailEditState = { tab: null, dirty: false, saving: false };`, context);
+
+  [
+    "Add reference",
+    "data-reference-id=\"ref-1\"",
+    "name=\"ref_citation\"",
+    "Existing citation",
+    "name=\"ref_reference_type\"",
+    "name=\"ref_author\"",
+    "Legacy reference",
+    "Legacy bibliography note"
+  ].forEach(expected => {
+    if (!structuredReferenceEditRendered.includes(expected)) {
+      fail(`Catalogue edit mode should render structured reference controls: missing ${expected}`);
+    }
+  });
+
   const aiEditRendered = vm.runInContext(`
     _detailEditState = { tab: 'ai', dirty: false, saving: false };
     _renderDetailPanels({
@@ -311,6 +353,9 @@ assertContains("sql/core-schema.sql", "WITH CHECK (auth.uid() = user_id)", "core
 assertContains("sql/map-detail-phase-1.sql", "CREATE TABLE IF NOT EXISTS map_catalog_details", "Phase 1 should add catalog detail metadata");
 assertContains("sql/map-references.sql", "CREATE TABLE IF NOT EXISTS map_references", "Structured references table should be present");
 assertContains("sql/map-references.sql", "Users manage own map references", "Structured references should enforce owner RLS");
+assertContains("js/collection-detail-manager.js", "db.from('map_references').insert", "Catalogue save should insert new structured references");
+assertContains("js/collection-detail-manager.js", "db.from('map_references').update", "Catalogue save should update existing structured references");
+assertContains("js/collection-detail-manager.js", "db.from('map_references').delete", "Catalogue save should delete selected structured references");
 assertContains("sql/map-detail-phase-1.sql", "CREATE TABLE IF NOT EXISTS map_notes", "Phase 1 should separate user and AI notes");
 assertContains("sql/map-detail-phase-1.sql", "CREATE TABLE IF NOT EXISTS map_documents", "Phase 1 should add private document metadata");
 assertContains("sql/map-detail-phase-1.sql", "VALUES ('map-documents', 'map-documents', false)", "map documents bucket should be private by default");
