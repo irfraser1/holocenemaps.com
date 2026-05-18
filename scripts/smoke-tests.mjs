@@ -293,12 +293,67 @@ function checkDetailEmptyStates() {
   }
 }
 
+function checkCollectionHealthRules() {
+  const context = { console };
+  context.window = context;
+  vm.createContext(context);
+  vm.runInContext(read("js/collection-health.js"), context, { filename: "js/collection-health.js" });
+
+  const health = vm.runInContext(`
+    buildCollectionHealth([
+      { id: 'complete-map', title: 'Complete Map', cartographer: 'De Fer', year: '1715', status: 'owned', image_url: 'cover.jpg' },
+      { id: 'attention-map', title: 'Attention Map', status: 'watching' }
+    ], {
+      catalogs: [
+        { map_id: 'complete-map', reference_entries: ['Legacy ref'], physical_summary: 'Framed', region: 'Mississippi', summary: 'Catalogued' }
+      ],
+      references: [
+        { map_id: 'complete-map', citation: 'Structured ref' }
+      ],
+      physical: [
+        { map_id: 'complete-map', medium: 'Engraving', condition_summary: 'Clean' }
+      ],
+      notes: [
+        { map_id: 'complete-map', ai_thesis_fit: 'Strong fit', ai_confidence: 'high', last_ai_evaluated_at: '2026-05-18T00:00:00Z' },
+        { map_id: 'attention-map', ai_confidence: 'low' }
+      ],
+      images: [
+        { map_id: 'complete-map', id: 'img-1' }
+      ]
+    })
+  `, context);
+
+  const summary = health.summary;
+  const expected = {
+    missingReferences: 1,
+    missingPhysicalDetails: 1,
+    missingPhotos: 1,
+    needsAiReview: 1,
+    missingThesisFit: 1,
+    incompleteCatalogue: 1,
+    missingCoreIdentity: 1,
+    watchlistNeedsReview: 1,
+    lowConfidenceAi: 1
+  };
+
+  Object.entries(expected).forEach(([key, value]) => {
+    if (summary[key] !== value) {
+      fail(`Collection Health should count ${key}: expected ${value}, got ${summary[key]}`);
+    }
+  });
+
+  if (!health.issuesByMapId["attention-map"]?.missingReferences) {
+    fail("Collection Health should expose per-map issue flags");
+  }
+}
+
 for (const htmlFile of productionHtml) {
   assertFile(htmlFile);
   if (exists(htmlFile)) checkLocalReferences(htmlFile);
 }
 
 checkDetailEmptyStates();
+checkCollectionHealthRules();
 
 assertFile("sql/core-schema.sql");
 assertFile("sql/map-detail-phase-1.sql");
@@ -311,6 +366,7 @@ assertFile("css/collection-chat.css");
 assertFile("js/collection-ui-helpers.js");
 assertFile("js/collection-detail-manager.js");
 assertFile("js/collection-photo-manager.js");
+assertFile("js/collection-health.js");
 
 assertNotContains("collection.html", "map-photos", "the live bucket is map-images");
 assertContains("js/collection-photo-manager.js", ".from('map-images')", "map image uploads and rotation use the real storage bucket");
@@ -326,6 +382,7 @@ assertContains("collection.html", "css/collection-chat.css", "collection chat st
 assertContains("collection.html", "js/collection-ui-helpers.js", "collection shared UI helpers should load before the main app script");
 assertContains("collection.html", "js/collection-detail-manager.js", "collection detail manager should load before the photo manager and main app script");
 assertContains("collection.html", "js/collection-photo-manager.js", "collection photo manager should load before the main app script");
+assertContains("collection.html", "js/collection-health.js?v=20260518-collection-health-a", "collection health module should load before the main app script");
 assertContains("collection.html", "id=\"home-view\"", "collection app should expose the new lightweight Home view");
 assertContains("collection.html", "id=\"tab-home\"", "primary navigation should include Home");
 assertContains("collection.html", ">Collection</button>", "primary navigation should include Collection");
@@ -334,6 +391,14 @@ assertContains("collection.html", "id=\"tab-advisor\" onclick=\"openCollectionAd
 assertContains("collection.html", "nav-add-wrap", "primary navigation should keep Add Map prominent");
 assertContains("collection.html", "function renderHome()", "Home dashboard should be rendered from existing app state");
 assertContains("collection.html", "function openCollectionAdvisor()", "Advisor navigation should focus the existing chat advisor");
+assertContains("collection.html", "Needs Attention", "Home dashboard should surface Collection Health");
+assertContains("collection.html", "refreshCollectionHealth()", "Home should refresh Collection Health after maps load");
+assertContains("js/collection-health.js", "function loadCollectionHealth", "collection health should own shallow metadata loading");
+assertContains("js/collection-health.js", ".from('map_references')", "collection health should read structured references");
+assertContains("js/collection-health.js", ".from('map_physical_details')", "collection health should read physical details");
+assertContains("js/collection-health.js", ".from('map_notes')", "collection health should read AI note signals");
+assertContains("js/collection-health.js", ".from('map_images')", "collection health should read photo signals");
+assertNotContains("js/collection-health.js", "_loadMapDetailData", "collection health must not load full detail records for every map");
 assertContains("css/collection-base.css", ".home-view", "Home view should have conservative app-shell styling");
 assertContains("css/collection-base.css", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");
 assertContains("js/collection-photo-manager.js", ".from('map-images')", "photo manager should continue using the map-images storage bucket");

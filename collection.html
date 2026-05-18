@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/collection-base.css?v=20260517-home-nav-a">
+<link rel="stylesheet" href="css/collection-base.css?v=20260518-collection-health-a">
 <link rel="stylesheet" href="css/collection-dialogs.css">
 <link rel="stylesheet" href="css/collection-chat.css">
 
@@ -147,8 +147,8 @@
       </section>
 
       <section class="home-panel">
-        <div class="home-panel-title">Needs Cataloguing</div>
-        <div class="home-list" id="home-cataloguing"></div>
+        <div class="home-panel-title">Needs Attention</div>
+        <div class="home-list" id="home-attention"></div>
       </section>
     </div>
   </div>
@@ -420,6 +420,7 @@
 <script src="js/collection-ui-helpers.js"></script>
 <script src="js/collection-detail-manager.js?v=20260517-map-references-edit"></script>
 <script src="js/collection-photo-manager.js"></script>
+<script src="js/collection-health.js?v=20260518-collection-health-a"></script>
 
 <script>
 const SUPABASE_URL = 'https://irfuhohbabtywbuchwpb.supabase.co';
@@ -445,6 +446,8 @@ let userThesis = '';
 let radarMatches = [];
 let currentTab = 'home';
 let needsThesisPrompt = false;
+let collectionHealth = createCollectionHealthState();
+let _collectionHealthRequestId = 0;
 
 // STAR PICKER
 function renderStars(val) {
@@ -866,7 +869,21 @@ db.auth.getSession().then(({ data: { session } }) => {
 
 async function loadMaps() {
   const { data, error } = await db.from('maps').select('*').order('created_at', { ascending: false });
-  if (!error) { maps = data || []; renderAll(); }
+  if (!error) {
+    maps = data || [];
+    collectionHealth = createCollectionHealthState({ loading: true });
+    renderAll();
+    refreshCollectionHealth();
+  }
+}
+
+async function refreshCollectionHealth() {
+  if (typeof loadCollectionHealth !== 'function') return;
+  const requestId = ++_collectionHealthRequestId;
+  const nextHealth = await loadCollectionHealth(db, maps);
+  if (requestId !== _collectionHealthRequestId) return;
+  collectionHealth = nextHealth;
+  renderHome();
 }
 
 let _reevalInFlight = false;
@@ -1186,16 +1203,22 @@ function renderHome() {
       : '<div class="home-empty">No maps added yet.</div>';
   }
 
-  const missingIdentity = maps.filter(m => !m.cartographer || !m.year).length;
-  const missingImages = maps.filter(m => !m.image_url).length;
-  const noThesis = !userThesis || !userThesis.trim() || userThesis === 'Antique and vintage maps';
-  const cataloguing = document.getElementById('home-cataloguing');
-  if (cataloguing) {
-    cataloguing.innerHTML = [
-      renderHomeListItem('Missing cartographer or year', `${missingIdentity} map${missingIdentity === 1 ? '' : 's'}`, `<button class="home-mini-btn" onclick="switchTab('collection')">Review</button>`),
-      renderHomeListItem('Missing image', `${missingImages} map${missingImages === 1 ? '' : 's'}`, `<button class="home-mini-btn" onclick="switchTab('collection')">Review</button>`),
-      renderHomeListItem('Thesis guidance', noThesis ? 'Thesis needs attention' : 'Thesis present', `<button class="home-mini-btn" onclick="switchTab('collection');startEditThesis()">Edit</button>`)
-    ].join('');
+  const attention = document.getElementById('home-attention');
+  if (attention) {
+    if (collectionHealth.loading && !collectionHealth.loaded) {
+      attention.innerHTML = '<div class="home-empty">Checking collection records...</div>';
+    } else if (collectionHealth.error) {
+      attention.innerHTML = '<div class="home-empty">Needs Attention is temporarily unavailable.</div>';
+    } else {
+      const summary = getCollectionHealthSummary(collectionHealth);
+      attention.innerHTML = [
+        renderHomeListItem('Maps missing references', `${summary.missingReferences} map${summary.missingReferences === 1 ? '' : 's'}`),
+        renderHomeListItem('Maps missing physical details', `${summary.missingPhysicalDetails} map${summary.missingPhysicalDetails === 1 ? '' : 's'}`),
+        renderHomeListItem('Maps missing photos', `${summary.missingPhotos} map${summary.missingPhotos === 1 ? '' : 's'}`),
+        renderHomeListItem('Maps needing AI review', `${summary.needsAiReview} map${summary.needsAiReview === 1 ? '' : 's'}`),
+        renderHomeListItem('Watchlist items needing review', `${summary.watchlistNeedsReview} map${summary.watchlistNeedsReview === 1 ? '' : 's'}`)
+      ].join('');
+    }
   }
 }
 
