@@ -276,10 +276,37 @@
     font-family: 'Cormorant SC', serif; font-size: 12px; letter-spacing: 0.11em;
     color: var(--gold); text-transform: uppercase; margin-bottom: 10px;
   }
-  .home-thesis-text {
-    font-family: 'Spectral', serif; font-size: 16px; line-height: 1.65;
-    color: var(--ink); max-width: 920px;
+  .home-thesis-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;
   }
+  .home-thesis-header .home-panel-kicker { margin-bottom: 0; }
+  .home-thesis-toggle {
+    min-height: 42px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border-light); background: transparent; color: var(--text-secondary);
+    font-family: 'Cormorant SC', serif; font-size: 11px; letter-spacing: 0.08em;
+    cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  }
+  .home-thesis-toggle:hover {
+    border-color: var(--gold); color: var(--gold);
+  }
+  .home-thesis-chevron {
+    width: 14px; height: 14px; transition: transform 0.2s;
+  }
+  .home-thesis-panel.expanded .home-thesis-chevron { transform: rotate(180deg); }
+  .home-thesis-text {
+    position: relative; overflow: hidden; max-height: 3.3em;
+    font-family: 'Spectral', serif; font-size: 16px; line-height: 1.65;
+    color: var(--ink); max-width: 920px; transition: max-height 0.22s ease;
+  }
+  .home-thesis-text::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1.65em;
+    background: linear-gradient(rgba(255,255,255,0), var(--card));
+    pointer-events: none;
+  }
+  .home-thesis-panel.expanded .home-thesis-text {
+    max-height: 420px;
+  }
+  .home-thesis-panel.expanded .home-thesis-text::after { display: none; }
   .home-panel-actions,
   .home-actions {
     display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px;
