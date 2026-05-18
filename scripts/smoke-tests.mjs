@@ -396,6 +396,11 @@ assertContains("collection.html", "let homeThesisExpanded = false", "Home thesis
 assertContains("collection.html", "id=\"home-thesis-toggle\"", "Home thesis should expose an inline expand/collapse control");
 assertContains("collection.html", "function toggleHomeThesis", "Home thesis should expand and collapse inline");
 assertContains("collection.html", "renderHomeThesisState()", "Home render should preserve thesis collapsed/expanded state");
+assertContains("collection.html", "let homeSnapshotFilter = null", "Home snapshot cards should use lightweight local filter state");
+assertContains("collection.html", "function applyHomeSnapshotFilter", "Home snapshot cards should route into Collection filtering");
+assertContains("collection.html", "function clearCollectionWorkflowFilter", "Collection workflow filters should expose a clear action");
+assertContains("collection.html", "HOME_SNAPSHOT_FILTERS", "Home snapshot filters should be defined explicitly");
+assertContains("collection.html", "renderHomeStat('High priority', priorityCount, 'highPriority')", "High Priority snapshot should filter priority maps");
 assertContains("collection.html", "refreshCollectionHealth()", "Home should refresh Collection Health after maps load");
 assertContains("collection.html", "let attentionFilter = null", "Needs Attention drill-down should use lightweight frontend state");
 assertContains("collection.html", "function applyAttentionFilter", "Needs Attention rows should filter the Collection view");
@@ -424,6 +429,7 @@ assertNotContains("js/collection-health.js", "_loadMapDetailData", "collection h
 assertContains("css/collection-base.css", ".home-view", "Home view should have conservative app-shell styling");
 assertContains("css/collection-base.css", ".home-thesis-panel.expanded", "Home thesis should have expanded inline styling");
 assertContains("css/collection-base.css", ".home-thesis-text::after", "Collapsed Home thesis should use a graceful fade");
+assertContains("css/collection-base.css", ".home-stat-action", "Home snapshot cards should have an interactive affordance");
 assertContains("css/collection-base.css", ".home-highlight-rail", "Collection Highlights should render as a lightweight horizontal rail");
 assertContains("css/collection-base.css", "aspect-ratio: 4 / 3", "Collection Highlights should keep stable image proportions");
 assertContains("css/collection-base.css", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");

@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/collection-base.css?v=20260518-home-thesis-compact-a">
+<link rel="stylesheet" href="css/collection-base.css?v=20260518-snapshot-actions-a">
 <link rel="stylesheet" href="css/collection-dialogs.css">
 <link rel="stylesheet" href="css/collection-chat.css">
 
@@ -461,6 +461,7 @@ let collectionHealth = createCollectionHealthState();
 let _collectionHealthRequestId = 0;
 let attentionFilter = null;
 let homeThesisExpanded = false;
+let homeSnapshotFilter = null;
 const ATTENTION_FILTERS = {
   missingReferences: {
     label: 'maps missing references',
@@ -481,6 +482,34 @@ const ATTENTION_FILTERS = {
   watchlistNeedsReview: {
     label: 'watchlist items needing review',
     detailTab: null
+  }
+};
+const HOME_SNAPSHOT_FILTERS = {
+  all: {
+    label: 'all maps',
+    status: '',
+    statusLabel: 'All Status'
+  },
+  owned: {
+    label: 'owned maps',
+    status: 'owned',
+    statusLabel: 'Owned'
+  },
+  target: {
+    label: 'target maps',
+    status: 'target',
+    statusLabel: 'Target'
+  },
+  watching: {
+    label: 'watching maps',
+    status: 'watching',
+    statusLabel: 'Watching'
+  },
+  highPriority: {
+    label: 'high priority maps',
+    status: '',
+    statusLabel: 'All Status',
+    highPriority: true
   }
 };
 
@@ -1143,11 +1172,13 @@ function setActFilter(n) {
 function getFiltered() {
   const q = document.getElementById('search-input').value.toLowerCase();
   const s = document.getElementById('status-filter').value;
+  const snapshotRule = HOME_SNAPSHOT_FILTERS[homeSnapshotFilter];
   let result = maps.filter(m => {
     if (attentionFilter) {
       const issues = getMapAttentionItems(collectionHealth, m.id);
       if (!issues?.[attentionFilter]) return false;
     }
+    if (snapshotRule?.highPriority && (m.priority || 0) < 4) return false;
     if (actFilter && m.act !== actFilter) return false;
     if (s && m.status !== s) return false;
     if (q) return [m.title, m.cartographer, m.dealer, m.notes, m.year].some(f => f?.toLowerCase().includes(q));
@@ -1156,17 +1187,60 @@ function getFiltered() {
   return result;
 }
 
+function setStatusFilter(value, label) {
+  const wrap = document.getElementById('cs-status');
+  document.getElementById('status-filter').value = value;
+  if (!wrap) return;
+  wrap.querySelector('.custom-select-trigger').textContent = label;
+  wrap.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('active'));
+  wrap.querySelector(`[data-value="${value}"]`)?.classList.add('active');
+  wrap.classList.remove('open');
+}
+
+function resetActFilterControl() {
+  actFilter = 0;
+  ['all','1','2','3'].forEach(id => {
+    document.getElementById('f-' + id)?.classList.remove('active');
+  });
+  document.getElementById('f-all')?.classList.add('active');
+}
+
+function applyHomeSnapshotFilter(key) {
+  const rule = HOME_SNAPSHOT_FILTERS[key];
+  if (!rule) return;
+  attentionFilter = null;
+  homeSnapshotFilter = key;
+  document.getElementById('search-input').value = '';
+  resetActFilterControl();
+  setStatusFilter(rule.status, rule.statusLabel);
+  switchTab('collection');
+  renderList();
+  document.getElementById('map-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function clearCollectionWorkflowFilter() {
+  const hadSnapshotFilter = !!homeSnapshotFilter;
+  attentionFilter = null;
+  homeSnapshotFilter = null;
+  if (hadSnapshotFilter) {
+    document.getElementById('search-input').value = '';
+    resetActFilterControl();
+    setStatusFilter('', 'All Status');
+  }
+  renderList();
+}
+
 function applyAttentionFilter(key) {
   if (!ATTENTION_FILTERS[key]) return;
   attentionFilter = key;
+  homeSnapshotFilter = null;
   switchTab('collection');
   renderList();
   document.getElementById('map-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function clearAttentionFilter() {
-  attentionFilter = null;
-  renderList();
+  clearCollectionWorkflowFilter();
 }
 
 async function openCollectionMap(id) {
@@ -1204,8 +1278,10 @@ function countMapsByStatus() {
   return counts;
 }
 
-function renderHomeStat(label, value) {
-  return `<div class="home-stat"><span>${value}</span>${label}</div>`;
+function renderHomeStat(label, value, filterKey) {
+  return `<button class="home-stat home-stat-action" type="button" onclick="applyHomeSnapshotFilter('${filterKey}')">
+    <span>${value}</span>${label}
+  </button>`;
 }
 
 function renderHomeThesisState() {
@@ -1290,11 +1366,11 @@ function renderHome() {
   const snapshot = document.getElementById('home-snapshot');
   if (snapshot) {
     snapshot.innerHTML = [
-      renderHomeStat('Total maps', maps.length),
-      renderHomeStat('Owned', counts.owned),
-      renderHomeStat('Targets', counts.target),
-      renderHomeStat('Watching', counts.watching),
-      renderHomeStat('High priority', priorityCount)
+      renderHomeStat('Total maps', maps.length, 'all'),
+      renderHomeStat('Owned', counts.owned, 'owned'),
+      renderHomeStat('Targets', counts.target, 'target'),
+      renderHomeStat('Watching', counts.watching, 'watching'),
+      renderHomeStat('High priority', priorityCount, 'highPriority')
     ].join('');
   }
 
@@ -1365,11 +1441,13 @@ function renderCard(m) {
 }
 
 function renderAttentionFilterBanner() {
-  if (!attentionFilter) return '';
-  const label = ATTENTION_FILTERS[attentionFilter]?.label || 'attention items';
+  const label = homeSnapshotFilter
+    ? HOME_SNAPSHOT_FILTERS[homeSnapshotFilter]?.label
+    : ATTENTION_FILTERS[attentionFilter]?.label;
+  if (!label) return '';
   return `<div class="attention-filter-banner">
     <span>Showing ${label}.</span>
-    <button type="button" onclick="clearAttentionFilter()">Clear</button>
+    <button type="button" onclick="clearCollectionWorkflowFilter()">Clear</button>
   </div>`;
 }
 
@@ -1768,6 +1846,7 @@ function selectCustom(wrapperId, value, label) {
   wrap.querySelector('[data-value="' + value + '"]').classList.add('active');
   wrap.classList.remove('open');
   if (wrapperId === 'cs-status') {
+    homeSnapshotFilter = null;
     document.getElementById('status-filter').value = value;
     renderList();
   } else if (wrapperId === 'cs-group') {
