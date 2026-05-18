@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/collection-base.css?v=20260518-collection-health-a">
+<link rel="stylesheet" href="css/collection-base.css?v=20260518-health-drilldown-b">
 <link rel="stylesheet" href="css/collection-dialogs.css">
 <link rel="stylesheet" href="css/collection-chat.css">
 
@@ -448,6 +448,29 @@ let currentTab = 'home';
 let needsThesisPrompt = false;
 let collectionHealth = createCollectionHealthState();
 let _collectionHealthRequestId = 0;
+let attentionFilter = null;
+const ATTENTION_FILTERS = {
+  missingReferences: {
+    label: 'maps missing references',
+    detailTab: 'catalogue'
+  },
+  missingPhysicalDetails: {
+    label: 'maps missing physical details',
+    detailTab: 'physical'
+  },
+  missingPhotos: {
+    label: 'maps missing photos',
+    detailTab: 'files'
+  },
+  needsAiReview: {
+    label: 'maps needing AI review',
+    detailTab: 'ai'
+  },
+  watchlistNeedsReview: {
+    label: 'watchlist items needing review',
+    detailTab: null
+  }
+};
 
 // STAR PICKER
 function renderStars(val) {
@@ -1109,12 +1132,37 @@ function getFiltered() {
   const q = document.getElementById('search-input').value.toLowerCase();
   const s = document.getElementById('status-filter').value;
   let result = maps.filter(m => {
+    if (attentionFilter) {
+      const issues = getMapAttentionItems(collectionHealth, m.id);
+      if (!issues?.[attentionFilter]) return false;
+    }
     if (actFilter && m.act !== actFilter) return false;
     if (s && m.status !== s) return false;
     if (q) return [m.title, m.cartographer, m.dealer, m.notes, m.year].some(f => f?.toLowerCase().includes(q));
     return true;
   });
   return result;
+}
+
+function applyAttentionFilter(key) {
+  if (!ATTENTION_FILTERS[key]) return;
+  attentionFilter = key;
+  switchTab('collection');
+  renderList();
+  document.getElementById('map-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function clearAttentionFilter() {
+  attentionFilter = null;
+  renderList();
+}
+
+async function openCollectionMap(id) {
+  await toggleCard(id);
+  const detailTab = ATTENTION_FILTERS[attentionFilter]?.detailTab;
+  if (detailTab && typeof setDetailTab === 'function') {
+    setDetailTab(detailTab);
+  }
 }
 
 // RENDER
@@ -1156,6 +1204,11 @@ function renderHomeListItem(title, meta, actionHtml = '') {
     </div>
     ${actionHtml}
   </div>`;
+}
+
+function renderAttentionAction(key, count) {
+  const disabled = count > 0 ? '' : ' disabled';
+  return `<button class="home-mini-btn" type="button" onclick="applyAttentionFilter('${key}')"${disabled}>View</button>`;
 }
 
 function renderHome() {
@@ -1212,18 +1265,18 @@ function renderHome() {
     } else {
       const summary = getCollectionHealthSummary(collectionHealth);
       attention.innerHTML = [
-        renderHomeListItem('Maps missing references', `${summary.missingReferences} map${summary.missingReferences === 1 ? '' : 's'}`),
-        renderHomeListItem('Maps missing physical details', `${summary.missingPhysicalDetails} map${summary.missingPhysicalDetails === 1 ? '' : 's'}`),
-        renderHomeListItem('Maps missing photos', `${summary.missingPhotos} map${summary.missingPhotos === 1 ? '' : 's'}`),
-        renderHomeListItem('Maps needing AI review', `${summary.needsAiReview} map${summary.needsAiReview === 1 ? '' : 's'}`),
-        renderHomeListItem('Watchlist items needing review', `${summary.watchlistNeedsReview} map${summary.watchlistNeedsReview === 1 ? '' : 's'}`)
+        renderHomeListItem('Maps missing references', `${summary.missingReferences} map${summary.missingReferences === 1 ? '' : 's'}`, renderAttentionAction('missingReferences', summary.missingReferences)),
+        renderHomeListItem('Maps missing physical details', `${summary.missingPhysicalDetails} map${summary.missingPhysicalDetails === 1 ? '' : 's'}`, renderAttentionAction('missingPhysicalDetails', summary.missingPhysicalDetails)),
+        renderHomeListItem('Maps missing photos', `${summary.missingPhotos} map${summary.missingPhotos === 1 ? '' : 's'}`, renderAttentionAction('missingPhotos', summary.missingPhotos)),
+        renderHomeListItem('Maps needing AI review', `${summary.needsAiReview} map${summary.needsAiReview === 1 ? '' : 's'}`, renderAttentionAction('needsAiReview', summary.needsAiReview)),
+        renderHomeListItem('Watchlist items needing review', `${summary.watchlistNeedsReview} map${summary.watchlistNeedsReview === 1 ? '' : 's'}`, renderAttentionAction('watchlistNeedsReview', summary.watchlistNeedsReview))
       ].join('');
     }
   }
 }
 
 function renderCard(m) {
-  return `<div class="card" id="card-${m.id}" onclick="toggleCard('${m.id}')">
+  return `<div class="card" id="card-${m.id}" onclick="openCollectionMap('${m.id}')">
     ${m.image_url
       ? `<img class="card-img" src="${m.image_url}" alt="" loading="lazy"><div class="card-gradient"></div>`
       : `<div class="card-placeholder"><div class="card-placeholder-icon">⊕</div></div><div class="card-gradient"></div>`
@@ -1240,10 +1293,20 @@ function renderCard(m) {
   </div>`;
 }
 
+function renderAttentionFilterBanner() {
+  if (!attentionFilter) return '';
+  const label = ATTENTION_FILTERS[attentionFilter]?.label || 'attention items';
+  return `<div class="attention-filter-banner">
+    <span>Showing ${label}.</span>
+    <button type="button" onclick="clearAttentionFilter()">Clear</button>
+  </div>`;
+}
+
 function renderList() {
   const filtered = getFiltered();
   const el = document.getElementById('map-list');
-  if (!filtered.length) { el.innerHTML = '<div class="empty">No maps match your filters.</div>'; return; }
+  const attentionBanner = renderAttentionFilterBanner();
+  if (!filtered.length) { el.innerHTML = attentionBanner + '<div class="empty">No maps match your filters.</div>'; return; }
 
   const groupBy = document.getElementById('group-select').value;
   const addCard = `<div class="card-add" onclick="openAdd()">
@@ -1253,7 +1316,7 @@ function renderList() {
 
   if (!groupBy) {
     // No grouping — flat list
-    el.innerHTML = filtered.map(m => renderCard(m)).join('') + addCard;
+    el.innerHTML = attentionBanner + filtered.map(m => renderCard(m)).join('') + addCard;
     return;
   }
 
@@ -1279,7 +1342,7 @@ function renderList() {
     return a.localeCompare(b);
   });
 
-  let html = '';
+  let html = attentionBanner;
   sortedKeys.forEach(key => {
     html += `<div class="group-header">${key}</div>`;
     html += groups[key].map(m => renderCard(m)).join('');

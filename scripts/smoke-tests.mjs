@@ -393,6 +393,18 @@ assertContains("collection.html", "function renderHome()", "Home dashboard shoul
 assertContains("collection.html", "function openCollectionAdvisor()", "Advisor navigation should focus the existing chat advisor");
 assertContains("collection.html", "Needs Attention", "Home dashboard should surface Collection Health");
 assertContains("collection.html", "refreshCollectionHealth()", "Home should refresh Collection Health after maps load");
+assertContains("collection.html", "let attentionFilter = null", "Needs Attention drill-down should use lightweight frontend state");
+assertContains("collection.html", "function applyAttentionFilter", "Needs Attention rows should filter the Collection view");
+assertContains("collection.html", "function clearAttentionFilter", "Needs Attention filter should be resettable");
+assertContains("collection.html", "getMapAttentionItems(collectionHealth, m.id)", "Collection filtering should use existing health issue flags");
+assertContains("collection.html", "function openCollectionMap", "Filtered maps should route detail opens through the collection helper");
+assertContains("collection.html", "setDetailTab(detailTab)", "Attention-filtered map opens should route to relevant detail tabs");
+assertContains("collection.html", "Showing ${label}.", "Collection should show a clear active attention filter label");
+assertContains("collection.html", "renderAttentionAction('missingReferences'", "Missing references should expose a View action");
+assertContains("collection.html", "renderAttentionAction('missingPhysicalDetails'", "Missing physical details should expose a View action");
+assertContains("collection.html", "renderAttentionAction('missingPhotos'", "Missing photos should expose a View action");
+assertContains("collection.html", "renderAttentionAction('needsAiReview'", "Needs AI review should expose a View action");
+assertContains("collection.html", "renderAttentionAction('watchlistNeedsReview'", "Watchlist review should expose a View action");
 assertContains("js/collection-health.js", "function loadCollectionHealth", "collection health should own shallow metadata loading");
 assertContains("js/collection-health.js", ".from('map_references')", "collection health should read structured references");
 assertContains("js/collection-health.js", ".from('map_physical_details')", "collection health should read physical details");
