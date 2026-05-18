@@ -389,6 +389,7 @@ assertContains("collection.html", ">Collection</button>", "primary navigation sh
 assertContains("collection.html", "Watchlist <span class=\"tab-badge\" id=\"radar-badge\"", "Watching should be relabeled to Watchlist while preserving the radar badge");
 assertContains("collection.html", "id=\"tab-advisor\" onclick=\"openCollectionAdvisor()\"", "primary navigation should include an Advisor entry point");
 assertContains("collection.html", "nav-add-wrap", "primary navigation should keep Add Map prominent");
+assertContains("css/collection-base.css", "align-items: center; overflow: visible; position: relative; z-index: 80;", "primary nav should not clip the Add Map dropdown");
 assertContains("collection.html", "function renderHome()", "Home dashboard should be rendered from existing app state");
 assertContains("collection.html", "function openCollectionAdvisor()", "Advisor navigation should focus the existing chat advisor");
 assertContains("collection.html", "Needs Attention", "Home dashboard should surface Collection Health");

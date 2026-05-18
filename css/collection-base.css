@@ -178,7 +178,7 @@
   .tab-nav {
     display: flex; gap: 10px; padding: 12px 24px;
     background: var(--cream); border-bottom: 1px solid var(--border);
-    align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    align-items: center; overflow: visible; position: relative; z-index: 80;
   }
   .tab-nav::-webkit-scrollbar { display: none; }
   .tab-btn {
