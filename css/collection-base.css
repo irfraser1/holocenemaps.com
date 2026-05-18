@@ -342,7 +342,16 @@
   .home-stat {
     border: 1px solid var(--border-light); background: var(--cream); padding: 12px;
     font-family: 'Cormorant SC', serif; font-size: 11px; letter-spacing: 0.08em;
-    color: var(--text-secondary); text-transform: uppercase;
+    color: var(--text-secondary); text-transform: uppercase; text-align: left;
+  }
+  .home-stat-action {
+    min-height: 74px; cursor: pointer; transition: border-color 0.2s, transform 0.2s, background 0.2s;
+  }
+  .home-stat-action:hover {
+    border-color: var(--gold); background: var(--card); transform: translateY(-1px);
+  }
+  .home-stat-action:focus-visible {
+    outline: 2px solid var(--gold); outline-offset: 2px;
   }
   .home-stat span {
     display: block; font-family: 'Cormorant Garamond', serif; font-size: 28px;
