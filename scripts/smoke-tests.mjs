@@ -405,6 +405,12 @@ assertContains("collection.html", "renderAttentionAction('missingPhysicalDetails
 assertContains("collection.html", "renderAttentionAction('missingPhotos'", "Missing photos should expose a View action");
 assertContains("collection.html", "renderAttentionAction('needsAiReview'", "Needs AI review should expose a View action");
 assertContains("collection.html", "renderAttentionAction('watchlistNeedsReview'", "Watchlist review should expose a View action");
+assertContains("collection.html", "Collection Highlights", "Home should include a quiet visual Collection Highlights module");
+assertContains("collection.html", "id=\"home-highlights\"", "Collection Highlights should have a dedicated render target");
+assertContains("collection.html", "function getCollectionHighlights", "Collection Highlights should select maps from existing loaded state");
+assertContains("collection.html", ".filter(m => m.image_url)", "Collection Highlights should use existing maps.image_url values");
+assertContains("collection.html", "function openHomeHighlight", "Collection Highlights tiles should open the existing map detail flow");
+assertContains("collection.html", "Add photos to see collection highlights here.", "Collection Highlights should have a graceful empty state");
 assertContains("js/collection-health.js", "function loadCollectionHealth", "collection health should own shallow metadata loading");
 assertContains("js/collection-health.js", ".from('map_references')", "collection health should read structured references");
 assertContains("js/collection-health.js", ".from('map_physical_details')", "collection health should read physical details");
@@ -412,6 +418,8 @@ assertContains("js/collection-health.js", ".from('map_notes')", "collection heal
 assertContains("js/collection-health.js", ".from('map_images')", "collection health should read photo signals");
 assertNotContains("js/collection-health.js", "_loadMapDetailData", "collection health must not load full detail records for every map");
 assertContains("css/collection-base.css", ".home-view", "Home view should have conservative app-shell styling");
+assertContains("css/collection-base.css", ".home-highlight-rail", "Collection Highlights should render as a lightweight horizontal rail");
+assertContains("css/collection-base.css", "aspect-ratio: 4 / 3", "Collection Highlights should keep stable image proportions");
 assertContains("css/collection-base.css", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");
 assertContains("js/collection-photo-manager.js", ".from('map-images')", "photo manager should continue using the map-images storage bucket");
 assertContains("js/collection-photo-manager.js", "Set Cover", "photo manager should preserve the visible set-cover action");

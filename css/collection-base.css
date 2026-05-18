@@ -268,7 +268,7 @@
   }
   .home-panel {
     background: var(--card); border: 1px solid var(--border-light); border-radius: 4px;
-    padding: 18px 20px;
+    padding: 18px 20px; min-width: 0;
   }
   .home-panel-wide { grid-column: 1 / -1; }
   .home-panel-kicker,
@@ -333,6 +333,38 @@
   .home-list-meta,
   .home-empty {
     font-family: 'Inter', sans-serif; font-size: 12px; color: var(--text-secondary); margin-top: 2px;
+  }
+  .home-highlight-rail {
+    display: flex; gap: 12px; max-width: 100%; overflow-x: auto; padding: 2px 0 6px;
+    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+  }
+  .home-highlight-rail::-webkit-scrollbar { height: 6px; }
+  .home-highlight-rail::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  .home-highlight-card {
+    flex: 0 0 220px; display: block; border: 1px solid var(--border-light);
+    background: var(--card); padding: 0; text-align: left; cursor: pointer;
+    scroll-snap-align: start; transition: border-color 0.2s, transform 0.2s;
+  }
+  .home-highlight-card:hover {
+    border-color: var(--gold); transform: translateY(-1px);
+  }
+  .home-highlight-image-wrap {
+    display: block; aspect-ratio: 4 / 3; background: var(--cream-dark);
+    border-bottom: 1px solid var(--border-light); overflow: hidden;
+  }
+  .home-highlight-image {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .home-highlight-copy {
+    display: block; padding: 10px 12px 12px; min-height: 82px;
+  }
+  .home-highlight-title {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    font-family: 'Spectral', serif; font-size: 14px; line-height: 1.35; color: var(--ink);
+  }
+  .home-highlight-meta {
+    display: block; margin-top: 5px; font-family: 'Inter', sans-serif; font-size: 11px;
+    color: var(--text-secondary); line-height: 1.35;
   }
 
   /* CUSTOM SELECT DROPDOWNS */
@@ -1066,6 +1098,8 @@
     .home-grid { grid-template-columns: 1fr; gap: 12px; }
     .home-panel { padding: 16px; }
     .home-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .home-highlight-card { flex-basis: 184px; }
+    .home-highlight-copy { min-height: 88px; padding: 9px 10px 11px; }
     .home-action-btn { flex: 1 1 calc(50% - 8px); min-width: 132px; }
     .home-list-item { align-items: flex-start; }
     .controls { flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
