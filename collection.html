@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/collection-base.css?v=20260518-collection-highlights-b">
+<link rel="stylesheet" href="css/collection-base.css?v=20260518-home-thesis-compact-a">
 <link rel="stylesheet" href="css/collection-dialogs.css">
 <link rel="stylesheet" href="css/collection-chat.css">
 
@@ -112,8 +112,14 @@
   <!-- HOME VIEW -->
   <div class="home-view active" id="home-view">
     <div class="home-grid">
-      <section class="home-panel home-panel-wide">
-        <div class="home-panel-kicker">Collection Thesis</div>
+      <section class="home-panel home-panel-wide home-thesis-panel" id="home-thesis-panel">
+        <div class="home-thesis-header">
+          <div class="home-panel-kicker">Collection Thesis</div>
+          <button class="home-thesis-toggle" id="home-thesis-toggle" type="button" onclick="toggleHomeThesis()" aria-expanded="false">
+            <span id="home-thesis-toggle-label">Expand</span>
+            <svg class="home-thesis-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></svg>
+          </button>
+        </div>
         <div class="home-thesis-text" id="home-thesis-text">Loading thesis...</div>
         <div class="home-panel-actions">
           <button class="home-link-btn" onclick="switchTab('collection');startEditThesis()">Edit Thesis</button>
@@ -454,6 +460,7 @@ let needsThesisPrompt = false;
 let collectionHealth = createCollectionHealthState();
 let _collectionHealthRequestId = 0;
 let attentionFilter = null;
+let homeThesisExpanded = false;
 const ATTENTION_FILTERS = {
   missingReferences: {
     label: 'maps missing references',
@@ -1201,6 +1208,22 @@ function renderHomeStat(label, value) {
   return `<div class="home-stat"><span>${value}</span>${label}</div>`;
 }
 
+function renderHomeThesisState() {
+  const panel = document.getElementById('home-thesis-panel');
+  const toggle = document.getElementById('home-thesis-toggle');
+  const label = document.getElementById('home-thesis-toggle-label');
+  if (!panel || !toggle || !label) return;
+
+  panel.classList.toggle('expanded', homeThesisExpanded);
+  toggle.setAttribute('aria-expanded', homeThesisExpanded ? 'true' : 'false');
+  label.textContent = homeThesisExpanded ? 'Collapse' : 'Expand';
+}
+
+function toggleHomeThesis() {
+  homeThesisExpanded = !homeThesisExpanded;
+  renderHomeThesisState();
+}
+
 function renderHomeListItem(title, meta, actionHtml = '') {
   return `<div class="home-list-item">
     <div>
@@ -1261,6 +1284,7 @@ function renderHome() {
       ? userThesis
       : 'Add a thesis to guide AI review, acquisitions, and cataloguing priorities.';
   }
+  renderHomeThesisState();
 
   const priorityCount = maps.filter(m => (m.priority || 0) >= 4).length;
   const snapshot = document.getElementById('home-snapshot');

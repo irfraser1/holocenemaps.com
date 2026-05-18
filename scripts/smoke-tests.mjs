@@ -392,6 +392,10 @@ assertContains("collection.html", "nav-add-wrap", "primary navigation should kee
 assertContains("collection.html", "function renderHome()", "Home dashboard should be rendered from existing app state");
 assertContains("collection.html", "function openCollectionAdvisor()", "Advisor navigation should focus the existing chat advisor");
 assertContains("collection.html", "Needs Attention", "Home dashboard should surface Collection Health");
+assertContains("collection.html", "let homeThesisExpanded = false", "Home thesis should default to collapsed local UI state");
+assertContains("collection.html", "id=\"home-thesis-toggle\"", "Home thesis should expose an inline expand/collapse control");
+assertContains("collection.html", "function toggleHomeThesis", "Home thesis should expand and collapse inline");
+assertContains("collection.html", "renderHomeThesisState()", "Home render should preserve thesis collapsed/expanded state");
 assertContains("collection.html", "refreshCollectionHealth()", "Home should refresh Collection Health after maps load");
 assertContains("collection.html", "let attentionFilter = null", "Needs Attention drill-down should use lightweight frontend state");
 assertContains("collection.html", "function applyAttentionFilter", "Needs Attention rows should filter the Collection view");
@@ -418,6 +422,8 @@ assertContains("js/collection-health.js", ".from('map_notes')", "collection heal
 assertContains("js/collection-health.js", ".from('map_images')", "collection health should read photo signals");
 assertNotContains("js/collection-health.js", "_loadMapDetailData", "collection health must not load full detail records for every map");
 assertContains("css/collection-base.css", ".home-view", "Home view should have conservative app-shell styling");
+assertContains("css/collection-base.css", ".home-thesis-panel.expanded", "Home thesis should have expanded inline styling");
+assertContains("css/collection-base.css", ".home-thesis-text::after", "Collapsed Home thesis should use a graceful fade");
 assertContains("css/collection-base.css", ".home-highlight-rail", "Collection Highlights should render as a lightweight horizontal rail");
 assertContains("css/collection-base.css", "aspect-ratio: 4 / 3", "Collection Highlights should keep stable image proportions");
 assertContains("css/collection-base.css", "width: 44px; height: 44px", "the map detail close button should have a reliable touch target");
