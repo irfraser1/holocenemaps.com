@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/collection-base.css?v=20260518-health-drilldown-b">
+<link rel="stylesheet" href="css/collection-base.css?v=20260518-collection-highlights-b">
 <link rel="stylesheet" href="css/collection-dialogs.css">
 <link rel="stylesheet" href="css/collection-chat.css">
 
@@ -119,6 +119,11 @@
           <button class="home-link-btn" onclick="switchTab('collection');startEditThesis()">Edit Thesis</button>
           <button class="home-link-btn" onclick="openCollectionAdvisor()">Ask Advisor</button>
         </div>
+      </section>
+
+      <section class="home-panel home-panel-wide">
+        <div class="home-panel-title">Collection Highlights</div>
+        <div class="home-highlight-rail" id="home-highlights"></div>
       </section>
 
       <section class="home-panel">
@@ -1206,6 +1211,40 @@ function renderHomeListItem(title, meta, actionHtml = '') {
   </div>`;
 }
 
+function getCollectionHighlights() {
+  return maps
+    .filter(m => m.image_url)
+    .slice()
+    .sort((a, b) => {
+      const ownedDelta = (b.status === 'owned') - (a.status === 'owned');
+      if (ownedDelta) return ownedDelta;
+      const priorityDelta = (b.priority || 0) - (a.priority || 0);
+      if (priorityDelta) return priorityDelta;
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    })
+    .slice(0, 8);
+}
+
+function renderHomeHighlightTile(m) {
+  const meta = [m.cartographer, m.year, statusLabel(m.status)].filter(Boolean).join(' · ');
+  return `<button class="home-highlight-card" type="button" onclick="openHomeHighlight('${m.id}')">
+    <span class="home-highlight-image-wrap">
+      <img class="home-highlight-image" src="${escapeHomeHtml(m.image_url)}" alt="" loading="lazy">
+    </span>
+    <span class="home-highlight-copy">
+      <span class="home-highlight-title">${escapeHomeHtml(m.title || 'Untitled map')}</span>
+      ${meta ? `<span class="home-highlight-meta">${escapeHomeHtml(meta)}</span>` : ''}
+    </span>
+  </button>`;
+}
+
+async function openHomeHighlight(id) {
+  attentionFilter = null;
+  switchTab('collection');
+  renderList();
+  await toggleCard(id);
+}
+
 function renderAttentionAction(key, count) {
   const disabled = count > 0 ? '' : ' disabled';
   return `<button class="home-mini-btn" type="button" onclick="applyAttentionFilter('${key}')"${disabled}>View</button>`;
@@ -1233,6 +1272,14 @@ function renderHome() {
       renderHomeStat('Watching', counts.watching),
       renderHomeStat('High priority', priorityCount)
     ].join('');
+  }
+
+  const highlights = document.getElementById('home-highlights');
+  if (highlights) {
+    const highlightMaps = getCollectionHighlights();
+    highlights.innerHTML = highlightMaps.length
+      ? highlightMaps.map(renderHomeHighlightTile).join('')
+      : '<div class="home-empty">Add photos to see collection highlights here.</div>';
   }
 
   const watchlist = document.getElementById('home-watchlist-summary');
