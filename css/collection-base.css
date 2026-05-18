@@ -303,6 +303,12 @@
   .home-mini-btn:hover {
     border-color: var(--gold); color: var(--gold);
   }
+  .home-mini-btn:disabled {
+    opacity: 0.42; cursor: default; border-color: var(--border-light); color: var(--text-secondary);
+  }
+  .home-mini-btn:disabled:hover {
+    border-color: var(--border-light); color: var(--text-secondary);
+  }
   .home-stat-grid {
     display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
   }
@@ -369,6 +375,21 @@
     border-bottom: 1px solid var(--border); margin-bottom: 4px;
   }
   .group-header:first-child { padding-top: 0; }
+
+  .attention-filter-banner {
+    grid-column: 1 / -1;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    border: 1px solid var(--border-light); background: var(--card);
+    padding: 12px 14px; border-radius: 4px;
+    font-family: 'Spectral', serif; font-size: 14px; color: var(--ink);
+  }
+  .attention-filter-banner button {
+    border: 1px solid var(--border); background: transparent; color: var(--text-secondary);
+    min-height: 34px; padding: 0 12px; border-radius: 0;
+    font-family: 'Cormorant SC', serif; font-size: 11px; letter-spacing: 0.08em;
+    cursor: pointer; transition: all 0.2s; flex: 0 0 auto;
+  }
+  .attention-filter-banner button:hover { border-color: var(--gold); color: var(--gold); }
 
   /* Hidden native selects */
   select.filter-select { display: none; }
