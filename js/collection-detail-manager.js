@@ -20,6 +20,24 @@ const DETAIL_REFERENCE_TYPES = [
   { value: 'website', label: 'Website' },
   { value: 'other', label: 'Other' }
 ];
+const DETAIL_PROVENANCE_TYPES = [
+  { value: '', label: 'Unspecified' },
+  { value: 'acquired', label: 'Acquired by Collector' },
+  { value: 'ownership', label: 'Ownership' },
+  { value: 'dealer_listing', label: 'Dealer Listing' },
+  { value: 'auction', label: 'Auction' },
+  { value: 'restoration', label: 'Restoration / Conservation' },
+  { value: 'exhibition', label: 'Exhibition' },
+  { value: 'appraisal', label: 'Appraisal' },
+  { value: 'other', label: 'Other' }
+];
+const DETAIL_CONFIDENCE_OPTIONS = [
+  { value: '', label: 'Unspecified' },
+  { value: 'documented', label: 'Documented' },
+  { value: 'probable', label: 'Probable' },
+  { value: 'possible', label: 'Possible' },
+  { value: 'unknown', label: 'Unknown' }
+];
 
 function _field(label, value, options = {}) {
   if (!_hasDetailValue(value)) return '';
@@ -62,6 +80,58 @@ function _referenceTypeLabel(value) {
     other: 'Other'
   };
   return labels[value] || value;
+}
+
+function _provenanceTypeLabel(value) {
+  const option = DETAIL_PROVENANCE_TYPES.find(item => item.value === value);
+  return option?.label || value;
+}
+
+function _confidenceLabel(value) {
+  const option = DETAIL_CONFIDENCE_OPTIONS.find(item => item.value === value);
+  return option?.label || value;
+}
+
+function _formatDetailMoney(amount, currency = 'USD') {
+  if (!_hasDetailValue(amount)) return '';
+  const code = currency || 'USD';
+  const num = Number(amount);
+  if (!Number.isFinite(num)) return `${amount}${code ? ' ' + code : ''}`;
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: code,
+      maximumFractionDigits: num % 1 === 0 ? 0 : 2
+    }).format(num);
+  } catch (_) {
+    return `${num}${code ? ' ' + code : ''}`;
+  }
+}
+
+function _detailDocumentLabel(id, documents = []) {
+  if (!id) return '';
+  const doc = documents.find(item => item.id === id);
+  return doc ? (doc.title || doc.document_type || 'Private document') : 'Linked private document';
+}
+
+function _detailReferenceLabel(id, references = []) {
+  if (!id) return '';
+  const ref = references.find(item => item.id === id);
+  return ref ? ref.citation : 'Linked reference';
+}
+
+function _documentOptions(documents = []) {
+  return [{ value: '', label: 'No linked document' }].concat((documents || []).map(doc => ({
+    value: doc.id,
+    label: doc.title || doc.document_type || 'Private document'
+  })));
+}
+
+function _referenceOptions(references = []) {
+  return [{ value: '', label: 'No linked reference' }].concat((references || []).map(ref => ({
+    value: ref.id,
+    label: ref.citation || ref.title || 'Reference'
+  })));
 }
 
 function _structuredReferenceRows(references) {
@@ -120,6 +190,132 @@ function _renderStructuredReferenceEditor(references) {
     </div>
     <div class="detail-reference-blocks" data-reference-blocks>
       ${blocks || '<div class="detail-empty">No structured references added yet.</div>'}
+    </div>
+  </div>`;
+}
+
+function _acquisitionRows(acquisitions, detail) {
+  const rows = Array.isArray(acquisitions) ? acquisitions : [];
+  if (!rows.length) {
+    return `<div class="detail-empty detail-empty-action">
+      <div class="detail-empty-message">No acquisition record yet. If this map is owned, record where it came from, when you acquired it, and what you paid.</div>
+      <button class="detail-empty-cta" type="button" onclick="_startDetailEdit('physical')">Add acquisition</button>
+    </div>`;
+  }
+  return rows.map(acq => {
+    const evidence = [
+      acq.document_id ? `Document: ${_detailDocumentLabel(acq.document_id, detail.documents)}` : '',
+      acq.listing_url ? 'Listing URL' : ''
+    ].filter(Boolean).join(' · ');
+    return `<div class="detail-doc-row">
+      <div>
+        <div class="detail-doc-title">${_escapeDetail(acq.event_date || 'Acquisition')}</div>
+        <div class="detail-doc-meta">${[
+          acq.seller_name,
+          _formatDetailMoney(acq.price_amount, acq.price_currency),
+          evidence ? `Source / Evidence: ${evidence}` : ''
+        ].filter(_hasDetailValue).map(_escapeDetail).join(' · ')}</div>
+        ${acq.listing_url ? `<div class="detail-doc-meta"><a href="${_escapeDetail(acq.listing_url)}" target="_blank" rel="noopener">View listing</a></div>` : ''}
+        ${_hasDetailValue(acq.notes) ? `<div class="detail-doc-meta">${_escapeDetail(acq.notes)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _provenanceRows(provenance, detail) {
+  const rows = Array.isArray(provenance) ? provenance : [];
+  if (!rows.length) {
+    return `<div class="detail-empty detail-empty-action">
+      <div class="detail-empty-message">No provenance events recorded yet. It is fine to leave provenance blank until you have evidence.</div>
+      <button class="detail-empty-cta" type="button" onclick="_startDetailEdit('physical')">Add provenance event</button>
+    </div>`;
+  }
+  return rows.map(event => {
+    const evidence = [
+      event.source_reference_id ? `Reference: ${_detailReferenceLabel(event.source_reference_id, detail.references)}` : '',
+      event.source_document_id ? `Document: ${_detailDocumentLabel(event.source_document_id, detail.documents)}` : ''
+    ].filter(Boolean).join(' · ');
+    const title = [
+      event.event_date_text,
+      _provenanceTypeLabel(event.event_type)
+    ].filter(_hasDetailValue).join(' · ') || 'Provenance event';
+    return `<div class="detail-doc-row">
+      <div>
+        <div class="detail-doc-title">${_escapeDetail(title)}</div>
+        <div class="detail-doc-meta">${[
+          event.party_name,
+          event.place,
+          event.confidence ? `Confidence: ${_confidenceLabel(event.confidence)}` : '',
+          evidence ? `Source / Evidence: ${evidence}` : ''
+        ].filter(_hasDetailValue).map(_escapeDetail).join(' · ')}</div>
+        ${_hasDetailValue(event.notes) ? `<div class="detail-doc-meta">${_escapeDetail(event.notes)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _acquisitionEditBlock(acq = {}, detail = {}) {
+  const idAttr = acq.id ? ` data-acquisition-id="${_escapeDetail(acq.id)}"` : '';
+  return `<div class="detail-reference-edit" data-acquisition-block${idAttr}>
+    <div class="detail-reference-edit-head">
+      <div class="detail-edit-group-title">Acquisition</div>
+      <button class="btn-action btn-danger" type="button" onclick="_removeAcquisitionBlock(this)">Delete</button>
+    </div>
+    <div class="detail-reference-edit-grid">
+      ${_inputField('Acquired Date', 'acq_event_date', acq.event_date, { type: 'date' })}
+      ${_inputField('Seller', 'acq_seller_name', acq.seller_name)}
+      ${_inputField('Price Amount', 'acq_price_amount', acq.price_amount)}
+      ${_inputField('Currency', 'acq_price_currency', acq.price_currency || 'USD')}
+      ${_inputField('Listing URL', 'acq_listing_url', acq.listing_url, { full: true })}
+      ${_selectField('Source / Evidence Document', 'acq_document_id', acq.document_id, _documentOptions(detail.documents), { full: true })}
+      ${_inputField('Notes', 'acq_notes', acq.notes, { full: true, type: 'textarea', rows: 3 })}
+    </div>
+  </div>`;
+}
+
+function _provenanceEditBlock(event = {}, detail = {}, index = 0) {
+  const idAttr = event.id ? ` data-provenance-id="${_escapeDetail(event.id)}"` : '';
+  return `<div class="detail-reference-edit" data-provenance-block${idAttr}>
+    <div class="detail-reference-edit-head">
+      <div class="detail-edit-group-title">Provenance Event</div>
+      <button class="btn-action btn-danger" type="button" onclick="_removeProvenanceBlock(this)">Delete</button>
+    </div>
+    <div class="detail-reference-edit-grid">
+      ${_selectField('Type', 'prov_event_type', event.event_type, DETAIL_PROVENANCE_TYPES)}
+      ${_inputField('Date / Date Range', 'prov_event_date_text', event.event_date_text)}
+      ${_inputField('Party', 'prov_party_name', event.party_name)}
+      ${_inputField('Place', 'prov_place', event.place)}
+      ${_selectField('Confidence', 'prov_confidence', event.confidence, DETAIL_CONFIDENCE_OPTIONS)}
+      ${_inputField('Sort Order', 'prov_sort_order', event.sort_order ?? index)}
+      ${_selectField('Source / Evidence Reference', 'prov_source_reference_id', event.source_reference_id, _referenceOptions(detail.references), { full: true })}
+      ${_selectField('Source / Evidence Document', 'prov_source_document_id', event.source_document_id, _documentOptions(detail.documents), { full: true })}
+      ${_inputField('Notes', 'prov_notes', event.notes, { full: true, type: 'textarea', rows: 3 })}
+    </div>
+  </div>`;
+}
+
+function _renderAcquisitionEditor(detail) {
+  const rows = Array.isArray(detail.acquisitions) ? detail.acquisitions : [];
+  return `<div class="detail-reference-editor full">
+    <div class="detail-reference-editor-head">
+      <div class="detail-section-title">Acquisition</div>
+      <button class="detail-edit-toggle" type="button" onclick="_addAcquisitionBlock(this)">Add acquisition</button>
+    </div>
+    <div class="detail-reference-blocks" data-acquisition-blocks>
+      ${rows.map(row => _acquisitionEditBlock(row, detail)).join('') || '<div class="detail-empty">No acquisition record yet.</div>'}
+    </div>
+  </div>`;
+}
+
+function _renderProvenanceEditor(detail) {
+  const rows = Array.isArray(detail.provenance) ? detail.provenance : [];
+  return `<div class="detail-reference-editor full">
+    <div class="detail-reference-editor-head">
+      <div class="detail-section-title">Provenance</div>
+      <button class="detail-edit-toggle" type="button" onclick="_addProvenanceBlock(this)">Add provenance event</button>
+    </div>
+    <div class="detail-reference-blocks" data-provenance-blocks>
+      ${rows.map((row, index) => _provenanceEditBlock(row, detail, index)).join('') || '<div class="detail-empty">No provenance events recorded yet.</div>'}
     </div>
   </div>`;
 }
@@ -307,7 +503,9 @@ function _detailTabHasData(tabName, m, detail) {
   if (tabName === 'physical') {
     return [
       catalog.physical_summary,
-      _physicalHasStructuredData(physical)
+      _physicalHasStructuredData(physical),
+      detail.acquisitions?.length,
+      detail.provenance?.length
     ].some(_hasDetailValue);
   }
   if (tabName === 'ai') {
@@ -419,6 +617,8 @@ function _renderPhysicalForm(detail) {
     ${_editGroupTitle('Display / Storage')}
     ${_inputField('Framing Status', 'framing_status', physical.framing_status)}
     ${_inputField('Inspected Date', 'inspected_at', physical.inspected_at, { type: 'date' })}
+    ${_renderAcquisitionEditor(detail)}
+    ${_renderProvenanceEditor(detail)}
   `);
 }
 
@@ -509,9 +709,15 @@ function _renderDetailPanels(m, detail, activeTab = 'overview') {
     hasStructuredPhysicalData ? _field('Inspected Date', physicalDetail.inspected_at) : ''
   ];
   const hasPhysicalFields = physicalFields.some(field => field && field.trim());
-  const physical = editingTab === 'physical' ? _renderPhysicalForm(detail) : hasPhysicalFields
-    ? _renderDetailTabControl('physical', m, detail) + _fieldGridSection('Physical Record', physicalFields, 'No physical details recorded yet.')
-    : _actionEmptySection('Physical Record', 'No physical details recorded yet.', 'Add physical details', 'physical');
+  const physicalRecordSection = hasPhysicalFields
+    ? _fieldGridSection('Physical Record', physicalFields, 'No physical details recorded yet.')
+    : _actionEmptySection('Physical Record', 'No physical details recorded yet. Suggested next fields: sheet size, condition, and inspection date.', 'Add physical details', 'physical');
+  const physical = editingTab === 'physical' ? _renderPhysicalForm(detail) : [
+    _renderDetailTabControl('physical', m, detail),
+    physicalRecordSection,
+    _section('Acquisition', _acquisitionRows(detail.acquisitions, detail), 'No acquisition record yet.'),
+    _section('Provenance', _provenanceRows(detail.provenance, detail), 'No provenance events recorded yet.')
+  ].join('');
 
   const aiNotes = editingTab === 'ai' ? _renderAiForm(m, detail) : _renderDetailTabControl('ai', m, detail) +
     _fieldGridSection('Collector Notes', [
@@ -603,6 +809,59 @@ function _removeReferenceBlock(button) {
   _markDetailEditDirty();
 }
 
+function _addAcquisitionBlock(button) {
+  const form = button.closest('.detail-edit-form');
+  const container = form?.querySelector('[data-acquisition-blocks]');
+  if (!container) return;
+  const empty = container.querySelector('.detail-empty');
+  if (empty) empty.remove();
+  container.insertAdjacentHTML('beforeend', _acquisitionEditBlock({}, _detailCurrentData || {}));
+  _markDetailEditDirty();
+}
+
+function _removeAcquisitionBlock(button) {
+  const block = button.closest('[data-acquisition-block]');
+  if (!block) return;
+  const container = block.parentElement;
+  if (block.dataset.acquisitionId) {
+    block.dataset.deleted = 'true';
+    block.style.display = 'none';
+  } else {
+    block.remove();
+  }
+  if (container && !container.querySelector('[data-acquisition-block]:not([data-deleted="true"])')) {
+    container.insertAdjacentHTML('beforeend', '<div class="detail-empty">No acquisition record yet.</div>');
+  }
+  _markDetailEditDirty();
+}
+
+function _addProvenanceBlock(button) {
+  const form = button.closest('.detail-edit-form');
+  const container = form?.querySelector('[data-provenance-blocks]');
+  if (!container) return;
+  const empty = container.querySelector('.detail-empty');
+  if (empty) empty.remove();
+  const index = container.querySelectorAll('[data-provenance-block]').length;
+  container.insertAdjacentHTML('beforeend', _provenanceEditBlock({ sort_order: index }, _detailCurrentData || {}, index));
+  _markDetailEditDirty();
+}
+
+function _removeProvenanceBlock(button) {
+  const block = button.closest('[data-provenance-block]');
+  if (!block) return;
+  const container = block.parentElement;
+  if (block.dataset.provenanceId) {
+    block.dataset.deleted = 'true';
+    block.style.display = 'none';
+  } else {
+    block.remove();
+  }
+  if (container && !container.querySelector('[data-provenance-block]:not([data-deleted="true"])')) {
+    container.insertAdjacentHTML('beforeend', '<div class="detail-empty">No provenance events recorded yet.</div>');
+  }
+  _markDetailEditDirty();
+}
+
 async function _startDetailEdit(tabName) {
   if (!DETAIL_EDITABLE_TABS.includes(tabName)) return;
   if (_detailEditState.tab && _detailEditState.tab !== tabName) {
@@ -671,6 +930,69 @@ function _collectReferenceFormBlocks(form) {
     if (!hasAnyValue && !id) return;
     if (!ref.citation) throw new Error('Citation is required for each structured reference.');
     active.push(ref);
+  });
+  return { active, deletedIds };
+}
+
+function _collectAcquisitionFormBlocks(form) {
+  const active = [];
+  const deletedIds = [];
+  form.querySelectorAll('[data-acquisition-block]').forEach(block => {
+    const id = block.dataset.acquisitionId || null;
+    if (block.dataset.deleted === 'true') {
+      if (id) deletedIds.push(id);
+      return;
+    }
+    const read = field => block.querySelector(`[name="${field}"]`)?.value ?? '';
+    const acq = {
+      id,
+      event_date: _cleanDetailDate(read('acq_event_date')),
+      seller_name: _cleanDetailText(read('acq_seller_name')),
+      price_amount: _cleanDetailNumber(read('acq_price_amount')),
+      price_currency: _cleanDetailText(read('acq_price_currency')) || 'USD',
+      listing_url: _cleanDetailText(read('acq_listing_url')),
+      document_id: _cleanDetailText(read('acq_document_id')),
+      notes: _cleanDetailText(read('acq_notes'))
+    };
+    const hasAnyValue = [
+      acq.event_date, acq.seller_name, acq.price_amount, acq.listing_url,
+      acq.document_id, acq.notes
+    ].some(_hasDetailValue);
+    if (!hasAnyValue && !id) return;
+    active.push(acq);
+  });
+  return { active, deletedIds };
+}
+
+function _collectProvenanceFormBlocks(form) {
+  const active = [];
+  const deletedIds = [];
+  form.querySelectorAll('[data-provenance-block]').forEach((block, index) => {
+    const id = block.dataset.provenanceId || null;
+    if (block.dataset.deleted === 'true') {
+      if (id) deletedIds.push(id);
+      return;
+    }
+    const read = field => block.querySelector(`[name="${field}"]`)?.value ?? '';
+    const sortValue = _cleanDetailNumber(read('prov_sort_order'));
+    const event = {
+      id,
+      event_type: _cleanDetailText(read('prov_event_type')),
+      event_date_text: _cleanDetailText(read('prov_event_date_text')),
+      party_name: _cleanDetailText(read('prov_party_name')),
+      place: _cleanDetailText(read('prov_place')),
+      source_reference_id: _cleanDetailText(read('prov_source_reference_id')),
+      source_document_id: _cleanDetailText(read('prov_source_document_id')),
+      confidence: _cleanDetailText(read('prov_confidence')),
+      notes: _cleanDetailText(read('prov_notes')),
+      sort_order: sortValue == null ? index : sortValue
+    };
+    const hasAnyValue = [
+      event.event_type, event.event_date_text, event.party_name, event.place,
+      event.source_reference_id, event.source_document_id, event.confidence, event.notes
+    ].some(_hasDetailValue);
+    if (!hasAnyValue && !id) return;
+    active.push(event);
   });
   return { active, deletedIds };
 }
@@ -819,7 +1141,79 @@ async function _saveCatalogueDetail(values, userId, form) {
   return { catalog: res.data, references };
 }
 
-async function _savePhysicalDetail(values, userId) {
+async function _saveAcquisitionEvents(changes, userId) {
+  const { active, deletedIds } = changes;
+  const saved = [];
+
+  for (const acq of active) {
+    const payload = {
+      map_id: _detailMapId,
+      user_id: userId,
+      event_date: acq.event_date,
+      seller_name: acq.seller_name,
+      price_amount: acq.price_amount,
+      price_currency: acq.price_currency,
+      listing_url: acq.listing_url,
+      document_id: acq.document_id,
+      notes: acq.notes,
+      updated_at: new Date().toISOString()
+    };
+    const res = acq.id
+      ? await db.from('map_acquisition_events').update(payload).eq('id', acq.id).eq('map_id', _detailMapId).select('*').single()
+      : await db.from('map_acquisition_events').insert(payload).select('*').single();
+    if (res.error) throw res.error;
+    saved.push(res.data);
+  }
+
+  for (const id of deletedIds) {
+    const res = await db.from('map_acquisition_events').delete().eq('id', id).eq('map_id', _detailMapId);
+    if (res.error) throw res.error;
+  }
+
+  return saved.sort((a, b) => {
+    const aTime = a.event_date || a.created_at || '';
+    const bTime = b.event_date || b.created_at || '';
+    return String(bTime).localeCompare(String(aTime));
+  });
+}
+
+async function _saveProvenanceEvents(changes, userId) {
+  const { active, deletedIds } = changes;
+  const saved = [];
+
+  for (const event of active) {
+    const payload = {
+      map_id: _detailMapId,
+      user_id: userId,
+      event_type: event.event_type,
+      event_date_text: event.event_date_text,
+      party_name: event.party_name,
+      place: event.place,
+      source_reference_id: event.source_reference_id,
+      source_document_id: event.source_document_id,
+      confidence: event.confidence,
+      notes: event.notes,
+      sort_order: event.sort_order,
+      updated_at: new Date().toISOString()
+    };
+    const res = event.id
+      ? await db.from('map_provenance_events').update(payload).eq('id', event.id).eq('map_id', _detailMapId).select('*').single()
+      : await db.from('map_provenance_events').insert(payload).select('*').single();
+    if (res.error) throw res.error;
+    saved.push(res.data);
+  }
+
+  for (const id of deletedIds) {
+    const res = await db.from('map_provenance_events').delete().eq('id', id).eq('map_id', _detailMapId);
+    if (res.error) throw res.error;
+  }
+
+  return saved.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+}
+
+async function _savePhysicalDetail(values, userId, form) {
+  const acquisitionChanges = form ? _collectAcquisitionFormBlocks(form) : { active: [], deletedIds: [] };
+  const provenanceChanges = form ? _collectProvenanceFormBlocks(form) : { active: [], deletedIds: [] };
   const catalogPayload = {
     map_id: _detailMapId,
     user_id: userId,
@@ -875,7 +1269,11 @@ async function _savePhysicalDetail(values, userId) {
       console.error('Physical tab legacy summary save failed', catalogRes.error);
       throw catalogRes.error;
     }
-    return { catalog: catalogRes.data };
+    const [acquisitions, provenance] = await Promise.all([
+      _saveAcquisitionEvents(acquisitionChanges, userId),
+      _saveProvenanceEvents(provenanceChanges, userId)
+    ]);
+    return { catalog: catalogRes.data, acquisitions, provenance };
   }
   const [catalogRes, physicalRes] = await Promise.all([
     db.from('map_catalog_details').upsert(catalogPayload, { onConflict: 'map_id' }).select('*').single(),
@@ -895,7 +1293,11 @@ async function _savePhysicalDetail(values, userId) {
     throw error;
   }
   console.info('Structured physical details saved', physicalRes.data);
-  return { catalog: catalogRes.data, physical: physicalRes.data };
+  const [acquisitions, provenance] = await Promise.all([
+    _saveAcquisitionEvents(acquisitionChanges, userId),
+    _saveProvenanceEvents(provenanceChanges, userId)
+  ]);
+  return { catalog: catalogRes.data, physical: physicalRes.data, acquisitions, provenance };
 }
 
 async function _saveAiUserNotes(values, userId) {
@@ -923,7 +1325,7 @@ async function _saveDetailEdit() {
     let saved = {};
     if (tabName === 'overview') saved = await _saveOverviewDetail(values, userId);
     else if (tabName === 'catalogue') saved = await _saveCatalogueDetail(values, userId, form);
-    else if (tabName === 'physical') saved = await _savePhysicalDetail(values, userId);
+    else if (tabName === 'physical') saved = await _savePhysicalDetail(values, userId, form);
     else if (tabName === 'ai') saved = await _saveAiUserNotes(values, userId);
     else throw new Error('This tab cannot be saved.');
 
@@ -936,6 +1338,8 @@ async function _saveDetailEdit() {
     if (saved.catalog) _detailCurrentData.catalog = saved.catalog;
     if (saved.references) _detailCurrentData.references = saved.references;
     if (saved.physical) _detailCurrentData.physical = saved.physical;
+    if (saved.acquisitions) _detailCurrentData.acquisitions = saved.acquisitions;
+    if (saved.provenance) _detailCurrentData.provenance = saved.provenance;
     if (saved.notes) _detailCurrentData.notes = saved.notes;
     _detailEditState = { tab: null, dirty: false, saving: false };
     _renderDetailPanelContainer();
@@ -949,7 +1353,7 @@ async function _saveDetailEdit() {
 }
 
 async function _loadMapDetailData(mapId) {
-  const empty = { catalog: null, physical: null, notes: null, documents: [], references: [] };
+  const empty = { catalog: null, physical: null, notes: null, documents: [], references: [], acquisitions: [], provenance: [] };
   try {
     const safeDetailQuery = async (label, query, fallback) => {
       try {
@@ -964,12 +1368,14 @@ async function _loadMapDetailData(mapId) {
         return { data: fallback, error };
       }
     };
-    const [catalogRes, physicalRes, notesRes, refsRes, docsRes] = await Promise.all([
+    const [catalogRes, physicalRes, notesRes, refsRes, docsRes, acquisitionsRes, provenanceRes] = await Promise.all([
       safeDetailQuery('Catalog details', db.from('map_catalog_details').select('*').eq('map_id', mapId).maybeSingle(), null),
       safeDetailQuery('Physical details', db.from('map_physical_details').select('*').eq('map_id', mapId).maybeSingle(), null),
       safeDetailQuery('Map notes', db.from('map_notes').select('*').eq('map_id', mapId).maybeSingle(), null),
       safeDetailQuery('Map references', db.from('map_references').select('*').eq('map_id', mapId).order('sort_order', { ascending: true }).order('created_at', { ascending: true }), []),
-      safeDetailQuery('Map documents', db.from('map_documents').select('id,map_id,user_id,document_type,title,file_url,storage_path,mime_type,file_size,notes,created_at').eq('map_id', mapId).order('created_at', { ascending: false }), [])
+      safeDetailQuery('Map documents', db.from('map_documents').select('id,map_id,user_id,document_type,title,file_url,storage_path,mime_type,file_size,notes,created_at').eq('map_id', mapId).order('created_at', { ascending: false }), []),
+      safeDetailQuery('Acquisition events', db.from('map_acquisition_events').select('*').eq('map_id', mapId).order('event_date', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false }), []),
+      safeDetailQuery('Provenance events', db.from('map_provenance_events').select('*').eq('map_id', mapId).order('sort_order', { ascending: true }).order('created_at', { ascending: true }), [])
     ]);
     console.info('Loaded map detail metadata', {
       mapId,
@@ -977,14 +1383,18 @@ async function _loadMapDetailData(mapId) {
       hasPhysical: !!physicalRes.data,
       hasNotes: !!notesRes.data,
       referenceCount: refsRes.data?.length || 0,
-      documentCount: docsRes.data?.length || 0
+      documentCount: docsRes.data?.length || 0,
+      acquisitionCount: acquisitionsRes.data?.length || 0,
+      provenanceCount: provenanceRes.data?.length || 0
     });
     if (mapId === DETAIL_PHYSICAL_DEBUG_MAP_ID) {
       const snapshot = {
         mapId,
         catalog: catalogRes.data,
         physical: physicalRes.data,
-        notes: notesRes.data
+        notes: notesRes.data,
+        acquisitions: acquisitionsRes.data,
+        provenance: provenanceRes.data
       };
       window.__nicolasPhysicalLoadDebug = snapshot;
       try {
@@ -997,7 +1407,9 @@ async function _loadMapDetailData(mapId) {
       physical: physicalRes.data || null,
       notes: notesRes.data || null,
       references: refsRes.data || [],
-      documents: docsRes.data || []
+      documents: docsRes.data || [],
+      acquisitions: acquisitionsRes.data || [],
+      provenance: provenanceRes.data || []
     };
   } catch (e) {
     console.warn('Map detail metadata unavailable:', e);
