@@ -433,9 +433,19 @@ function _parseDetailAct(value, fallback) {
 
 function _parseDetailStatus(value, fallback) {
   const text = String(value ?? '').trim().toLowerCase();
-  const labels = { owned: 'owned', negotiating: 'negotiating', target: 'target', watching: 'watching', passed: 'passed' };
-  const fromLabel = { 'owned': 'owned', 'negotiating': 'negotiating', 'target': 'target', 'watching': 'watching', 'passed': 'passed' };
-  return labels[text] || fromLabel[text] || fallback || 'watching';
+  const labels = { owned: 'owned', target: 'target', reference: 'reference', narrative: 'narrative', negotiating: 'negotiating', watching: 'watching', passed: 'passed' };
+  const fromLabel = {
+    'owned': 'owned',
+    'target': 'target',
+    'reference map': 'reference',
+    'reference': 'reference',
+    'narrative piece': 'narrative',
+    'narrative': 'narrative',
+    'negotiating': 'negotiating',
+    'watching': 'watching',
+    'passed': 'passed'
+  };
+  return labels[text] || fromLabel[text] || fallback || 'reference';
 }
 
 function _parseDetailPriority(value, fallback) {

@@ -531,6 +531,8 @@
   .cs-owned { border-color: var(--navy); color: var(--navy); background: rgba(28,43,58,0.06); }
   .cs-negotiating { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
   .cs-target { border-color: var(--rust); color: var(--rust); background: rgba(122,59,46,0.06); }
+  .cs-reference { border-color: var(--border); color: var(--text-secondary); background: var(--cream-dark); }
+  .cs-narrative { border-color: var(--gold); color: var(--gold); background: rgba(196,164,74,0.1); }
   .cs-watching { border-color: var(--border); color: var(--text-secondary); background: var(--cream-dark); }
   .cs-passed { border-color: var(--border-light); color: rgba(90,78,60,0.4); background: transparent; }
   .card-stars { display: none; }
@@ -909,6 +911,21 @@
   .import-supported {
     font-family: 'Spectral', serif; font-size: 11px; color: rgba(90,78,60,0.4); margin-top: 6px;
   }
+  .import-review { display: none; }
+  .import-review.visible { display: block; }
+  .import-review-header {
+    display: flex; justify-content: space-between; gap: 12px; align-items: center;
+    font-family: 'Cormorant SC', serif; font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 12px;
+  }
+  .import-review-header span:last-child {
+    color: var(--text-secondary); letter-spacing: 0.08em;
+  }
+  .import-review-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    padding: 14px; border: 1px solid var(--border-light); background: var(--cream-dark);
+  }
+  .import-review-grid .full { grid-column: 1 / -1; }
 
   /* AI ANALYSIS */
   .ai-analysis {

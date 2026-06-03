@@ -66,7 +66,17 @@ function stars(n) { return '★'.repeat(n||0) + '☆'.repeat(5-(n||0)); }
 
 function actLabel(n) { return ['','Act I','Act II','Act III'][n] || ''; }
 function actClass(n) { return ['','act1','act2','act3'][n] || ''; }
-function statusLabel(s) { return {owned:'Owned',negotiating:'Negotiating',target:'Target',watching:'Watching',passed:'Passed'}[s] || s; }
+function statusLabel(s) {
+  return {
+    owned: 'Owned',
+    target: 'Target',
+    reference: 'Reference Map',
+    narrative: 'Narrative Piece',
+    negotiating: 'Negotiating',
+    watching: 'Watching',
+    passed: 'Passed'
+  }[s] || s;
+}
 function formatPrice(p) {
   if (!p) return '';
   const n = Number(String(p).replace(/[^0-9.]/g, ''));
