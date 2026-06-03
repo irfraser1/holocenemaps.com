@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS maps (
   listing_url TEXT,
   source_url TEXT,
   source_domain TEXT,
+  source_listing_title TEXT,
   imported_at TIMESTAMPTZ,
   raw_import_snapshot JSONB DEFAULT '{}'::jsonb,
   extraction_confidence NUMERIC
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS maps (
 
 ALTER TABLE maps ADD COLUMN IF NOT EXISTS source_url TEXT;
 ALTER TABLE maps ADD COLUMN IF NOT EXISTS source_domain TEXT;
+ALTER TABLE maps ADD COLUMN IF NOT EXISTS source_listing_title TEXT;
 ALTER TABLE maps ADD COLUMN IF NOT EXISTS imported_at TIMESTAMPTZ;
 ALTER TABLE maps ADD COLUMN IF NOT EXISTS raw_import_snapshot JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE maps ADD COLUMN IF NOT EXISTS extraction_confidence NUMERIC;

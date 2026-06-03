@@ -338,8 +338,8 @@
           <div id="fetch-status"></div>
         </div>
         <div class="field full">
-          <label class="lbl">Title</label>
-          <input type="text" id="f-title" placeholder="e.g. De l'Isle — Carte de la Louisiane">
+          <label class="lbl">Actual Map Title / Title Transcription</label>
+          <input type="text" id="f-title" placeholder="Title printed on or bibliographically associated with the map">
         </div>
         <div class="field">
           <label class="lbl">Year</label>
@@ -347,7 +347,7 @@
         </div>
         <div class="field">
           <label class="lbl">Cartographer</label>
-          <input type="text" id="f-cartographer" placeholder="De l'Isle">
+          <input type="text" id="f-cartographer" placeholder="Mapmaker / Attribution">
         </div>
         <div class="field">
           <label class="lbl">Act</label>
@@ -400,6 +400,10 @@
             <span id="import-confidence-label"></span>
           </div>
           <div class="import-review-grid">
+            <div class="field full">
+              <label class="lbl">Listing Title / Dealer Headline</label>
+              <input type="text" id="f-import-listing-title" placeholder="Dealer page headline">
+            </div>
             <div class="field">
               <label class="lbl">Publication Place</label>
               <input type="text" id="f-import-publication-place" placeholder="Amsterdam, Paris, London...">
@@ -1107,6 +1111,7 @@ async function saveMap() {
   if (currentImportDraft) {
     payload.source_url = currentImportDraft.source_url || payload.url || null;
     payload.source_domain = currentImportDraft.source_domain || sourceDomainFromUrl(payload.source_url);
+    payload.source_listing_title = document.getElementById('f-import-listing-title').value.trim() || currentImportDraft.listing_title || null;
     payload.imported_at = currentImportDraft.imported_at || new Date().toISOString();
     payload.extraction_confidence = currentImportDraft.extraction_confidence ?? null;
     payload.raw_import_snapshot = buildImportSnapshot();
@@ -1601,6 +1606,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function resetImportReviewFields() {
   [
     'publication-place',
+    'listing-title',
     'inventory',
     'dimensions',
     'sold-status',
@@ -1614,6 +1620,15 @@ function resetImportReviewFields() {
   if (panel) panel.classList.remove('visible');
   const confidence = document.getElementById('import-confidence-label');
   if (confidence) confidence.textContent = '';
+}
+
+function resetImportCoreFieldsForFetch() {
+  ['title','year','cartographer','price','notes'].forEach(f => {
+    const el = document.getElementById('f-' + f);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-act').value = '';
+  document.getElementById('f-status').value = 'reference';
 }
 
 function sourceDomainFromUrl(url) {
@@ -1639,6 +1654,8 @@ function normalizeImportDraft(data, fallbackUrl) {
   const sourceUrl = draft.source_url || data?.source_url || fallbackUrl;
   return {
     title: draft.title || '',
+    listing_title: draft.listing_title || draft.dealer_headline || '',
+    actual_map_title: draft.actual_map_title || '',
     cartographer: draft.cartographer || draft.maker || '',
     publication_date: draft.publication_date || draft.year || '',
     publication_place: draft.publication_place || '',
@@ -1661,14 +1678,17 @@ function normalizeImportDraft(data, fallbackUrl) {
 
 function applyImportDraftToForm(draft) {
   currentImportDraft = draft;
-  if (draft.title) document.getElementById('f-title').value = draft.title;
-  if (draft.publication_date) document.getElementById('f-year').value = String(draft.publication_date).match(/\b(1[4-9]\d{2}|20\d{2})\b/)?.[1] || draft.publication_date;
-  if (draft.cartographer) document.getElementById('f-cartographer').value = draft.cartographer;
+  document.getElementById('f-title').value = draft.actual_map_title || draft.title || '';
+  document.getElementById('f-year').value = draft.publication_date
+    ? String(draft.publication_date).match(/\b(1[4-9]\d{2}|20\d{2})\b/)?.[1] || draft.publication_date
+    : '';
+  document.getElementById('f-cartographer').value = draft.cartographer || '';
   if (draft.dealer) document.getElementById('f-dealer').value = draft.dealer;
-  if (draft.price) document.getElementById('f-price').value = draft.price;
+  document.getElementById('f-price').value = draft.price || '';
   if (draft.source_url) document.getElementById('f-url').value = draft.source_url;
   document.getElementById('f-status').value = draft.status || 'reference';
   document.getElementById('f-import-publication-place').value = draft.publication_place || '';
+  document.getElementById('f-import-listing-title').value = draft.listing_title || '';
   document.getElementById('f-import-inventory').value = draft.inventory_number || '';
   document.getElementById('f-import-dimensions').value = draft.dimensions || '';
   document.getElementById('f-import-sold-status').value = draft.sold_status || '';
@@ -1693,6 +1713,7 @@ function buildImportSnapshot() {
     ...currentImportDraft.raw_import_snapshot,
     reviewed_draft: {
       title: document.getElementById('f-title').value.trim(),
+      listing_title: document.getElementById('f-import-listing-title').value.trim(),
       cartographer: document.getElementById('f-cartographer').value.trim(),
       publication_date: document.getElementById('f-year').value.trim(),
       publication_place: document.getElementById('f-import-publication-place').value.trim(),
@@ -1711,20 +1732,23 @@ function buildImportSnapshot() {
 
 async function saveImportedDetailPayload(mapId, userId) {
   const description = document.getElementById('f-import-description').value.trim();
+  const listingTitle = document.getElementById('f-import-listing-title').value.trim();
   const publicationPlace = document.getElementById('f-import-publication-place').value.trim();
   const inventory = document.getElementById('f-import-inventory').value.trim();
   const dimensions = document.getElementById('f-import-dimensions').value.trim();
   const condition = document.getElementById('f-import-condition').value.trim();
   const soldStatus = document.getElementById('f-import-sold-status').value.trim();
 
-  if (description || publicationPlace || inventory || soldStatus || dimensions) {
+  if (description || publicationPlace || inventory || soldStatus || dimensions || listingTitle) {
     await db.from('map_catalog_details').upsert({
       map_id: mapId,
       user_id: userId,
       place_of_publication: publicationPlace || null,
+      display_title: document.getElementById('f-title').value.trim() || null,
+      full_title_transcription: document.getElementById('f-title').value.trim() || null,
       summary: description || null,
       physical_summary: dimensions || null,
-      bibliography_notes: [inventory && `Inventory: ${inventory}`, soldStatus && `Listing status: ${soldStatus}`].filter(Boolean).join('\n') || null,
+      bibliography_notes: [listingTitle && `Dealer headline: ${listingTitle}`, inventory && `Inventory: ${inventory}`, soldStatus && `Listing status: ${soldStatus}`].filter(Boolean).join('\n') || null,
       updated_at: new Date().toISOString()
     }, { onConflict: 'map_id' });
   }
@@ -1754,6 +1778,7 @@ async function fetchImportUrl() {
   // Always pre-fill the Listing URL field
   document.getElementById('f-url').value = url;
   document.getElementById('f-dealer').value = sourceDomainFromUrl(url);
+  resetImportCoreFieldsForFetch();
   resetImportReviewFields();
   document.getElementById('f-image-url').value = '';
   _modalExistingImages = [];

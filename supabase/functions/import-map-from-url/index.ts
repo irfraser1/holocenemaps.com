@@ -3,6 +3,8 @@ import { corsHeaders, enforceUsageLimit, identifyActor, jsonResponse, optionsRes
 
 type Draft = {
   title: string | null;
+  listing_title: string | null;
+  actual_map_title: string | null;
   cartographer: string | null;
   publication_date: string | null;
   publication_place: string | null;
@@ -129,6 +131,57 @@ function extractTitle(html: string, jsonLd: any[]) {
   return firstString(product?.name, product?.headline, metaTitle, titleTag)?.replace(/\s+[|–—-]\s+(Antique|Rare|Old|Vintage)?\s*Maps?.*$/i, "").trim() || null;
 }
 
+function extractListingTitle(html: string, jsonLd: any[]) {
+  const h1 = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)]
+    .map((match) => cleanText(match[1], 500))
+    .find((heading) => heading && !/\b(boston rare maps|rare maps|contact|inventory)\b/i.test(heading));
+  return firstString(h1, metaContent(html, ["og:title", "twitter:title"]), extractTitle(html, jsonLd));
+}
+
+function normalizeActualTitle(value: string | null) {
+  if (!value) return null;
+  let text = value
+    .replace(/\s*\[[^\]]+\]\s*$/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^["'“”]+|["'“”]+$/g, "");
+
+  const citationPrefix = text.match(/^(.{1,100}?),\s+([A-Z0-9][A-Z0-9 .,'’:&;\-]{15,})$/);
+  if (citationPrefix && !/\b(map|chart|plan|governments|america|proclamation|colonies|province)\b/i.test(citationPrefix[1])) {
+    text = citationPrefix[2].trim();
+  }
+
+  return text || null;
+}
+
+function extractActualMapTitle(html: string, pageText: string) {
+  const candidates = [
+    ...[...pageText.matchAll(/(?:engraver|cartographer|maker|author)\)?(?:,|\s)\s*([A-Z0-9][A-Z0-9 .,'’:&;\-]{15,260}(?:AMERICA|GOVERNMENTS|MAP|CHART|PLAN|PROCLAMATION|COLONIES|PROVINCES)[A-Z0-9 .,'’:&;\-]{0,160})/gi)].map((m) => cleanText(m[1], 500)),
+    ...[...html.matchAll(/<(?:em|i|cite)[^>]*>([\s\S]{12,500}?)<\/(?:em|i|cite)>/gi)].map((m) => cleanText(m[1], 500)),
+    ...[...html.matchAll(/(?:alt|title)=["']([^"']{12,500})["']/gi)].map((m) => cleanText(m[1], 500)),
+    ...[...pageText.matchAll(/(?:^|\s)([A-Z][A-Z0-9 .,'’:&;\-]+(?:AMERICA|GOVERNMENTS|MAP|CHART|PLAN|PROCLAMATION|COLONIES|PROVINCES)[A-Z0-9 .,'’:&;\-]{8,260})/g)].map((m) => cleanText(m[1], 500)),
+    cleanText(pageText.match(/\b[A-Z][^.\n]{0,120}\b(?:map|chart|plan)\b[^.\n]{0,260}/i)?.[0], 500),
+  ].filter(Boolean) as string[];
+
+  const scored = candidates
+    .map((candidate) => {
+      const title = normalizeActualTitle(candidate);
+      if (!title) return null;
+      let score = 0;
+      if (/[A-Z]{4,}/.test(title)) score += 3;
+      if (/\b(map|chart|plan|governments|america|proclamation|colonies|province)\b/i.test(title)) score += 4;
+      if (/\b(laid down|according|agreeable|proclamation|octr|north america|n\.?\s*america)\b/i.test(title)) score += 3;
+      if (/\b(engraving|colored|uncolored|sold|references|related items|sign up)\b/i.test(title)) score -= 3;
+      if (title.length >= 20 && title.length <= 260) score += 2;
+      if (title.split(/\s+/).length >= 4) score += 1;
+      return { title, score };
+    })
+    .filter((item): item is { title: string; score: number } => !!item)
+    .sort((a, b) => b.score - a.score);
+
+  return scored[0]?.score >= 5 ? scored[0].title : null;
+}
+
 function extractPrice(jsonLd: any[], pageText: string) {
   for (const item of jsonLd) {
     const offer = Array.isArray(item.offers) ? item.offers[0] : item.offers;
@@ -191,7 +244,9 @@ function extractDraft(html: string, url: string): Draft {
   const jsonLd = parseJsonLd(html);
   const pageText = cleanText(html, 120000) || "";
   const product = jsonLd.find((item) => /Product|CreativeWork|Book|VisualArtwork/.test(String(item["@type"] || ""))) || {};
-  const title = extractTitle(html, jsonLd);
+  const listingTitle = extractListingTitle(html, jsonLd);
+  const actualMapTitle = extractActualMapTitle(html, pageText);
+  const title = actualMapTitle || null;
   const description = firstString(product.description, metaContent(html, ["og:description", "description", "twitter:description"]), labelValue(pageText, ["Description", "Catalogue Note", "Summary"]));
   const cartographer = firstString(product.creator, product.author, labelValue(pageText, ["Cartographer", "Maker", "Author", "Creator", "Artist"]));
   const publicationDate = firstString(product.datePublished, product.productionDate, labelValue(pageText, ["Date", "Publication Date", "Year"])) || pageText.match(/\b(1[4-9]\d{2}|20\d{2})\b/)?.[1] || null;
@@ -199,6 +254,8 @@ function extractDraft(html: string, url: string): Draft {
 
   return {
     title,
+    listing_title: listingTitle,
+    actual_map_title: actualMapTitle,
     cartographer,
     publication_date: publicationDate,
     publication_place: labelValue(pageText, ["Place of Publication", "Publication Place", "Published", "Place"]),
