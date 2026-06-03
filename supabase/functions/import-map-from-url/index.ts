@@ -23,16 +23,29 @@ type Draft = {
 
 function cleanText(value: unknown, maxLength = 2000) {
   if (value == null) return null;
+  const entities: Record<string, string> = {
+    amp: "&",
+    quot: "\"",
+    apos: "'",
+    nbsp: " ",
+    rsquo: "'",
+    lsquo: "'",
+    ldquo: "\"",
+    rdquo: "\"",
+    ndash: "-",
+    mdash: "-",
+    eacute: "e",
+    Eacute: "E",
+    ccedil: "c",
+    Ccedil: "C",
+  };
   const text = String(value)
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, "\"")
-    .replace(/&#39;/gi, "'")
-    .replace(/&rsquo;/gi, "'")
-    .replace(/&ldquo;|&rdquo;/gi, "\"")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
+    .replace(/&([a-zA-Z]+);/g, (match, name) => entities[name] || match)
     .replace(/\s+/g, " ")
     .trim();
   return text ? text.slice(0, maxLength) : null;
@@ -120,8 +133,49 @@ function imageValues(value: unknown, baseUrl: string): string[] {
 
 function labelValue(text: string, labels: string[]) {
   const labelPattern = labels.map((label) => label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
-  const match = text.match(new RegExp(`(?:${labelPattern})\\s*[:\\-]?\\s*([^|\\n\\r]{2,220})`, "i"));
+  const match = text.match(new RegExp(`(?:^|[\\n\\r|•])\\s*(?:${labelPattern})\\b\\s*[:\\-]?\\s*([^|\\n\\r]{2,220})`, "i"));
   return cleanText(match?.[1], 500);
+}
+
+function extractMainHtml(html: string) {
+  return html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ||
+    html.match(/<article\b[^>]*(?:bookdetail|product|item)[^>]*>([\s\S]*?)<\/article>/i)?.[1] ||
+    html;
+}
+
+function firstTagText(html: string, patterns: RegExp[], maxLength = 1000) {
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    const text = cleanText(match?.[1], maxLength);
+    if (text) return text;
+  }
+  return null;
+}
+
+function itempropText(html: string, prop: string, maxLength = 1000) {
+  return itempropContent(html, prop, maxLength) || itempropBodyText(html, prop, maxLength);
+}
+
+function itempropBodyText(html: string, prop: string, maxLength = 5000) {
+  const escaped = prop.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = html.match(new RegExp(`<([a-z0-9]+)[^>]+itemprop=["']${escaped}["'][^>]*>([\\s\\S]*?)<\\/\\1>`, "i"));
+  return cleanText(match?.[2], maxLength);
+}
+
+function itempropContent(html: string, prop: string, maxLength = 1000) {
+  const escaped = prop.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return firstTagText(html, [
+    new RegExp(`<[^>]+itemprop=["']${escaped}["'][^>]*content=["']([^"']+)["'][^>]*>`, "i"),
+    new RegExp(`<[^>]+content=["']([^"']+)["'][^>]*itemprop=["']${escaped}["'][^>]*>`, "i"),
+  ], maxLength);
+}
+
+function extractDealer(html: string, jsonLd: any[], sourceDomain: string) {
+  return firstString(
+    metaContent(html, ["og:site_name", "application-name"]),
+    jsonLd.find((item) => /Organization|LocalBusiness/.test(String(item["@type"] || "")))?.name,
+    sourceDomain,
+  );
 }
 
 function extractTitle(html: string, jsonLd: any[]) {
@@ -131,11 +185,15 @@ function extractTitle(html: string, jsonLd: any[]) {
   return firstString(product?.name, product?.headline, metaTitle, titleTag)?.replace(/\s+[|–—-]\s+(Antique|Rare|Old|Vintage)?\s*Maps?.*$/i, "").trim() || null;
 }
 
-function extractListingTitle(html: string, jsonLd: any[]) {
-  const h1 = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)]
+function extractListingTitle(html: string, jsonLd: any[], mainHtml = html) {
+  const banner = firstTagText(mainHtml, [
+    /<[^>]+class=["'][^"']*(?:banner-display|headline|subtitle|tagline)[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/i,
+  ], 500);
+  const h1 = [...mainHtml.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)]
     .map((match) => cleanText(match[1], 500))
-    .find((heading) => heading && !/\b(boston rare maps|rare maps|contact|inventory)\b/i.test(heading));
-  return firstString(h1, metaContent(html, ["og:title", "twitter:title"]), extractTitle(html, jsonLd));
+    .find((heading) => heading && !/\b(boston rare maps|rare maps|contact|inventory|james e\.?\s+arsenault)\b/i.test(heading));
+  const metaTitle = metaContent(html, ["og:title", "twitter:title"])?.replace(/\s+by\s+.+?\s+on\s+.+$/i, "").trim();
+  return firstString(banner, h1, metaTitle, extractTitle(html, jsonLd));
 }
 
 function normalizeActualTitle(value: string | null) {
@@ -156,6 +214,7 @@ function normalizeActualTitle(value: string | null) {
 
 function extractActualMapTitle(html: string, pageText: string) {
   const candidates = [
+    itempropBodyText(html, "name", 500),
     ...[...pageText.matchAll(/(?:engraver|cartographer|maker|author)\)?(?:,|\s)\s*([A-Z0-9][A-Z0-9 .,'’:&;\-]{15,260}(?:AMERICA|GOVERNMENTS|MAP|CHART|PLAN|PROCLAMATION|COLONIES|PROVINCES)[A-Z0-9 .,'’:&;\-]{0,160})/gi)].map((m) => cleanText(m[1], 500)),
     ...[...html.matchAll(/<(?:em|i|cite)[^>]*>([\s\S]{12,500}?)<\/(?:em|i|cite)>/gi)].map((m) => cleanText(m[1], 500)),
     ...[...html.matchAll(/(?:alt|title)=["']([^"']{12,500})["']/gi)].map((m) => cleanText(m[1], 500)),
@@ -169,8 +228,8 @@ function extractActualMapTitle(html: string, pageText: string) {
       if (!title) return null;
       let score = 0;
       if (/[A-Z]{4,}/.test(title)) score += 3;
-      if (/\b(map|chart|plan|governments|america|proclamation|colonies|province)\b/i.test(title)) score += 4;
-      if (/\b(laid down|according|agreeable|proclamation|octr|north america|n\.?\s*america)\b/i.test(title)) score += 3;
+      if (/\b(map|chart|plan|governments|america|amerique|septentrionale|proclamation|colonies|province)\b/i.test(title)) score += 4;
+      if (/\b(laid down|according|agreeable|proclamation|octr|north america|n\.?\s*america|amerique septentrionale)\b/i.test(title)) score += 3;
       if (/\b(engraving|colored|uncolored|sold|references|related items|sign up)\b/i.test(title)) score -= 3;
       if (title.length >= 20 && title.length <= 260) score += 2;
       if (title.split(/\s+/).length >= 4) score += 1;
@@ -182,7 +241,7 @@ function extractActualMapTitle(html: string, pageText: string) {
   return scored[0]?.score >= 5 ? scored[0].title : null;
 }
 
-function extractPrice(jsonLd: any[], pageText: string) {
+function extractPrice(html: string, jsonLd: any[], pageText: string) {
   for (const item of jsonLd) {
     const offer = Array.isArray(item.offers) ? item.offers[0] : item.offers;
     const price = firstString(offer?.price, item.price);
@@ -191,17 +250,31 @@ function extractPrice(jsonLd: any[], pageText: string) {
       return currency && !String(price).includes(currency) ? `${currency} ${price}` : price;
     }
   }
+  const metaPrice = metaContent(html, ["product:price:amount", "og:price:amount"]);
+  if (metaPrice) {
+    const currency = metaContent(html, ["product:price:currency", "og:price:currency"]);
+    return currency ? `${currency} ${metaPrice}` : metaPrice;
+  }
+  const itemPrice = itempropContent(html, "price");
+  if (itemPrice) {
+    const currency = itempropContent(html, "priceCurrency");
+    return currency ? `${currency} ${itemPrice}` : itemPrice;
+  }
   return cleanText(pageText.match(/(?:US)?\$\s?[\d,]+(?:\.\d{2})?/)?.[0], 80);
 }
 
-function extractSoldStatus(jsonLd: any[], pageText: string) {
-  const availability = firstString(...jsonLd.map((item) => item.offers?.availability || item.availability));
+function extractSoldStatus(html: string, jsonLd: any[], pageText: string) {
+  const availability = firstString(
+    ...jsonLd.map((item) => item.offers?.availability || item.availability),
+    metaContent(html, ["product:availability", "og:availability"]),
+    itempropContent(html, "availability"),
+  );
   if (availability) {
     if (/soldout|outofstock|sold/i.test(availability)) return "Sold";
     if (/instock|available/i.test(availability)) return "Available";
     return availability.split("/").pop() || availability;
   }
-  if (/\b(sold|sold out|sale pending|reserved|on hold)\b/i.test(pageText)) return pageText.match(/\b(sold out|sale pending|reserved|on hold|sold)\b/i)?.[1] || null;
+  if (/\b(sold out|sale pending|on hold)\b/i.test(pageText)) return pageText.match(/\b(sold out|sale pending|on hold)\b/i)?.[1] || null;
   return null;
 }
 
@@ -213,7 +286,43 @@ function extractImages(html: string, jsonLd: any[], baseUrl: string) {
   const jsonImages = jsonLd.flatMap((item) => imageValues(item.image || item.primaryImageOfPage, baseUrl));
   return unique([...jsonImages, ...metaImages.map((url) => absolutizeUrl(url, baseUrl))])
     .filter((url) => url && !/logo|icon|sprite|avatar/i.test(url))
-    .slice(0, 8) as string[];
+    .slice(0, 1) as string[];
+}
+
+function extractPublicationPlace(value: string | null) {
+  if (!value) return null;
+  return cleanText(value.match(/^([A-Z][A-Za-z .'-]{2,80})\s*:/)?.[1], 200);
+}
+
+function extractPublicationDate(value: string | null, itemText: string) {
+  const bracketedApprox = value?.match(/\[(?:ca\.?|c\.?)\s*(1[4-9]\d{2}|20\d{2})\]/i)?.[1];
+  if (bracketedApprox) return `ca. ${bracketedApprox}`;
+  const years = unique([
+    ...[...(value || "").matchAll(/\b(1[4-9]\d{2}|20\d{2})\b/g)].map((match) => match[1]),
+    ...[...itemText.matchAll(/\b(?:circa|ca\.?)\s*(1[4-9]\d{2}|20\d{2})\b/gi)].map((match) => match[1]),
+  ]);
+  return years.length ? years.slice(0, 3).join(" / ") : null;
+}
+
+function extractInventoryNumber(itemText: string, url: string) {
+  return cleanText(itemText.match(/\bItem\s*#\s*([A-Za-z0-9._-]+)/i)?.[1], 100) ||
+    cleanText(url.match(/\/books\/([A-Za-z0-9._-]+)\//i)?.[1], 100) ||
+    labelValue(itemText, ["Inventory", "Stock", "Stock No", "Stock Number", "Item Number"]);
+}
+
+function extractDimensions(itemText: string) {
+  return cleanText(
+    itemText.match(/(?:engraving|lithograph|etching|woodcut|copperplate).{0,800}?(?=\s+CONDITION\s*:)/i)?.[0] ||
+      itemText.match(/(?:engraving|lithograph|etching|woodcut|copperplate).{0,800}?\b(?:dimensions|measuring|sheet|engraved area).{0,200}\./i)?.[0] ||
+      itemText.match(/(?:sheet|image|engraved area|total dimensions|dimensions)[^.;]{0,260}(?:\d+(?:\.\d+)?[”"']?\s*x\s*\d+(?:\.\d+)?[”"']?)[^.;]{0,180}/i)?.[0] ||
+      labelValue(itemText, ["Dimensions", "Size", "Sheet Size", "Image Size"]),
+    800,
+  );
+}
+
+function extractCondition(itemText: string) {
+  return cleanText(itemText.match(/\bCONDITION\s*:\s*([^.]*(?:\.[^A-Z]*)?)/i)?.[1], 500) ||
+    labelValue(itemText, ["Condition", "Condition Report"]);
 }
 
 function confidenceFor(draft: Draft) {
@@ -242,15 +351,18 @@ function extractDraft(html: string, url: string): Draft {
   const parsedUrl = new URL(url);
   const sourceDomain = parsedUrl.hostname.replace(/^www\./, "");
   const jsonLd = parseJsonLd(html);
+  const mainHtml = extractMainHtml(html);
   const pageText = cleanText(html, 120000) || "";
+  const itemText = cleanText(mainHtml, 120000) || pageText;
   const product = jsonLd.find((item) => /Product|CreativeWork|Book|VisualArtwork/.test(String(item["@type"] || ""))) || {};
-  const listingTitle = extractListingTitle(html, jsonLd);
-  const actualMapTitle = extractActualMapTitle(html, pageText);
+  const publisherLine = firstString(product.publisher, itempropText(mainHtml, "publisher"));
+  const listingTitle = extractListingTitle(html, jsonLd, mainHtml);
+  const actualMapTitle = extractActualMapTitle(mainHtml, itemText);
   const title = actualMapTitle || null;
-  const description = firstString(product.description, metaContent(html, ["og:description", "description", "twitter:description"]), labelValue(pageText, ["Description", "Catalogue Note", "Summary"]));
-  const cartographer = firstString(product.creator, product.author, labelValue(pageText, ["Cartographer", "Maker", "Author", "Creator", "Artist"]));
-  const publicationDate = firstString(product.datePublished, product.productionDate, labelValue(pageText, ["Date", "Publication Date", "Year"])) || pageText.match(/\b(1[4-9]\d{2}|20\d{2})\b/)?.[1] || null;
-  const dealer = firstString(product.seller, product.provider, jsonLd.find((item) => /Organization|LocalBusiness/.test(String(item["@type"] || "")))?.name, sourceDomain);
+  const description = firstString(product.description, itempropBodyText(mainHtml, "description", 12000), metaContent(html, ["og:description", "description", "twitter:description"]), labelValue(itemText, ["Description", "Catalogue Note", "Summary"]));
+  const cartographer = firstString(product.creator, product.author, itempropText(mainHtml, "author"), labelValue(itemText, ["Cartographer", "Maker", "Author", "Creator", "Artist"]));
+  const publicationDate = firstString(product.datePublished, product.productionDate, labelValue(itemText, ["Publication Date", "Year"])) || extractPublicationDate(publisherLine, itemText);
+  const dealer = firstString(product.seller, product.provider, extractDealer(html, jsonLd, sourceDomain));
 
   return {
     title,
@@ -258,14 +370,14 @@ function extractDraft(html: string, url: string): Draft {
     actual_map_title: actualMapTitle,
     cartographer,
     publication_date: publicationDate,
-    publication_place: labelValue(pageText, ["Place of Publication", "Publication Place", "Published", "Place"]),
+    publication_place: labelValue(itemText, ["Place of Publication", "Publication Place"]) || extractPublicationPlace(publisherLine),
     dealer,
-    price: extractPrice(jsonLd, pageText),
-    sold_status: extractSoldStatus(jsonLd, pageText),
-    inventory_number: labelValue(pageText, ["Inventory", "Stock", "Stock No", "Stock Number", "Item Number", "Reference"]),
-    dimensions: labelValue(pageText, ["Dimensions", "Size", "Sheet Size", "Image Size"]),
+    price: extractPrice(html, jsonLd, itemText),
+    sold_status: extractSoldStatus(html, jsonLd, itemText),
+    inventory_number: extractInventoryNumber(itemText, url),
+    dimensions: extractDimensions(itemText),
     description,
-    condition: labelValue(pageText, ["Condition", "Condition Report"]),
+    condition: extractCondition(itemText),
     image_urls: extractImages(html, jsonLd, url),
     source_url: url,
     source_domain: sourceDomain,
