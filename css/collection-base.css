@@ -571,6 +571,17 @@
     position: relative;
   }
   @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .detail-success-banner {
+    border: 1px solid rgba(196,164,74,0.38);
+    background: var(--gold-glow);
+    color: var(--navy);
+    font-family: 'Spectral', serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 12px 14px;
+    margin: 0 52px 16px 0;
+    border-radius: 4px;
+  }
   .detail-close {
     position: sticky; top: 0; margin-left: auto; z-index: 3;
     width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;

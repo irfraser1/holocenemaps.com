@@ -1120,6 +1120,8 @@ async function saveMap() {
   if (!payload.title) { btn.textContent = editingId ? 'Update' : 'Add map'; return; }
 
   const wasEditing = editingId;
+  const wasImport = !!currentImportDraft;
+  const createdStatus = payload.status;
   let newMapId = null;
   if (editingId) {
     await db.from('maps').update(payload).eq('id', editingId);
@@ -1158,6 +1160,13 @@ async function saveMap() {
   // If we were editing an existing map, re-open its detail panel with fresh data
   if (wasEditing) {
     toggleCard(wasEditing);
+  } else if (newMapId) {
+    switchTab('collection');
+    await toggleCard(newMapId, {
+      notice: wasImport
+        ? `${statusLabel(createdStatus)} created. This imported record is ready for review.`
+        : 'Map created. This record is ready for review.'
+    });
   }
 
   // If onboarding was deferred (new user from scan flow), trigger it now

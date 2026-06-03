@@ -1439,7 +1439,7 @@ async function setDetailTab(tabName, options = {}) {
 }
 
 async function toggleCard(id, options = {}) {
-  const { pushHistory = true } = options;
+  const { pushHistory = true, notice = '' } = options;
   const m = maps.find(x => x.id === id);
   if (!m) return;
   _detailMapId = id;
@@ -1450,6 +1450,7 @@ async function toggleCard(id, options = {}) {
   const sheet = document.getElementById('detail-sheet');
   sheet.innerHTML = `
     <button class="detail-close" type="button" aria-label="Close map details" onclick="event.stopPropagation();closeDetail()" ontouchend="event.preventDefault();event.stopPropagation();closeDetail()">✕</button>
+    ${notice ? `<div class="detail-success-banner">${_escapeDetail(notice)}</div>` : ''}
     ${m.image_url
       ? `<div class="detail-img-wrap">
            <img class="detail-image" id="detail-main-img" src="${_escapeDetail(m.image_url)}" alt="" onerror="this.outerHTML='<div class=\'detail-placeholder\'>No image available</div>'">
