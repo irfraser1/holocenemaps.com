@@ -430,6 +430,18 @@
             </div>
           </div>
         </div>
+        <div class="field full import-understanding" id="import-understanding-panel">
+          <div class="import-understanding-header">
+            <span>AI Understanding</span>
+            <span id="import-understanding-status"></span>
+          </div>
+          <div class="import-understanding-note">Generated from imported source text and your collection context. Review before relying on this.</div>
+          <div class="import-understanding-body" id="import-understanding-body"></div>
+          <div class="import-understanding-actions">
+            <button type="button" class="import-understanding-btn" id="import-understanding-regenerate" onclick="generateImportUnderstanding()">Regenerate</button>
+            <button type="button" class="import-understanding-btn primary" id="import-understanding-append" onclick="appendImportUnderstandingToNotes()">Append to Why This Map Matters</button>
+          </div>
+        </div>
         <div class="field full">
           <label class="lbl" id="f-notes-label">Notes</label>
           <textarea id="f-notes" placeholder="Your notes — condition, negotiation context, narrative fit…"></textarea>
@@ -500,6 +512,7 @@ let attentionFilter = null;
 let homeThesisExpanded = false;
 let homeSnapshotFilter = null;
 let currentImportDraft = null;
+let currentImportUnderstanding = null;
 let pendingImportUrl = new URLSearchParams(window.location.search).get('import_url') || '';
 const ATTENTION_FILTERS = {
   missingReferences: {
@@ -1629,6 +1642,7 @@ function resetImportReviewFields() {
   if (panel) panel.classList.remove('visible');
   const confidence = document.getElementById('import-confidence-label');
   if (confidence) confidence.textContent = '';
+  resetImportUnderstandingPanel();
 }
 
 function resetImportCoreFieldsForFetch() {
@@ -1638,6 +1652,169 @@ function resetImportCoreFieldsForFetch() {
   });
   document.getElementById('f-act').value = '';
   document.getElementById('f-status').value = 'reference';
+}
+
+function resetImportUnderstandingPanel() {
+  currentImportUnderstanding = null;
+  const panel = document.getElementById('import-understanding-panel');
+  const body = document.getElementById('import-understanding-body');
+  const status = document.getElementById('import-understanding-status');
+  const appendBtn = document.getElementById('import-understanding-append');
+  const regenBtn = document.getElementById('import-understanding-regenerate');
+  if (panel) panel.classList.remove('visible');
+  if (body) body.innerHTML = '';
+  if (status) status.textContent = '';
+  if (appendBtn) appendBtn.disabled = true;
+  if (regenBtn) regenBtn.disabled = true;
+}
+
+function showImportUnderstandingLoading(message = 'Generating…') {
+  const panel = document.getElementById('import-understanding-panel');
+  const body = document.getElementById('import-understanding-body');
+  const status = document.getElementById('import-understanding-status');
+  const appendBtn = document.getElementById('import-understanding-append');
+  const regenBtn = document.getElementById('import-understanding-regenerate');
+  if (panel) panel.classList.add('visible');
+  if (body) body.innerHTML = '<div class="import-understanding-section"><p>Holocene is comparing the imported source with your collection context…</p></div>';
+  if (status) status.textContent = message;
+  if (appendBtn) appendBtn.disabled = true;
+  if (regenBtn) regenBtn.disabled = true;
+}
+
+function importedMapForUnderstanding() {
+  return {
+    title: document.getElementById('f-title').value.trim(),
+    listing_title: document.getElementById('f-import-listing-title').value.trim(),
+    cartographer: document.getElementById('f-cartographer').value.trim(),
+    publication_date: document.getElementById('f-year').value.trim(),
+    publication_place: document.getElementById('f-import-publication-place').value.trim(),
+    dealer: document.getElementById('f-dealer').value.trim(),
+    price: document.getElementById('f-price').value.trim(),
+    source_url: document.getElementById('f-url').value.trim(),
+    source_domain: sourceDomainFromUrl(document.getElementById('f-url').value.trim()),
+    description: document.getElementById('f-import-description').value.trim(),
+    condition: document.getElementById('f-import-condition').value.trim(),
+    dimensions: document.getElementById('f-import-dimensions').value.trim()
+  };
+}
+
+function buildCollectionContextForImport() {
+  const statusRank = { owned: 0, target: 1, reference: 2, narrative: 3 };
+  return [...maps]
+    .filter(m => m && m.title)
+    .sort((a, b) => (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9))
+    .slice(0, 18)
+    .map(m => ({
+      title: m.title || '',
+      cartographer: m.cartographer || '',
+      year: m.year || '',
+      status: statusLabel(m.status),
+      act: m.act ? `Act ${m.act}` : '',
+      dealer: m.dealer || '',
+      notes: m.notes || ''
+    }));
+}
+
+function renderImportUnderstanding(understanding) {
+  currentImportUnderstanding = understanding || null;
+  const panel = document.getElementById('import-understanding-panel');
+  const body = document.getElementById('import-understanding-body');
+  const status = document.getElementById('import-understanding-status');
+  const appendBtn = document.getElementById('import-understanding-append');
+  const regenBtn = document.getElementById('import-understanding-regenerate');
+  if (!panel || !body) return;
+
+  const evidence = Array.isArray(understanding?.evidence) ? understanding.evidence.filter(Boolean) : [];
+  body.innerHTML = [
+    understanding?.what_this_map_is ? `
+      <div class="import-understanding-section">
+        <h4>What This Map Is</h4>
+        <p>${escapeHomeHtml(understanding.what_this_map_is)}</p>
+      </div>` : '',
+    understanding?.historical_significance ? `
+      <div class="import-understanding-section">
+        <h4>Historical Significance</h4>
+        <p>${escapeHomeHtml(understanding.historical_significance)}</p>
+      </div>` : '',
+    understanding?.collection_relationship ? `
+      <div class="import-understanding-section">
+        <h4>Collection Relationship</h4>
+        <p>${escapeHomeHtml(understanding.collection_relationship)}</p>
+      </div>` : '',
+    evidence.length ? `
+      <div class="import-understanding-section">
+        <h4>Evidence</h4>
+        <ul>${evidence.map(item => `<li>${escapeHomeHtml(item)}</li>`).join('')}</ul>
+      </div>` : ''
+  ].filter(Boolean).join('') || '<div class="import-understanding-section"><p>No understanding was generated for this import yet.</p></div>';
+
+  panel.classList.add('visible');
+  if (status) status.textContent = 'Draft';
+  if (appendBtn) appendBtn.disabled = !currentImportUnderstanding;
+  if (regenBtn) regenBtn.disabled = false;
+}
+
+function renderImportUnderstandingError(message) {
+  const panel = document.getElementById('import-understanding-panel');
+  const body = document.getElementById('import-understanding-body');
+  const status = document.getElementById('import-understanding-status');
+  const regenBtn = document.getElementById('import-understanding-regenerate');
+  if (panel) panel.classList.add('visible');
+  if (body) body.innerHTML = `<div class="import-understanding-section"><p>${escapeHomeHtml(message || 'Understanding could not be generated. You can still save the imported map normally.')}</p></div>`;
+  if (status) status.textContent = 'Unavailable';
+  if (regenBtn) regenBtn.disabled = false;
+}
+
+function formatImportUnderstandingForNotes(understanding = currentImportUnderstanding) {
+  if (!understanding) return '';
+  const evidence = Array.isArray(understanding.evidence) ? understanding.evidence.filter(Boolean) : [];
+  return [
+    'AI Understanding',
+    understanding.what_this_map_is ? `\nWhat This Map Is:\n${understanding.what_this_map_is}` : '',
+    understanding.historical_significance ? `\nHistorical Significance:\n${understanding.historical_significance}` : '',
+    understanding.collection_relationship ? `\nCollection Relationship:\n${understanding.collection_relationship}` : '',
+    evidence.length ? `\nEvidence:\n${evidence.map(item => `- ${item}`).join('\n')}` : ''
+  ].filter(Boolean).join('\n');
+}
+
+function appendImportUnderstandingToNotes() {
+  const text = formatImportUnderstandingForNotes();
+  if (!text) return;
+  const notes = document.getElementById('f-notes');
+  const existing = notes.value.trim();
+  notes.value = existing ? `${existing}\n\n${text}` : text;
+  notes.focus();
+}
+
+async function generateImportUnderstanding() {
+  const importedMap = importedMapForUnderstanding();
+  if (!importedMap.title && !importedMap.listing_title && !importedMap.description) {
+    renderImportUnderstandingError('Add a title or source description before generating understanding.');
+    return;
+  }
+
+  showImportUnderstandingLoading();
+  try {
+    const res = await fetch('https://irfuhohbabtywbuchwpb.supabase.co/functions/v1/import-map-understanding', {
+      method: 'POST',
+      headers: await getFunctionHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        imported_map: importedMap,
+        thesis: userThesis || '',
+        collection_maps: buildCollectionContextForImport()
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      renderImportUnderstandingError(data.error || 'Understanding could not be generated. You can still save the imported map normally.');
+      return;
+    }
+
+    renderImportUnderstanding(data.understanding);
+  } catch (e) {
+    renderImportUnderstandingError('Understanding could not be generated. You can still save the imported map normally.');
+  }
 }
 
 function sourceDomainFromUrl(url) {
@@ -1720,6 +1897,10 @@ function applyImportDraftToForm(draft) {
 function buildImportSnapshot() {
   return {
     ...currentImportDraft.raw_import_snapshot,
+    ai_understanding: currentImportUnderstanding ? {
+      ...currentImportUnderstanding,
+      generated_from: 'import-review-modal'
+    } : currentImportDraft.raw_import_snapshot?.ai_understanding || null,
     reviewed_draft: {
       title: document.getElementById('f-title').value.trim(),
       listing_title: document.getElementById('f-import-listing-title').value.trim(),
@@ -1843,6 +2024,7 @@ async function fetchImportUrl() {
 
     const draft = normalizeImportDraft(data, url);
     applyImportDraftToForm(draft);
+    generateImportUnderstanding();
 
     // Count populated fields
     const populated = [

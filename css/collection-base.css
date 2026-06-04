@@ -938,6 +938,51 @@
   }
   .import-review-grid .full { grid-column: 1 / -1; }
 
+  .import-understanding { display: none; }
+  .import-understanding.visible { display: block; }
+  .import-understanding-header {
+    display: flex; justify-content: space-between; gap: 12px; align-items: center;
+    font-family: 'Cormorant SC', serif; font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 8px;
+  }
+  .import-understanding-header span:last-child {
+    color: var(--text-secondary); letter-spacing: 0.08em;
+  }
+  .import-understanding-note {
+    font-family: 'Spectral', serif; font-size: 12px; line-height: 1.5;
+    color: rgba(90,78,60,0.62); margin-bottom: 10px;
+  }
+  .import-understanding-body {
+    border: 1px solid var(--border-light); background: var(--card);
+    padding: 14px; display: grid; gap: 12px;
+  }
+  .import-understanding-section h4 {
+    margin: 0 0 4px; font-family: 'Cormorant SC', serif; font-size: 11px;
+    font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--navy);
+  }
+  .import-understanding-section p,
+  .import-understanding-section li {
+    margin: 0; font-family: 'Spectral', serif; font-size: 14px; line-height: 1.55;
+    color: var(--text-secondary);
+  }
+  .import-understanding-section ul {
+    margin: 0; padding-left: 18px; display: grid; gap: 4px;
+  }
+  .import-understanding-actions {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; justify-content: flex-end;
+  }
+  .import-understanding-btn {
+    border: 1px solid var(--border-light); background: transparent; color: var(--navy);
+    padding: 8px 10px; font-family: 'Cormorant SC', serif; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+  }
+  .import-understanding-btn.primary {
+    background: var(--navy); color: var(--cream); border-color: var(--navy);
+  }
+  .import-understanding-btn:disabled {
+    opacity: 0.5; cursor: default;
+  }
+
   /* AI ANALYSIS */
   .ai-analysis {
     background: var(--cream-dark); border: 1px solid var(--border-light); border-radius: 4px;
