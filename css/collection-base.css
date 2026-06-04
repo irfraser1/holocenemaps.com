@@ -968,6 +968,10 @@
   .import-understanding-section ul {
     margin: 0; padding-left: 18px; display: grid; gap: 4px;
   }
+  .import-understanding-section p + ul,
+  .import-understanding-section ul + p {
+    margin-top: 6px;
+  }
   .import-understanding-actions {
     display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; justify-content: flex-end;
   }

@@ -1725,6 +1725,11 @@ function renderImportUnderstanding(understanding) {
   if (!panel || !body) return;
 
   const evidence = Array.isArray(understanding?.evidence) ? understanding.evidence.filter(Boolean) : [];
+  const gap = understanding?.collection_gap_analysis || {};
+  const currentStrengths = Array.isArray(gap.current_strengths) ? gap.current_strengths.filter(Boolean) : [];
+  const potentialGaps = Array.isArray(gap.potential_gaps) ? gap.potential_gaps.filter(Boolean) : [];
+  const higherValueDirections = Array.isArray(gap.higher_value_directions) ? gap.higher_value_directions.filter(Boolean) : [];
+  const hasGapAnalysis = currentStrengths.length || potentialGaps.length || gap.collection_insight || higherValueDirections.length;
   body.innerHTML = [
     understanding?.what_this_map_is ? `
       <div class="import-understanding-section">
@@ -1745,6 +1750,14 @@ function renderImportUnderstanding(understanding) {
       <div class="import-understanding-section">
         <h4>Suggested Action</h4>
         <p>${escapeHomeHtml(understanding.suggested_action)}</p>
+      </div>` : '',
+    hasGapAnalysis ? `
+      <div class="import-understanding-section">
+        <h4>Collection Gap Analysis</h4>
+        ${currentStrengths.length ? `<p><strong>Current Strengths</strong></p><ul>${currentStrengths.map(item => `<li>${escapeHomeHtml(item)}</li>`).join('')}</ul>` : ''}
+        ${potentialGaps.length ? `<p><strong>Potential Gaps</strong></p><ul>${potentialGaps.map(item => `<li>${escapeHomeHtml(item)}</li>`).join('')}</ul>` : ''}
+        ${gap.collection_insight ? `<p><strong>Collection Insight</strong></p><p>${escapeHomeHtml(gap.collection_insight)}</p>` : ''}
+        ${higherValueDirections.length ? `<p><strong>Higher-Value Directions</strong></p><ul>${higherValueDirections.map(item => `<li>${escapeHomeHtml(item)}</li>`).join('')}</ul>` : ''}
       </div>` : '',
     evidence.length ? `
       <div class="import-understanding-section">
@@ -1773,12 +1786,23 @@ function renderImportUnderstandingError(message) {
 function formatImportUnderstandingForNotes(understanding = currentImportUnderstanding) {
   if (!understanding) return '';
   const evidence = Array.isArray(understanding.evidence) ? understanding.evidence.filter(Boolean) : [];
+  const gap = understanding.collection_gap_analysis || {};
+  const currentStrengths = Array.isArray(gap.current_strengths) ? gap.current_strengths.filter(Boolean) : [];
+  const potentialGaps = Array.isArray(gap.potential_gaps) ? gap.potential_gaps.filter(Boolean) : [];
+  const higherValueDirections = Array.isArray(gap.higher_value_directions) ? gap.higher_value_directions.filter(Boolean) : [];
+  const gapText = [
+    currentStrengths.length ? `Current Strengths:\n${currentStrengths.map(item => `- ${item}`).join('\n')}` : '',
+    potentialGaps.length ? `Potential Gaps:\n${potentialGaps.map(item => `- ${item}`).join('\n')}` : '',
+    gap.collection_insight ? `Collection Insight:\n${gap.collection_insight}` : '',
+    higherValueDirections.length ? `Higher-Value Directions:\n${higherValueDirections.map(item => `- ${item}`).join('\n')}` : ''
+  ].filter(Boolean).join('\n\n');
   return [
     'AI Understanding',
     understanding.what_this_map_is ? `\nWhat This Map Is:\n${understanding.what_this_map_is}` : '',
     understanding.historical_significance ? `\nHistorical Significance:\n${understanding.historical_significance}` : '',
     understanding.collection_relationship ? `\nCollection Relationship:\n${understanding.collection_relationship}` : '',
     understanding.suggested_action ? `\nSuggested Action:\n${understanding.suggested_action}` : '',
+    gapText ? `\nCollection Gap Analysis:\n${gapText}` : '',
     evidence.length ? `\nEvidence:\n${evidence.map(item => `- ${item}`).join('\n')}` : ''
   ].filter(Boolean).join('\n');
 }
