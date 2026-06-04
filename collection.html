@@ -1698,21 +1698,82 @@ function importedMapForUnderstanding() {
   };
 }
 
-function buildCollectionContextForImport() {
+const IMPORT_ACT_LABELS = {
+  '1': 'Act I — French (1688–1719)',
+  '2': 'Act II — Contest (1720–1754)',
+  '3': 'Act III — British (1763–1780)'
+};
+
+function compactImportContextText(value, maxLength = 600) {
+  return String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function normalizeImportContextList(value) {
+  if (Array.isArray(value)) return value.map(item => compactImportContextText(item, 120)).filter(Boolean).slice(0, 8);
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return normalizeImportContextList(parsed);
+    } catch (_) {}
+    return value.split(/[,;\n]/).map(item => compactImportContextText(item, 120)).filter(Boolean).slice(0, 8);
+  }
+  return [];
+}
+
+function selectedMapsForImportContext() {
   const statusRank = { owned: 0, target: 1, reference: 2, narrative: 3 };
   return [...maps]
     .filter(m => m && m.title)
     .sort((a, b) => (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9))
-    .slice(0, 18)
-    .map(m => ({
-      title: m.title || '',
-      cartographer: m.cartographer || '',
-      year: m.year || '',
+    .slice(0, 18);
+}
+
+async function buildCollectionContextForImport() {
+  const selected = selectedMapsForImportContext();
+  const ids = selected.map(m => m.id).filter(Boolean);
+  const notesByMap = {};
+  const catalogByMap = {};
+
+  if (ids.length) {
+    const [notesRes, catalogRes] = await Promise.all([
+      db.from('map_notes')
+        .select('map_id,user_notes,ai_summary,ai_thesis_fit,ai_recommendation')
+        .in('map_id', ids),
+      db.from('map_catalog_details')
+        .select('map_id,region,subject_tags,summary')
+        .in('map_id', ids)
+    ]);
+
+    if (!notesRes.error) {
+      (notesRes.data || []).forEach(row => { notesByMap[row.map_id] = row; });
+    }
+    if (!catalogRes.error) {
+      (catalogRes.data || []).forEach(row => { catalogByMap[row.map_id] = row; });
+    }
+  }
+
+  return selected.map(m => {
+    const notes = notesByMap[m.id] || {};
+    const catalog = catalogByMap[m.id] || {};
+    const period = IMPORT_ACT_LABELS[String(m.act || '')] || '';
+    return {
+      title: compactImportContextText(m.title, 180),
+      maker: compactImportContextText(m.cartographer, 120),
+      date: compactImportContextText(m.year, 80),
       status: statusLabel(m.status),
-      act: m.act ? `Act ${m.act}` : '',
-      dealer: m.dealer || '',
-      notes: m.notes || ''
-    }));
+      period,
+      geography: compactImportContextText(catalog.region, 160),
+      historical_themes: normalizeImportContextList(catalog.subject_tags),
+      why_this_matters: compactImportContextText(notes.user_notes || m.notes, 500),
+      ai_summary: compactImportContextText(notes.ai_summary, 500),
+      thesis_fit: compactImportContextText(notes.ai_thesis_fit, 500),
+      narrative_role: [period, catalog.summary, notes.ai_recommendation]
+        .map(value => compactImportContextText(value, 300))
+        .filter(Boolean)
+        .join(' | ')
+        .slice(0, 700)
+    };
+  });
 }
 
 function renderImportUnderstanding(understanding) {
@@ -1831,7 +1892,7 @@ async function generateImportUnderstanding() {
       body: JSON.stringify({
         imported_map: importedMap,
         thesis: userThesis || '',
-        collection_maps: buildCollectionContextForImport()
+        collection_maps: await buildCollectionContextForImport()
       })
     });
 

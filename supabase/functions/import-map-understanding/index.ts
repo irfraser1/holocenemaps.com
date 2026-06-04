@@ -18,12 +18,16 @@ type ImportedMap = {
 
 type ContextMap = {
   title?: string;
-  cartographer?: string;
-  year?: string;
+  maker?: string;
+  date?: string;
   status?: string;
-  act?: string;
-  dealer?: string;
-  notes?: string;
+  period?: string;
+  geography?: string;
+  historical_themes?: unknown;
+  why_this_matters?: string;
+  ai_summary?: string;
+  thesis_fit?: string;
+  narrative_role?: string;
 };
 
 function cleanText(value: unknown, maxLength = 1200) {
@@ -32,14 +36,22 @@ function cleanText(value: unknown, maxLength = 1200) {
 }
 
 function compactMap(item: ContextMap) {
+  const themes = Array.isArray(item.historical_themes)
+    ? item.historical_themes.map((value) => cleanText(value, 120)).filter(Boolean).slice(0, 8)
+    : [];
+
   return {
     title: cleanText(item.title, 180),
-    cartographer: cleanText(item.cartographer, 120),
-    year: cleanText(item.year, 80),
+    maker: cleanText(item.maker, 120),
+    date: cleanText(item.date, 80),
     status: cleanText(item.status, 80),
-    act: cleanText(item.act, 80),
-    dealer: cleanText(item.dealer, 120),
-    notes: cleanText(item.notes, 260),
+    period: cleanText(item.period, 120),
+    geography: cleanText(item.geography, 160),
+    historical_themes: themes,
+    why_this_matters: cleanText(item.why_this_matters, 500),
+    ai_summary: cleanText(item.ai_summary, 500),
+    thesis_fit: cleanText(item.thesis_fit, 500),
+    narrative_role: cleanText(item.narrative_role, 700),
   };
 }
 
