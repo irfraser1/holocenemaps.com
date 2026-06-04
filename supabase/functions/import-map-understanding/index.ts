@@ -96,6 +96,7 @@ function normalizeUnderstanding(value: any) {
   return {
     what_this_map_is: cleanText(value?.what_this_map_is, 900),
     historical_significance: cleanText(value?.historical_significance, 1100),
+    likely_narrative_chapter: cleanText(value?.likely_narrative_chapter, 180),
     collection_relationship: cleanText(value?.collection_relationship, 1200),
     suggested_action: cleanText(value?.suggested_action, 900),
     collection_gap_analysis: {
@@ -152,6 +153,8 @@ Important product principles:
 - Relationship to the collection and suggested action are separate concepts. A map can be highly related but low acquisition priority because the collector already owns it or owns a close equivalent.
 - Gap analysis must compare the imported map, the collector's thesis, and the distribution of existing owned/reference/target/narrative maps. Do not infer gaps from the imported map alone.
 - Use guarded language such as "appears underrepresented", "based on the provided collection context", and "may be a gap if this is central to the thesis." Avoid "your collection lacks", "you need", and "the next acquisition should be."
+- Before writing the response, infer a provisional collection narrative model from the thesis and collection context. Think in story chapters: major historical phases, themes, or transitions anchored by existing maps. Use this inferred model internally; do not present it as permanent collector-approved structure.
+- Reason over whether the imported map belongs to an existing narrative chapter, bridges chapters, fills a thin chapter, or mostly duplicates/reinforces a well-anchored chapter.
 
 Architecture distinction:
 Map Intelligence answers what the map is and why it matters historically.
@@ -170,19 +173,20 @@ Return strict JSON only with this shape:
 {
   "what_this_map_is": "Plain-language explanation of the object, 2-3 sentences. Explain what kind of map/object this is, its edition/state/lineage if evident, and its role as an artifact. Do not repeat or lightly paraphrase the title.",
   "historical_significance": "Why this map matters historically, 2-4 concise sentences.",
-  "collection_relationship": "How this may relate to owned maps, reference maps, target maps, thesis, or notes. This is about relationship strength and narrative/contextual fit only, not whether to buy it. Mention specific related maps only when supported by the provided context.",
-  "suggested_action": "A provisional next step, distinct from relationship. Examples: retain as reference, compare with owned copy, add notes to existing owned map, watch as acquisition target, or no action. If the collector appears to already own this map or a close equivalent, say that acquisition value may be low even if relationship is high.",
+  "likely_narrative_chapter": "Optional short guarded chapter label inferred from the collection story, e.g. British Reorganization / Proclamation of 1763. Empty string if unclear.",
+  "collection_relationship": "How this may relate to the inferred collection narrative, owned maps, reference maps, target maps, thesis, or notes. This is about relationship strength, narrative chapter, and contextual fit only, not whether to buy it. Mention specific related maps only when supported by the provided context.",
+  "suggested_action": "A provisional next step, distinct from relationship. Examples: retain as reference, compare with owned copy, add notes to existing owned map, watch as acquisition target, or no action. If the imported map belongs to a well-represented chapter or the collector appears to already own this map or a close equivalent, say acquisition value may be low even if relationship is high.",
   "collection_gap_analysis": {
-    "current_strengths": ["Themes, periods, geographies, or map roles that appear well represented based on the provided context."],
-    "potential_gaps": ["Themes, periods, geographies, or map roles that appear underrepresented based on the thesis and collection context."],
-    "collection_insight": "Explain whether the imported map reinforces an existing strength, fills an underrepresented gap, has comparative/reference value, has low acquisition value due to redundancy, or points toward better future targets.",
-    "higher_value_directions": ["Guarded examples of map types or historical areas that may add more new collection value than this import, if the import is redundant."]
+    "current_strengths": ["Narrative chapters, themes, periods, geographies, or map roles that appear well represented based on the provided context."],
+    "potential_gaps": ["Narrative chapters, transitions, themes, periods, geographies, or map roles that appear underrepresented based on the thesis and collection context."],
+    "collection_insight": "Explain whether the imported map advances the collection story, reinforces an existing chapter, fills a thin chapter, has comparative/reference value, has low acquisition value due to redundancy, or points toward better future targets.",
+    "higher_value_directions": ["Guarded examples of map types or historical areas that may advance the next or thinner chapter more than this import, if the import is redundant."]
   },
   "evidence": [
     "Thesis evidence: Short point showing how the thesis affects the conclusion.",
     "Imported source evidence: Short point showing what in the listing supports the conclusion.",
-    "Collection evidence: Short point naming relevant owned/reference/target/narrative maps where possible.",
-    "Gap evidence: Short point explaining why a strength or possible gap was identified. Do not merely restate metadata."
+    "Collection evidence: Short point naming relevant owned/reference/target/narrative maps or inferred narrative chapter anchors where possible.",
+    "Gap evidence: Short point explaining why a chapter appears strong, thin, reinforced, or advanced. Do not merely restate metadata."
   ]
 }`;
 
