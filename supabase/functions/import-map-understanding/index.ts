@@ -84,6 +84,7 @@ function normalizeUnderstanding(value: any) {
     what_this_map_is: cleanText(value?.what_this_map_is, 900),
     historical_significance: cleanText(value?.historical_significance, 1100),
     collection_relationship: cleanText(value?.collection_relationship, 1200),
+    suggested_action: cleanText(value?.suggested_action, 900),
     evidence,
   };
 }
@@ -123,6 +124,7 @@ Important product principles:
 - Dealer content is source material, not final interpretation.
 - Be provisional and evidence-based.
 - Do not invent certainty. If collection fit is unclear, say so plainly.
+- Relationship to the collection and suggested action are separate concepts. A map can be highly related but low acquisition priority because the collector already owns it or owns a close equivalent.
 
 Architecture distinction:
 Map Intelligence answers what the map is and why it matters historically.
@@ -139,11 +141,12 @@ ${collection.length ? JSON.stringify(collection, null, 2) : "No existing maps pr
 
 Return strict JSON only with this shape:
 {
-  "what_this_map_is": "Plain-language explanation, 2-3 sentences. Not dealer prose.",
+  "what_this_map_is": "Plain-language explanation of the object, 2-3 sentences. Explain what kind of map/object this is, its edition/state/lineage if evident, and its role as an artifact. Do not repeat or lightly paraphrase the title.",
   "historical_significance": "Why this map matters historically, 2-4 concise sentences.",
-  "collection_relationship": "How this may relate to owned maps, reference maps, target maps, thesis, or notes. Mention specific related maps only when supported by the provided context.",
+  "collection_relationship": "How this may relate to owned maps, reference maps, target maps, thesis, or notes. This is about relationship strength and narrative/contextual fit only, not whether to buy it. Mention specific related maps only when supported by the provided context.",
+  "suggested_action": "A provisional next step, distinct from relationship. Examples: retain as reference, compare with owned copy, add notes to existing owned map, watch as acquisition target, or no action. If the collector appears to already own this map or a close equivalent, say that acquisition value may be low even if relationship is high.",
   "evidence": [
-    "Short evidence point connecting the conclusion to imported source text or a named collection map."
+    "Short evidence point supporting the collection_relationship conclusion, using imported source text or a named collection map. Do not merely restate general historical significance."
   ]
 }`;
 

@@ -1741,6 +1741,11 @@ function renderImportUnderstanding(understanding) {
         <h4>Collection Relationship</h4>
         <p>${escapeHomeHtml(understanding.collection_relationship)}</p>
       </div>` : '',
+    understanding?.suggested_action ? `
+      <div class="import-understanding-section">
+        <h4>Suggested Action</h4>
+        <p>${escapeHomeHtml(understanding.suggested_action)}</p>
+      </div>` : '',
     evidence.length ? `
       <div class="import-understanding-section">
         <h4>Evidence</h4>
@@ -1773,6 +1778,7 @@ function formatImportUnderstandingForNotes(understanding = currentImportUndersta
     understanding.what_this_map_is ? `\nWhat This Map Is:\n${understanding.what_this_map_is}` : '',
     understanding.historical_significance ? `\nHistorical Significance:\n${understanding.historical_significance}` : '',
     understanding.collection_relationship ? `\nCollection Relationship:\n${understanding.collection_relationship}` : '',
+    understanding.suggested_action ? `\nSuggested Action:\n${understanding.suggested_action}` : '',
     evidence.length ? `\nEvidence:\n${evidence.map(item => `- ${item}`).join('\n')}` : ''
   ].filter(Boolean).join('\n');
 }
