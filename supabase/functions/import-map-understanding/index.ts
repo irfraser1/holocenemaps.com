@@ -97,6 +97,10 @@ function normalizeUnderstanding(value: any) {
     what_this_map_is: cleanText(value?.what_this_map_is, 900),
     historical_significance: cleanText(value?.historical_significance, 1100),
     likely_narrative_chapter: cleanText(value?.likely_narrative_chapter, 180),
+    collection_role: {
+      role: cleanText(value?.collection_role?.role, 120),
+      reason: cleanText(value?.collection_role?.reason, 700),
+    },
     collection_relationship: cleanText(value?.collection_relationship, 1200),
     suggested_action: cleanText(value?.suggested_action, 900),
     collection_gap_analysis: {
@@ -155,6 +159,8 @@ Important product principles:
 - Use guarded language such as "appears underrepresented", "based on the provided collection context", and "may be a gap if this is central to the thesis." Avoid "your collection lacks", "you need", and "the next acquisition should be."
 - Before writing the response, infer a provisional collection narrative model from the thesis and collection context. Think in story chapters: major historical phases, themes, or transitions anchored by existing maps. Use this inferred model internally; do not present it as permanent collector-approved structure.
 - Reason over whether the imported map belongs to an existing narrative chapter, bridges chapters, fills a thin chapter, or mostly duplicates/reinforces a well-anchored chapter.
+- Assign a collection role that describes what this map does for the collection, not just where it fits. Consider roles such as Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, or Acquisition Target.
+- Do not let chronology dominate. Consider theme, map function, geography, cartographic significance, intellectual lineage, geographic uncertainty, and evolution of geographic knowledge.
 
 Architecture distinction:
 Map Intelligence answers what the map is and why it matters historically.
@@ -174,6 +180,10 @@ Return strict JSON only with this shape:
   "what_this_map_is": "Plain-language explanation of the object, 2-3 sentences. Explain what kind of map/object this is, its edition/state/lineage if evident, and its role as an artifact. Do not repeat or lightly paraphrase the title.",
   "historical_significance": "Why this map matters historically, 2-4 concise sentences.",
   "likely_narrative_chapter": "Optional short guarded chapter label inferred from the collection story, e.g. British Reorganization / Proclamation of 1763. Empty string if unclear.",
+  "collection_role": {
+    "role": "One concise role label: Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, Acquisition Target, or another short role if none fit.",
+    "reason": "Why this role fits. Distinguish relationship from advancement. For example, another owned-anchor example may be Comparative Research or Reinforcement, while a map that opens a new story chapter may be Narrative Advancement or Branch Narrative."
+  },
   "collection_relationship": "How this may relate to the inferred collection narrative, owned maps, reference maps, target maps, thesis, or notes. This is about relationship strength, narrative chapter, and contextual fit only, not whether to buy it. Mention specific related maps only when supported by the provided context.",
   "suggested_action": "A provisional next step, distinct from relationship. Examples: retain as reference, compare with owned copy, add notes to existing owned map, watch as acquisition target, or no action. If the imported map belongs to a well-represented chapter or the collector appears to already own this map or a close equivalent, say acquisition value may be low even if relationship is high.",
   "collection_gap_analysis": {
