@@ -101,7 +101,15 @@ function normalizeUnderstanding(value: any) {
       role: cleanText(value?.collection_role?.role, 120),
       reason: cleanText(value?.collection_role?.reason, 700),
     },
+    map_function: {
+      function: cleanText(value?.map_function?.function, 120),
+      reason: cleanText(value?.map_function?.reason, 600),
+    },
     collection_relationship: cleanText(value?.collection_relationship, 1200),
+    collection_advancement: {
+      level: cleanText(value?.collection_advancement?.level, 80),
+      reason: cleanText(value?.collection_advancement?.reason, 800),
+    },
     suggested_action: cleanText(value?.suggested_action, 900),
     collection_gap_analysis: {
       current_strengths: Array.isArray(gap.current_strengths)
@@ -160,7 +168,13 @@ Important product principles:
 - Before writing the response, infer a provisional collection narrative model from the thesis and collection context. Think in story chapters: major historical phases, themes, or transitions anchored by existing maps. Use this inferred model internally; do not present it as permanent collector-approved structure.
 - Reason over whether the imported map belongs to an existing narrative chapter, bridges chapters, fills a thin chapter, or mostly duplicates/reinforces a well-anchored chapter.
 - Assign a collection role that describes what this map does for the collection, not just where it fits. Consider roles such as Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, or Acquisition Target.
-- Do not let chronology dominate. Consider theme, map function, geography, cartographic significance, intellectual lineage, geographic uncertainty, and evolution of geographic knowledge.
+- Keep relationship and advancement separate. Relationship asks "does this connect strongly to the collection?" Advancement asks "does this move the collection story forward, open a new chapter, fill a thin branch, or mostly reinforce what is already anchored?"
+- Do not infer importance from date alone.
+- Do not treat uniqueness, rarity, or "firsts" as automatic collection advancement.
+- Do not collapse intellectual-history maps into the nearest political chapter.
+- Do not let chronology dominate. Consider political events, geographic knowledge, speculative geography, cartographic controversy, intellectual lineage, map function, geographic diversification, comparison with an owned anchor, and advancement of the observed narrative.
+- Distinguish Core Narrative from Branch Narrative when useful. A map may be deeply valuable as a branch, foundational context, or intellectual lineage object even if it does not advance the core political chronology.
+- Identify map function as a lightweight reasoning output. Consider labels such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Speculative Geography, Propaganda / Claims Map, Reference / Compilation Map, or another concise function label if better supported.
 
 Architecture distinction:
 Map Intelligence answers what the map is and why it matters historically.
@@ -184,7 +198,15 @@ Return strict JSON only with this shape:
     "role": "One concise role label: Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, Acquisition Target, or another short role if none fit.",
     "reason": "Why this role fits. Distinguish relationship from advancement. For example, another owned-anchor example may be Comparative Research or Reinforcement, while a map that opens a new story chapter may be Narrative Advancement or Branch Narrative."
   },
+  "map_function": {
+    "function": "One concise object/function label such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Speculative Geography, Propaganda / Claims Map, Reference / Compilation Map, or another short label if better supported.",
+    "reason": "What the map does as an object. Explain whether its importance comes from boundaries, administration, navigation, settlement, exploration, scientific correction, speculative geography, claims-making, compilation/reference use, or another supported function."
+  },
   "collection_relationship": "How this may relate to the inferred collection narrative, owned maps, reference maps, target maps, thesis, or notes. This is about relationship strength, narrative chapter, and contextual fit only, not whether to buy it. Mention specific related maps only when supported by the provided context.",
+  "collection_advancement": {
+    "level": "Very High, High, Moderate, Low, Very Low, or Unclear.",
+    "reason": "Whether this moves the collection story forward, fills an underrepresented chapter or branch, opens a branch narrative, deepens intellectual lineage, or mostly reinforces/duplicates an existing anchor. Keep this separate from relationship strength."
+  },
   "suggested_action": "A provisional next step, distinct from relationship. Examples: retain as reference, compare with owned copy, add notes to existing owned map, watch as acquisition target, or no action. If the imported map belongs to a well-represented chapter or the collector appears to already own this map or a close equivalent, say acquisition value may be low even if relationship is high.",
   "collection_gap_analysis": {
     "current_strengths": ["Narrative chapters, themes, periods, geographies, or map roles that appear well represented based on the provided context."],
