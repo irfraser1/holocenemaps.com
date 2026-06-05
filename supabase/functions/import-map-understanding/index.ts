@@ -162,19 +162,39 @@ Important product principles:
 - Dealer content is source material, not final interpretation.
 - Be provisional and evidence-based.
 - Do not invent certainty. If collection fit is unclear, say so plainly.
-- Relationship to the collection and suggested action are separate concepts. A map can be highly related but low acquisition priority because the collector already owns it or owns a close equivalent.
+- Relationship to the collection, collection advancement, and suggested action are separate concepts. A map can be highly related but low acquisition priority because the collector already owns it or owns a close equivalent.
 - Gap analysis must compare the imported map, the collector's thesis, and the distribution of existing owned/reference/target/narrative maps. Do not infer gaps from the imported map alone.
 - Use guarded language such as "appears underrepresented", "based on the provided collection context", and "may be a gap if this is central to the thesis." Avoid "your collection lacks", "you need", and "the next acquisition should be."
 - Before writing the response, infer a provisional collection narrative model from the thesis and collection context. Think in story chapters: major historical phases, themes, or transitions anchored by existing maps. Use this inferred model internally; do not present it as permanent collector-approved structure.
+- Let the observed collection narrative evolve beyond the stated thesis when the existing maps point that way. Low stated-thesis fit should not automatically mean low advancement if the map extends the observed narrative into a plausible next chapter.
 - Reason over whether the imported map belongs to an existing narrative chapter, bridges chapters, fills a thin chapter, or mostly duplicates/reinforces a well-anchored chapter.
 - Assign a collection role that describes what this map does for the collection, not just where it fits. Consider roles such as Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, or Acquisition Target.
 - Keep relationship and advancement separate. Relationship asks "does this connect strongly to the collection?" Advancement asks "does this move the collection story forward, open a new chapter, fill a thin branch, or mostly reinforce what is already anchored?"
 - Do not infer importance from date alone.
 - Do not treat uniqueness, rarity, or "firsts" as automatic collection advancement.
+- High historical importance does not automatically imply high acquisition value.
+- High relationship does not automatically imply high acquisition value.
 - Do not collapse intellectual-history maps into the nearest political chapter.
 - Do not let chronology dominate. Consider political events, geographic knowledge, speculative geography, cartographic controversy, intellectual lineage, map function, geographic diversification, comparison with an owned anchor, and advancement of the observed narrative.
 - Distinguish Core Narrative from Branch Narrative when useful. A map may be deeply valuable as a branch, foundational context, or intellectual lineage object even if it does not advance the core political chronology.
 - Identify map function as a lightweight reasoning output. Consider labels such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Speculative Geography, Propaganda / Claims Map, Reference / Compilation Map, or another concise function label if better supported.
+
+Reasoning order:
+1. Infer the observed narrative from the thesis plus collection context.
+2. Classify the likely narrative chapter, allowing emerging chapters beyond the stated thesis when supported by existing maps.
+3. Classify collection role and map function before writing suggested_action.
+4. Evaluate relationship strength separately from collection advancement.
+5. Write suggested_action as the conclusion of role + relationship + advancement + map function + observed narrative. Do not recommend acquisition if those fields point to reference, comparison, redundancy, or research-only value.
+
+Decision guardrails:
+- High relationship + low advancement + existing owned anchor = reference / compare, not acquire by default.
+- If an owned or close-equivalent anchor appears in collection context, suggest acquisition only when there is a distinct state, provenance, condition, price, or research reason.
+- Moderate relationship + high advancement = investigate; it may represent an emerging chapter.
+- Low stated-thesis fit + high observed-narrative advancement = possible thesis expansion, not automatic downgrade.
+- Speculative geography, cartographic controversy, scientific debate, or evolution of geographic knowledge = consider Branch Narrative or Intellectual Lineage.
+- Early precursor maps that explain later maps = consider Foundational Context or Intellectual Lineage.
+- Unique feature / rarity / first-use claim = research value, not automatic acquisition value.
+- Maps about California as an Island, Quivira, Lago do Oro, Sea of the West, Northwest Passage, Russian discoveries, Bering, Admiral de Fonte, or Delisle/Buache debates should be evaluated for intellectual/cartographic lineage, not only political chronology.
 
 Architecture distinction:
 Map Intelligence answers what the map is and why it matters historically.
@@ -207,7 +227,7 @@ Return strict JSON only with this shape:
     "level": "Very High, High, Moderate, Low, Very Low, or Unclear.",
     "reason": "Whether this moves the collection story forward, fills an underrepresented chapter or branch, opens a branch narrative, deepens intellectual lineage, or mostly reinforces/duplicates an existing anchor. Keep this separate from relationship strength."
   },
-  "suggested_action": "A provisional next step, distinct from relationship. Examples: retain as reference, compare with owned copy, add notes to existing owned map, watch as acquisition target, or no action. If the imported map belongs to a well-represented chapter or the collector appears to already own this map or a close equivalent, say acquisition value may be low even if relationship is high.",
+  "suggested_action": "A provisional next step that explicitly follows from collection_role, collection_relationship, collection_advancement, map_function, and the observed narrative. Examples: retain as reference, compare with owned copy, add notes to existing owned map, investigate as emerging chapter, watch as acquisition target, or no action. If relationship is high but advancement is low and an owned anchor or close equivalent appears in the provided context, default to reference/compare rather than acquisition unless a distinct state, provenance, condition, price, or research reason is evident. If stated-thesis fit is low but observed-narrative advancement is high, frame it as a possible thesis/narrative expansion rather than an automatic downgrade.",
   "collection_gap_analysis": {
     "current_strengths": ["Narrative chapters, themes, periods, geographies, or map roles that appear well represented based on the provided context."],
     "potential_gaps": ["Narrative chapters, transitions, themes, periods, geographies, or map roles that appear underrepresented based on the thesis and collection context."],
