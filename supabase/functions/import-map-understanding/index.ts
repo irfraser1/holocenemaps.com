@@ -178,6 +178,7 @@ Important product principles:
 - Do not let chronology dominate. Consider political events, geographic knowledge, speculative geography, cartographic controversy, intellectual lineage, map function, geographic diversification, comparison with an owned anchor, and advancement of the observed narrative.
 - Distinguish Core Narrative from Branch Narrative when useful. A map may be deeply valuable as a branch, foundational context, or intellectual lineage object even if it does not advance the core political chronology.
 - Identify map function as a lightweight reasoning output. Consider labels such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Speculative Geography, Propaganda / Claims Map, Reference / Compilation Map, or another concise function label if better supported.
+- Do not hard-code outcomes by cartographer, publisher, or mapmaker name. Use names only as supporting evidence when the dealer description, title, and collection context support the classification.
 
 Reasoning order:
 1. Infer the observed narrative from the thesis plus collection context.
@@ -195,6 +196,22 @@ Decision guardrails:
 - Early precursor maps that explain later maps = consider Foundational Context or Intellectual Lineage.
 - Unique feature / rarity / first-use claim = research value, not automatic acquisition value.
 - Maps about California as an Island, Quivira, Lago do Oro, Sea of the West, Northwest Passage, Russian discoveries, Bering, Admiral de Fonte, or Delisle/Buache debates should be evaluated for intellectual/cartographic lineage, not only political chronology.
+
+Classification calibration:
+- Preserve the acquisition guardrail: high relationship + low advancement + existing owned anchor should remain reference / compare / do not acquire by default.
+- Do not default to political claims if the description emphasizes speculative geography, cartographic controversy, scientific debate, geographic uncertainty, mapmaking lineage, or evolution of knowledge.
+- If the map matters because it shows how geographic knowledge evolved, strongly consider Intellectual Lineage.
+- If the map opens an adjacent story rather than advancing the core narrative, strongly consider Branch Narrative.
+- If the map explains the intellectual/cartographic background for later maps, strongly consider Foundational Context.
+- If the map depicts imagined, disputed, mythical, or uncertain geography, strongly consider Speculative Geography.
+- If the map corrects, rejects, updates, or disputes earlier geographic models, consider Scientific / Corrective Cartography.
+- If the description emphasizes early geographic worldview, pre-modern geographic assumptions, California as an Island, Quivira, or Lago de Oro, consider Foundational Context / Intellectual Lineage and Speculative Geography / Foundational Reference before Claims Map.
+- If the description emphasizes Sea of the West, Northwest Passage, Russian discoveries, Bering, Admiral de Fonte, Delisle/Buache context, scientific debate, cartographic controversy, or competing geographic theories, consider Branch Narrative / Intellectual Lineage and Speculative Geography / Scientific-Theoretical Cartography before Exploration Map.
+- If the description emphasizes correction or refinement of earlier North Pacific speculative geography, consider Intellectual Lineage / Branch Narrative and Scientific / Corrective Cartography.
+- If the description emphasizes apocryphal geography, De Fonte waterways, cartographic myth, speculative French geographic imagination, or compiled disputed geographic claims, consider Branch Narrative / Intellectual Lineage and Speculative Geography / Reference Compilation.
+- Exploration Map should be reserved for maps whose primary function is documenting exploration routes, discoveries, or geographic reporting, not maps whose primary value is theoretical debate.
+- Claims Map should be reserved for maps whose primary function is territorial or political assertion, not maps whose main value is speculative geography or cartographic worldview.
+- When a map extends the observed collection narrative into a major next chapter, do not cap advancement at Moderate solely because it sits beyond the original thesis. Consider High or Very High advancement when it completes or opens a major transition.
 
 Architecture distinction:
 Map Intelligence answers what the map is and why it matters historically.
@@ -216,11 +233,11 @@ Return strict JSON only with this shape:
   "likely_narrative_chapter": "Optional short guarded chapter label inferred from the collection story, e.g. British Reorganization / Proclamation of 1763. Empty string if unclear.",
   "collection_role": {
     "role": "One concise role label: Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, Acquisition Target, or another short role if none fit.",
-    "reason": "Why this role fits. Distinguish relationship from advancement. For example, another owned-anchor example may be Comparative Research or Reinforcement, while a map that opens a new story chapter may be Narrative Advancement or Branch Narrative."
+    "reason": "Why this role fits based on evidence from the listing and collection context, not cartographer name alone. Distinguish relationship from advancement. For example, another owned-anchor example may be Comparative Research or Reinforcement, a map that opens a new story chapter may be Narrative Advancement or Branch Narrative, and a map that explains earlier geographic thought may be Foundational Context or Intellectual Lineage."
   },
   "map_function": {
-    "function": "One concise object/function label such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Speculative Geography, Propaganda / Claims Map, Reference / Compilation Map, or another short label if better supported.",
-    "reason": "What the map does as an object. Explain whether its importance comes from boundaries, administration, navigation, settlement, exploration, scientific correction, speculative geography, claims-making, compilation/reference use, or another supported function."
+    "function": "One concise object/function label such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Scientific-Theoretical Cartography, Scientific / Corrective Cartography, Speculative Geography, Foundational Reference, Propaganda / Claims Map, Reference / Compilation Map, or another short label if better supported.",
+    "reason": "What the map does as an object. Explain whether its importance comes from boundaries, administration, navigation, settlement, exploration, scientific correction, theoretical debate, speculative geography, claims-making, compilation/reference use, foundational worldview, or another supported function."
   },
   "collection_relationship": "How this may relate to the inferred collection narrative, owned maps, reference maps, target maps, thesis, or notes. This is about relationship strength, narrative chapter, and contextual fit only, not whether to buy it. Mention specific related maps only when supported by the provided context.",
   "collection_advancement": {
