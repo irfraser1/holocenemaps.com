@@ -14,6 +14,7 @@ type ImportedMap = {
   description?: string;
   condition?: string;
   dimensions?: string;
+  raw_import_snapshot?: unknown;
 };
 
 type ContextMap = {
@@ -70,6 +71,211 @@ function compactImportedMap(item: ImportedMap) {
     condition: cleanText(item.condition, 400),
     description: cleanText(item.description, 3000),
   };
+}
+
+function collectSourceStrings(value: unknown, depth = 0): string[] {
+  if (value == null || depth > 3) return [];
+  if (typeof value === "string" || typeof value === "number") {
+    const text = cleanText(value, 3000);
+    return text ? [text] : [];
+  }
+  if (Array.isArray(value)) {
+    return value.slice(0, 12).flatMap((item) => collectSourceStrings(item, depth + 1));
+  }
+  if (typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !/\b(image|url|html|css|script|token|auth)\b/i.test(key))
+      .slice(0, 30)
+      .flatMap(([, nested]) => collectSourceStrings(nested, depth + 1));
+  }
+  return [];
+}
+
+function sourceTextForDistinctiveEvidence(imported: ImportedMap) {
+  const primary = [
+    imported.title,
+    imported.listing_title,
+    imported.cartographer,
+    imported.publication_date,
+    imported.publication_place,
+    imported.dealer,
+    imported.description,
+    imported.condition,
+    imported.dimensions,
+    imported.source_domain,
+  ].map((value) => cleanText(value, 3000)).filter(Boolean);
+
+  const snapshotText = collectSourceStrings(imported.raw_import_snapshot)
+    .filter((text) => !primary.includes(text))
+    .slice(0, 12);
+
+  return [...primary, ...snapshotText].join(" \n ");
+}
+
+function contextSnippet(text: string, index: number, length: number) {
+  const start = Math.max(0, index - 180);
+  const end = Math.min(text.length, index + length + 220);
+  const prefix = start > 0 ? "... " : "";
+  const suffix = end < text.length ? " ..." : "";
+  return cleanText(prefix + text.slice(start, end) + suffix, 520);
+}
+
+function findDistinctiveSnippets(text: string, patterns: RegExp[]) {
+  const snippets: string[] = [];
+  const seen = new Set<string>();
+  for (const pattern of patterns) {
+    const regex = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : pattern.flags + "g");
+    for (const match of text.matchAll(regex)) {
+      if (match.index == null) continue;
+      const snippet = contextSnippet(text, match.index, match[0].length);
+      const key = snippet.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        snippets.push(snippet);
+      }
+      if (snippets.length >= 3) break;
+    }
+    if (snippets.length >= 3) break;
+  }
+  return snippets;
+}
+
+function buildDistinctiveEvidence(inputText: string, importedMetadata: ImportedMap) {
+  const text = cleanText(
+    [
+      inputText,
+      importedMetadata.title,
+      importedMetadata.listing_title,
+      importedMetadata.cartographer,
+      importedMetadata.publication_date,
+      importedMetadata.description,
+      importedMetadata.condition,
+      importedMetadata.dimensions,
+    ].filter(Boolean).join(" \n "),
+    18000,
+  );
+  if (!text) return "";
+
+  const categories: Array<{ label: string; support: string; patterns: RegExp[] }> = [
+    {
+      label: "Foundational / speculative early geography",
+      support: "Supports Foundational Context / Intellectual Lineage and Speculative Geography / Foundational Reference when central.",
+      patterns: [
+        /California as an Island/i,
+        /Island of California/i,
+        /Quivira/i,
+        /Lago d[eo] Oro/i,
+        /Lake of Gold/i,
+        /\bAnian\b/i,
+        /Northwest Passage/i,
+        /speculative geography/i,
+        /mythical geography/i,
+        /imagined geography/i,
+        /pre-scientific geography/i,
+        /early geographic worldview/i,
+        /Sanson(?: geography)?/i,
+        /foundational cartography/i,
+      ],
+    },
+    {
+      label: "Scientific-theoretical / cartographic controversy",
+      support: "Supports Branch Narrative / Intellectual Lineage and Speculative Geography / Scientific-Theoretical Cartography when central.",
+      patterns: [
+        /Sea of the West/i,
+        /Mer de l[’']Ouest/i,
+        /Admiral de Fonte/i,
+        /\bDe Fonte\b/i,
+        /\bFonte\b/i,
+        /\bBuache\b/i,
+        /\bDe(?:\s+|l['’])?L['’]?Isle\b/i,
+        /Northwest Passage/i,
+        /\bBering\b/i,
+        /Russian discoveries/i,
+        /Kamchatka/i,
+        /Tschirikow/i,
+        /Chirikov/i,
+        /scientific debate/i,
+        /cartographic controversy/i,
+        /competing geographic theories/i,
+        /theoretical geography/i,
+        /speculative geography/i,
+      ],
+    },
+    {
+      label: "Corrective cartography",
+      support: "Supports Intellectual Lineage / Branch Narrative and Scientific / Corrective Cartography when the map corrects or refines prior models.",
+      patterns: [
+        /correct(?:ed|ion|ive)?/i,
+        /refutes?/i,
+        /rebuts?/i,
+        /rejects?/i,
+        /updates?/i,
+        /revised/i,
+        /improved/i,
+        /later discoveries/i,
+        /Russian discoveries/i,
+        /Imperial Academy of St\.? Petersburg/i,
+        /M[üu]ller/i,
+        /St[äa]hlin/i,
+        /\bBering\b/i,
+        /Chirikov/i,
+        /Tschirikow/i,
+        /North Pacific/i,
+      ],
+    },
+    {
+      label: "Apocryphal / reference compilation geography",
+      support: "Supports Branch Narrative / Intellectual Lineage and Speculative Geography / Reference Compilation when central.",
+      patterns: [
+        /apocryphal/i,
+        /mythical/i,
+        /imaginary/i,
+        /legendary/i,
+        /Admiral de Fonte/i,
+        /\bDe Fonte\b/i,
+        /Fonte waterways/i,
+        /speculative waterways/i,
+        /reference compilation/i,
+        /public imagination/i,
+        /French public/i,
+        /cartographic myth/i,
+        /\bNolin\b/i,
+      ],
+    },
+    {
+      label: "Post-Revolutionary / diplomatic recognition / treaty settlement",
+      support: "Supports Narrative Advancement / Anchor Candidate and Political Boundary / Treaty Settlement / Diplomatic Recognition / Post-Revolutionary Reference Map when it extends the observed narrative.",
+      patterns: [
+        /Benjamin Franklin/i,
+        /\bFranklin\b/i,
+        /Treaty of Paris/i,
+        /\b1783\b/i,
+        /\b1791\b/i,
+        /United States/i,
+        /[EÉ]tats-Unis/i,
+        /first French map of the United States/i,
+        /French recognition/i,
+        /recognition of the United States/i,
+        /American independence/i,
+        /post-Revolutionary/i,
+        /Revolutionary War/i,
+        /treaty settlement/i,
+        /diplomatic recognition/i,
+        /Mitchell map/i,
+        /John Mitchell/i,
+      ],
+    },
+  ];
+
+  const sections = categories
+    .map((category) => {
+      const snippets = findDistinctiveSnippets(text, category.patterns);
+      if (!snippets.length) return "";
+      return `${category.label}: ${category.support} Evidence snippets: ${snippets.map((snippet) => `"${snippet}"`).join(" | ")}`;
+    })
+    .filter(Boolean);
+
+  return cleanText(sections.join("\n"), 1600);
 }
 
 function parseJsonObject(text: string) {
@@ -137,7 +343,12 @@ serve(async (req: Request) => {
     if (limitResponse) return limitResponse;
 
     const { imported_map, thesis, collection_maps } = await req.json();
-    const imported = compactImportedMap(imported_map || {});
+    const rawImportedMap = (imported_map || {}) as ImportedMap;
+    const imported = compactImportedMap(rawImportedMap);
+    const distinctiveEvidence = buildDistinctiveEvidence(
+      sourceTextForDistinctiveEvidence(rawImportedMap),
+      rawImportedMap,
+    );
     const collection = Array.isArray(collection_maps)
       ? collection_maps.slice(0, 18).map(compactMap)
       : [];
@@ -179,6 +390,7 @@ Important product principles:
 - Distinguish Core Narrative from Branch Narrative when useful. A map may be deeply valuable as a branch, foundational context, or intellectual lineage object even if it does not advance the core political chronology.
 - Identify map function as a lightweight reasoning output. Consider labels such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Speculative Geography, Propaganda / Claims Map, Reference / Compilation Map, or another concise function label if better supported.
 - Do not hard-code outcomes by cartographer, publisher, or mapmaker name. Use names only as supporting evidence when the dealer description, title, and collection context support the classification.
+- Use the distinctive cartographic / narrative evidence block as source evidence when classifying Collection Role, Map Function, Collection Advancement, and Suggested Action. It surfaces snippets from the imported source; it should inform reasoning, not force a conclusion.
 
 Reasoning order:
 1. Infer the observed narrative from the thesis plus collection context.
@@ -219,6 +431,9 @@ Collection Intelligence answers why it may matter to this collector.
 
 Imported map:
 ${JSON.stringify(imported, null, 2)}
+
+Distinctive cartographic / narrative evidence surfaced from source:
+${distinctiveEvidence || "No distinctive cartographic or narrative trigger evidence was surfaced from the imported source text."}
 
 Collector thesis:
 ${cleanText(thesis, 1500) || "No collection thesis provided."}
