@@ -333,6 +333,81 @@ function normalizeUnderstanding(value: any) {
   };
 }
 
+function hasAny(text: string, patterns: RegExp[]) {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function hasDistinctAcquisitionReason(text: string) {
+  const distinctSignals = [
+    /\bdistinct\s+(?:state|edition|issue|provenance|condition|price|perspective|content|variant|copy)\b/i,
+    /\bunique\s+(?:perspective|content|provenance|state|edition|variant|copy)\b/i,
+    /\bmaterially\s+new\s+(?:content|evidence|perspective)\b/i,
+    /\bunusually\s+favo[u]?rable\s+price\b/i,
+    /\bcondition\s+advantage\b/i,
+  ];
+  return hasAny(text, distinctSignals) && !hasAny(text, [
+    /\bunless\s+(?:there\s+is\s+|it\s+has\s+|a\s+)?(?:a\s+)?distinct\b/i,
+    /\bonly\s+if\s+(?:there\s+is\s+|it\s+has\s+|a\s+)?(?:a\s+)?distinct\b/i,
+    /\bif\s+(?:there\s+is\s+|it\s+has\s+|a\s+)?(?:a\s+)?distinct\b/i,
+    /\bno\s+(?:clear\s+)?distinct\b/i,
+  ]);
+}
+
+function normalizeOwnedAnchorRedundancy(value: any) {
+  const text = [
+    value?.likely_narrative_chapter,
+    value?.collection_role?.role,
+    value?.collection_role?.reason,
+    value?.map_function?.function,
+    value?.map_function?.reason,
+    value?.collection_relationship,
+    value?.collection_advancement?.level,
+    value?.collection_advancement?.reason,
+    value?.suggested_action,
+    value?.collection_gap_analysis?.collection_insight,
+    ...(Array.isArray(value?.evidence) ? value.evidence : []),
+  ].map((item) => cleanText(item, 1000)).filter(Boolean).join(" ");
+
+  const ownedAnchor = hasAny(text, [
+    /\bowned\s+(?:anchor|map|copy|example|Gibson|Proclamation)\b/i,
+    /\balready\s+own(?:s|ed)?\b/i,
+    /\bexisting\s+owned\b/i,
+    /\bowned\s+.*\banchor\b/i,
+  ]);
+  const redundantSameMoment = hasAny(text, [
+    /\bsame\s+(?:chapter|event|date|period|policy|historical moment|map family|narrative function|Proclamation|1763)\b/i,
+    /\bduplicates?\b/i,
+    /\bredundan(?:t|cy)\b/i,
+    /\breinforces?\b/i,
+    /\bcomplements?\b/i,
+    /\badds?\s+context\b/i,
+    /\bcompar(?:e|ison|ative)\b/i,
+    /\bclose equivalent\b/i,
+    /\bwell-represented\b/i,
+  ]);
+
+  if (!ownedAnchor || !redundantSameMoment || hasDistinctAcquisitionReason(text)) {
+    return value;
+  }
+
+  return {
+    ...value,
+    collection_role: {
+      role: "Reference Evidence / Reinforcement",
+      reason: cleanText(
+        value?.collection_role?.reason ||
+          "The imported map appears to document or reinforce an already-owned anchor moment rather than opening a new collection chapter.",
+        700,
+      ),
+    },
+    collection_advancement: {
+      level: "Low",
+      reason: "An owned anchor or close equivalent already appears to cover the same chapter, event, policy, map family, or narrative function. Without a distinct state, edition, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content, this should be treated as reinforcement/reference value rather than narrative advancement.",
+    },
+    suggested_action: "Use as reference evidence or compare against the owned anchor; consider attaching useful notes to the existing record. Do not treat as an acquisition candidate by default unless a distinct state, edition, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content is identified.",
+  };
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return optionsResponse();
 
@@ -408,6 +483,16 @@ Decision guardrails:
 - Early precursor maps that explain later maps = consider Foundational Context or Intellectual Lineage.
 - Unique feature / rarity / first-use claim = research value, not automatic acquisition value.
 - Maps about California as an Island, Quivira, Lago do Oro, Sea of the West, Northwest Passage, Russian discoveries, Bering, Admiral de Fonte, or Delisle/Buache debates should be evaluated for intellectual/cartographic lineage, not only political chronology.
+
+Final owned-anchor consistency check:
+- Before writing collection_role, collection_advancement, collection_gap_analysis, and suggested_action, check whether the imported map covers an already-owned anchor's same chapter, event, date/period, policy, historical moment, map family, or narrative function.
+- If it does, and the source does not clearly identify a distinct state, edition, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content, normalize the conclusion to Reference Evidence / Reinforcement, Low or Very Low advancement, and reference/compare/do-not-acquire-by-default.
+- High historical importance must not override redundancy.
+- High relationship must not imply high advancement.
+- Additional context/detail is not enough for High advancement when an owned anchor already covers the same narrative moment.
+- Do not call it an emerging chapter when it covers an already-owned anchor chapter/event.
+- If you want Moderate or High advancement despite an owned anchor, you must explicitly name the distinct non-redundant reason.
+- This owned-anchor redundancy rule does not apply to successor chapters that genuinely extend the observed narrative, such as post-Revolutionary / Treaty Settlement / American Independence material that is not already anchored.
 
 Classification calibration:
 - Preserve the acquisition guardrail: high relationship + low advancement + existing owned anchor should remain reference / compare / do not acquire by default.
@@ -499,7 +584,7 @@ Return strict JSON only with this shape:
 
     const openaiData = await openaiRes.json();
     const raw = openaiData?.choices?.[0]?.message?.content || "";
-    const understanding = normalizeUnderstanding(parseJsonObject(raw));
+    const understanding = normalizeUnderstanding(normalizeOwnedAnchorRedundancy(parseJsonObject(raw)));
 
     return jsonResponse({
       understanding,
