@@ -448,6 +448,33 @@ function hasConcreteOwnedAnchorException(text: string) {
   ]);
 }
 
+function hasMilitaryWarEvidence(text: string) {
+  return hasAny(text, [
+    /\bmilitary(?:[-\s]strategic)?\b/i,
+    /\bMilitary-Strategic Bridge\b/i,
+    /\bWar-Hinge Evidence\b/i,
+    /\bWar Theater\b/i,
+    /\bCampaign(?:\/Theater)?\b/i,
+    /\bCampaign Map\b/i,
+    /\bCampaign \/ Theater Compilation\b/i,
+    /\bBattle Map\b/i,
+    /\bSiege Plan\b/i,
+    /\bFortification Plan\b/i,
+    /\bplans?\b[\s\S]{0,100}\b(?:forts?|towns?|campaign|military|strategic|theater|siege)\b/i,
+    /\bforts?\b/i,
+    /\btowns?\s+and\s+forts?\b/i,
+    /\bstrategic locations?\b/i,
+    /\bwar[-\s]?theater\b/i,
+    /\bcampaign\b/i,
+    /\bbattle\b/i,
+    /\bsiege\b/i,
+    /\btroop movements?\b/i,
+    /\bfortification\b/i,
+    /\bFrench and Indian War outset\b/i,
+    /\bSeven Years'? War military context\b/i,
+  ]);
+}
+
 function normalizeOwnedAnchorRedundancy(value: any) {
   const text = [
     value?.likely_narrative_chapter,
@@ -479,14 +506,23 @@ function normalizeOwnedAnchorRedundancy(value: any) {
     /\bcompar(?:e|ison|ative)\b/i,
     /\bclose equivalent\b/i,
   ]);
-  const sameProclamationAnchor = hasAny(text, [
-    /\b(?:owned|existing|already own(?:s|ed)?)\b[\s\S]{0,240}\b(?:Proclamation|1763|Gibson)\b/i,
-    /\b(?:Proclamation|1763|Gibson)\b[\s\S]{0,240}\b(?:owned|existing|already own(?:s|ed)?)\b/i,
+  const ownedProclamationAnchor = hasAny(text, [
+    /\b(?:owned|existing|already own(?:s|ed)?)\b[\s\S]{0,240}\b(?:Proclamation|Gibson)\b/i,
+    /\b(?:Proclamation|Gibson)\b[\s\S]{0,240}\b(?:owned|existing|already own(?:s|ed)?)\b/i,
+  ]);
+  const sameProclamationPolicy = hasAny(text, [
     /\bsame\s+(?:1763\s+)?Proclamation\s+(?:policy|event|moment|map)\b/i,
     /\bsame\s+(?:policy|historical moment)\b[\s\S]{0,120}\bProclamation\b/i,
+    /\bcovers?\s+(?:the\s+)?same\s+(?:1763\s+)?Proclamation\s+(?:policy|event|moment|map)\b/i,
+    /\b(?:same|owned|existing)\s+Gibson\s+(?:anchor|map|example|copy)\b/i,
   ]);
+  const sameProclamationAnchor = ownedProclamationAnchor && sameProclamationPolicy;
 
   if (!ownedAnchor || !redundantSameMoment) {
+    return value;
+  }
+
+  if (hasMilitaryWarEvidence(text) && !sameProclamationAnchor) {
     return value;
   }
 
@@ -632,6 +668,7 @@ Final owned-anchor consistency check:
 - This owned-anchor redundancy rule does not apply to successor chapters that genuinely extend the observed narrative, such as post-Revolutionary / Treaty Settlement / American Independence material that is not already anchored.
 - This owned-anchor redundancy rule also does not apply merely because the map shares a broad thesis area or chapter with owned maps. Same chapter does not equal redundancy.
 - However, if an owned anchor covers the same 1763 Proclamation policy/event/moment and the candidate does not identify a concrete distinct state, edition, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content, this rule overrides War-Hinge Evidence, Political Argument, Thesis-Supporting Object, or other distinct-looking role/function labels. Normalize to Reference Evidence / Reinforcement, Administrative / Boundary / Proclamation Map, Low advancement, and reference/compare/research-notes value.
+- Military, campaign, fortification, towns-and-forts, war-theater, strategic-location, or plans evidence is a distinct narrative function and should block owned-anchor redundancy normalization unless the candidate also explicitly covers the same 1763 Proclamation policy/map family.
 
 Classification calibration:
 - Preserve the owned-anchor guardrail: high relationship + low advancement + existing owned anchor should remain reference / compare / research-notes value by default.
