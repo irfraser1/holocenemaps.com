@@ -265,6 +265,80 @@ function buildDistinctiveEvidence(inputText: string, importedMetadata: ImportedM
         /John Mitchell/i,
       ],
     },
+    {
+      label: "French and Indian War / Seven Years' War hinge",
+      support: "Supports Narrative Advancement, Military-Strategic Bridge, War-Hinge Evidence, French/British Military Perspective, or Campaign/Theater Evidence when it bridges claims and post-1763 resolution.",
+      patterns: [
+        /French and Indian War/i,
+        /Seven Years'? War/i,
+        /\b175[4-9]\b/i,
+        /\b176[0-3]\b/i,
+        /Braddock/i,
+        /Jefferys/i,
+        /Recueil des Plans/i,
+        /Pouchot/i,
+        /Bellin/i,
+        /Louisbourg/i,
+        /\bQuebec\b/i,
+        /Ticonderoga/i,
+        /Niagara/i,
+        /Frontenac/i,
+        /Montreal/i,
+        /St\.?\s*Lawrence/i,
+        /Lake Ontario/i,
+        /New York[-\s]+Canada/i,
+        /campaign/i,
+        /theater of (?:war|conflict|operations)/i,
+      ],
+    },
+    {
+      label: "Military cartography / war-theater function",
+      support: "Supports Military Cartography, War Theater Map, Campaign Map, Battle Map, Siege Plan, Fortification Plan, Campaign/Theater Compilation, Strategic Regional Map, or War-Context Boundary Map when military geography is central.",
+      patterns: [
+        /battle/i,
+        /campaign/i,
+        /\bforts?\b/i,
+        /troop (?:positions|movements)/i,
+        /siege/i,
+        /fortification/i,
+        /theater of (?:war|conflict|operations)/i,
+        /naval battle/i,
+        /military strateg/i,
+        /expedition/i,
+        /war plans?/i,
+        /army/i,
+        /fleet/i,
+        /Louisbourg/i,
+        /\bQuebec\b/i,
+        /Ticonderoga/i,
+        /Niagara/i,
+        /Frontenac/i,
+        /Montreal/i,
+      ],
+    },
+    {
+      label: "Political argument / imperial counter-claim",
+      support: "Supports Political Argument Map, Imperial Counter-Claim Map, Imperial Polemic, or Counter-Claim / Territorial Dispute Map when the map critiques or rebuts another empire's claims.",
+      patterns: [
+        /political argument/i,
+        /counter-claim/i,
+        /counterclaim/i,
+        /territorial dispute/i,
+        /imperial polemic/i,
+        /criti(?:que|cizes?)/i,
+        /challenges?/i,
+        /disputes?/i,
+        /scrutini[sz]es?/i,
+        /rebuts?/i,
+        /defends? against/i,
+        /claimed by France/i,
+        /British response/i,
+        /English response/i,
+        /French response/i,
+        /defense of English interests/i,
+        /defence of English interests/i,
+      ],
+    },
   ];
 
   const sections = categories
@@ -337,10 +411,17 @@ function hasAny(text: string, patterns: RegExp[]) {
   return patterns.some((pattern) => pattern.test(text));
 }
 
-function hasDistinctAcquisitionReason(text: string) {
+function hasDistinctCollectionContribution(text: string) {
   const distinctSignals = [
     /\bdistinct\s+(?:state|edition|issue|provenance|condition|price|perspective|content|variant|copy)\b/i,
+    /\bdistinct\s+(?:phase|function|scale|format|genre|institutional context|geographic theater|military layer|political argument|map family)\b/i,
     /\bunique\s+(?:perspective|content|provenance|state|edition|variant|copy)\b/i,
+    /\b(?:military|strategic|campaign|war[-\s]?theater|battle|siege|fortification)\b/i,
+    /\b(?:French|British)\s+military\s+perspective\b/i,
+    /\b(?:political argument|counter-claim|counterclaim|imperial polemic|territorial dispute)\b/i,
+    /\b(?:administrative framework|wall[-\s]?map|colonial boundary|institutional context)\b/i,
+    /\b(?:war[-\s]?hinge|French and Indian War|Seven Years'? War)\b/i,
+    /\b(?:successor chapter|post-Revolutionary|Treaty Settlement|American Independence)\b/i,
     /\bmaterially\s+new\s+(?:content|evidence|perspective)\b/i,
     /\bunusually\s+favo[u]?rable\s+price\b/i,
     /\bcondition\s+advantage\b/i,
@@ -375,18 +456,17 @@ function normalizeOwnedAnchorRedundancy(value: any) {
     /\bowned\s+.*\banchor\b/i,
   ]);
   const redundantSameMoment = hasAny(text, [
-    /\bsame\s+(?:chapter|event|date|period|policy|historical moment|map family|narrative function|Proclamation|1763)\b/i,
+    /\bsame\s+(?:event|date|policy|historical moment|map family|narrative function|Proclamation|1763)\b/i,
     /\bduplicates?\b/i,
     /\bredundan(?:t|cy)\b/i,
-    /\breinforces?\b/i,
-    /\bcomplements?\b/i,
-    /\badds?\s+context\b/i,
+    /\breinforces?\s+(?:the\s+)?(?:same|owned|existing)\b/i,
+    /\bcomplements?\s+(?:the\s+)?(?:same|owned|existing)\b/i,
+    /\badds?\s+context\s+to\s+(?:the\s+)?(?:owned|existing|same)\b/i,
     /\bcompar(?:e|ison|ative)\b/i,
     /\bclose equivalent\b/i,
-    /\bwell-represented\b/i,
   ]);
 
-  if (!ownedAnchor || !redundantSameMoment || hasDistinctAcquisitionReason(text)) {
+  if (!ownedAnchor || !redundantSameMoment || hasDistinctCollectionContribution(text)) {
     return value;
   }
 
@@ -402,9 +482,9 @@ function normalizeOwnedAnchorRedundancy(value: any) {
     },
     collection_advancement: {
       level: "Low",
-      reason: "An owned anchor or close equivalent already appears to cover the same chapter, event, policy, map family, or narrative function. Without a distinct state, edition, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content, this should be treated as reinforcement/reference value rather than narrative advancement.",
+      reason: "An owned anchor or close equivalent already appears to cover the same event, policy, historical moment, map family, or narrative function. Without a distinct phase, function, perspective, scale, format, genre, institutional context, geographic theater, military layer, political argument, state/edition significance, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content, this should be treated as reinforcement/reference value rather than narrative advancement.",
     },
-    suggested_action: "Use as reference evidence or compare against the owned anchor; consider attaching useful notes to the existing record. Do not treat as an acquisition candidate by default unless a distinct state, edition, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content is identified.",
+    suggested_action: "Collection judgment: use as reference evidence or compare against the owned anchor; consider attaching useful notes to the existing record. Treat it as redundant with the owned anchor unless a distinct phase, function, perspective, scale, format, genre, institutional context, geographic theater, military layer, political argument, state/edition significance, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content is identified.",
   };
 }
 
@@ -448,13 +528,14 @@ Important product principles:
 - Dealer content is source material, not final interpretation.
 - Be provisional and evidence-based.
 - Do not invent certainty. If collection fit is unclear, say so plainly.
-- Relationship to the collection, collection advancement, and suggested action are separate concepts. A map can be highly related but low acquisition priority because the collector already owns it or owns a close equivalent.
+- Relationship to the collection, collection advancement, and collection judgment are separate concepts. A map can be highly related but still function mainly as reference, comparison, benchmark, bridge, branch, or redundancy evidence.
+- Treat suggested_action as Collection Judgment, not buy/acquire advice. Avoid crude purchase language such as buy, acquire, do not acquire, acquisition candidate, or purchase recommendation. Prefer collection-use language such as thesis-central, thesis-supporting, branch-forming, military bridge object, reference/comparison object, redundant with owned anchor, benchmark object, outside current thesis, useful for research notes, or possible future direction if the collection thesis expands.
 - Gap analysis must compare the imported map, the collector's thesis, and the distribution of existing owned/reference/target/narrative maps. Do not infer gaps from the imported map alone.
 - Use guarded language such as "appears underrepresented", "based on the provided collection context", and "may be a gap if this is central to the thesis." Avoid "your collection lacks", "you need", and "the next acquisition should be."
 - Before writing the response, infer a provisional collection narrative model from the thesis and collection context. Think in story chapters: major historical phases, themes, or transitions anchored by existing maps. Use this inferred model internally; do not present it as permanent collector-approved structure.
 - Let the observed collection narrative evolve beyond the stated thesis when the existing maps point that way. Low stated-thesis fit should not automatically mean low advancement if the map extends the observed narrative into a plausible next chapter.
 - Reason over whether the imported map belongs to an existing narrative chapter, bridges chapters, fills a thin chapter, or mostly duplicates/reinforces a well-anchored chapter.
-- Assign a collection role that describes what this map does for the collection, not just where it fits. Consider roles such as Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, or Acquisition Target.
+- Assign a collection role that describes what this map does for the collection, not just where it fits. Consider roles such as Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, War-Hinge Evidence, Military-Strategic Bridge, Campaign/Theater Evidence, French Military Perspective, British Military Perspective, Political Argument, Imperial Counter-Claim, Benchmark Object, or Thesis-Supporting Object.
 - Keep relationship and advancement separate. Relationship asks "does this connect strongly to the collection?" Advancement asks "does this move the collection story forward, open a new chapter, fill a thin branch, or mostly reinforce what is already anchored?"
 - Do not infer importance from date alone.
 - Do not treat uniqueness, rarity, or "firsts" as automatic collection advancement.
@@ -463,7 +544,7 @@ Important product principles:
 - Do not collapse intellectual-history maps into the nearest political chapter.
 - Do not let chronology dominate. Consider political events, geographic knowledge, speculative geography, cartographic controversy, intellectual lineage, map function, geographic diversification, comparison with an owned anchor, and advancement of the observed narrative.
 - Distinguish Core Narrative from Branch Narrative when useful. A map may be deeply valuable as a branch, foundational context, or intellectual lineage object even if it does not advance the core political chronology.
-- Identify map function as a lightweight reasoning output. Consider labels such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Speculative Geography, Propaganda / Claims Map, Reference / Compilation Map, or another concise function label if better supported.
+- Identify map function as a lightweight reasoning output. Consider labels such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Speculative Geography, Propaganda / Claims Map, Political Argument / Counter-Claim Map, Military Cartography, War Theater Map, Campaign Map, Battle Map, Siege Plan, Fortification Plan, Campaign / Theater Compilation, Strategic Regional Map, War-Context Boundary Map, Reference / Compilation Map, or another concise function label if better supported.
 - Do not hard-code outcomes by cartographer, publisher, or mapmaker name. Use names only as supporting evidence when the dealer description, title, and collection context support the classification.
 - Use the distinctive cartographic / narrative evidence block as source evidence when classifying Collection Role, Map Function, Collection Advancement, and Suggested Action. It surfaces snippets from the imported source; it should inform reasoning, not force a conclusion.
 
@@ -472,30 +553,49 @@ Reasoning order:
 2. Classify the likely narrative chapter, allowing emerging chapters beyond the stated thesis when supported by existing maps.
 3. Classify collection role and map function before writing suggested_action.
 4. Evaluate relationship strength separately from collection advancement.
-5. Write suggested_action as the conclusion of role + relationship + advancement + map function + observed narrative. Do not recommend acquisition if those fields point to reference, comparison, redundancy, or research-only value.
+5. Write suggested_action as Collection Judgment: the conclusion of role + relationship + advancement + map function + observed narrative. Say what the map does for the collection thesis. Do not frame it as purchase advice.
 
 Decision guardrails:
-- High relationship + low advancement + existing owned anchor = reference / compare, not acquire by default.
-- If an owned or close-equivalent anchor appears in collection context, suggest acquisition only when there is a distinct state, provenance, condition, price, or research reason.
+- High relationship + low advancement + existing owned anchor = reference / compare / research-notes value by default.
+- If an owned or close-equivalent anchor appears in collection context, frame the judgment around collection use unless there is a distinct state, provenance, condition, price, research, or materially new collection reason.
 - Moderate relationship + high advancement = investigate; it may represent an emerging chapter.
 - Low stated-thesis fit + high observed-narrative advancement = possible thesis expansion, not automatic downgrade.
 - Speculative geography, cartographic controversy, scientific debate, or evolution of geographic knowledge = consider Branch Narrative or Intellectual Lineage.
 - Early precursor maps that explain later maps = consider Foundational Context or Intellectual Lineage.
 - Unique feature / rarity / first-use claim = research value, not automatic acquisition value.
 - Maps about California as an Island, Quivira, Lago do Oro, Sea of the West, Northwest Passage, Russian discoveries, Bering, Admiral de Fonte, or Delisle/Buache debates should be evaluated for intellectual/cartographic lineage, not only political chronology.
+- Same broad thesis area or same chapter does not equal redundancy. Do not cap advancement as Low when the candidate has a distinct phase, function, perspective, scale, format, genre, institutional context, geographic theater, military layer, political argument, map family, state/edition significance, or other materially distinct collection work.
+- High historical importance should not automatically mean high advancement, but broad chapter overlap should not automatically mean Low advancement.
+
+French and Indian War / Seven Years' War crisis, 1754-1763:
+- Recognize this as a military and strategic hinge between imperial claims and post-1763 British resolution.
+- Maps from this phase should not automatically be generic Act II claims maps or Act III British-resolution reference maps.
+- If source evidence mentions Braddock, Jefferys, Recueil des Plans, Pouchot, Bellin, Louisbourg, Quebec, Ticonderoga, Niagara, Frontenac, Montreal, St. Lawrence, Lake Ontario, New York-Canada theater, campaigns, expeditions, battles, sieges, forts, or war theaters, consider War-Hinge Evidence, Military-Strategic Bridge, Campaign/Theater Evidence, French Military Perspective, or British Military Perspective.
+- Advancement may be Moderate or High when the map fills the war-hinge layer between claims and resolution, even if owned maps exist elsewhere in the broad thesis.
+
+Military cartography:
+- If source evidence mentions battles, campaigns, forts, troop positions, troop movements, sieges, theaters of conflict, naval battles, military strategy, expeditions, or war plans, do not default to Claims Map or Exploration Map.
+- Exploration Map should not be used for military campaigns simply because routes or movements are shown.
+- Claims Map should not be used when the dominant function is battle/campaign/war-theater geography.
+
+Political argument / counter-claim maps:
+- If source evidence says the map critiques, challenges, disputes, scrutinizes, rebuts, or defends against another empire's claims, do not classify it only as Claims Map.
+- Prefer Political Argument / Counter-Claim Map, Imperial Counter-Claim, Imperial Polemic, British response to French claims, French response to British claims, or Counter-Claim / Territorial Dispute Map when supported.
+- These maps may be strong thesis bridge objects because they show how one imperial power interpreted another's claims.
 
 Final owned-anchor consistency check:
 - Before writing collection_role, collection_advancement, collection_gap_analysis, and suggested_action, check whether the imported map covers an already-owned anchor's same chapter, event, date/period, policy, historical moment, map family, or narrative function.
-- If it does, and the source does not clearly identify a distinct state, edition, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content, normalize the conclusion to Reference Evidence / Reinforcement, Low or Very Low advancement, and reference/compare/do-not-acquire-by-default.
+- If it does, and the source does not clearly identify a distinct state, edition, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content, normalize the conclusion to Reference Evidence / Reinforcement, Low or Very Low advancement, and reference/compare/research-notes value by default.
 - High historical importance must not override redundancy.
 - High relationship must not imply high advancement.
 - Additional context/detail is not enough for High advancement when an owned anchor already covers the same narrative moment.
 - Do not call it an emerging chapter when it covers an already-owned anchor chapter/event.
-- If you want Moderate or High advancement despite an owned anchor, you must explicitly name the distinct non-redundant reason.
+- If you want Moderate or High advancement despite an owned anchor, you must explicitly name the distinct non-redundant phase, function, perspective, scale, format, genre, institutional context, geographic theater, military layer, political argument, map family, state/edition significance, or other materially distinct collection reason.
 - This owned-anchor redundancy rule does not apply to successor chapters that genuinely extend the observed narrative, such as post-Revolutionary / Treaty Settlement / American Independence material that is not already anchored.
+- This owned-anchor redundancy rule also does not apply merely because the map shares a broad thesis area or chapter with owned maps. Same chapter does not equal redundancy.
 
 Classification calibration:
-- Preserve the acquisition guardrail: high relationship + low advancement + existing owned anchor should remain reference / compare / do not acquire by default.
+- Preserve the owned-anchor guardrail: high relationship + low advancement + existing owned anchor should remain reference / compare / research-notes value by default.
 - Do not default to political claims if the description emphasizes speculative geography, cartographic controversy, scientific debate, geographic uncertainty, mapmaking lineage, or evolution of knowledge.
 - If the map matters because it shows how geographic knowledge evolved, strongly consider Intellectual Lineage.
 - If the map opens an adjacent story rather than advancing the core narrative, strongly consider Branch Narrative.
@@ -532,19 +632,19 @@ Return strict JSON only with this shape:
   "historical_significance": "Why this map matters historically, 2-4 concise sentences.",
   "likely_narrative_chapter": "Optional short guarded chapter label inferred from the collection story, e.g. British Reorganization / Proclamation of 1763. Empty string if unclear.",
   "collection_role": {
-    "role": "One concise role label: Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, Acquisition Target, or another short role if none fit.",
-    "reason": "Why this role fits based on evidence from the listing and collection context, not cartographer name alone. Distinguish relationship from advancement. For example, another owned-anchor example may be Comparative Research or Reinforcement, a map that opens a new story chapter may be Narrative Advancement or Branch Narrative, and a map that explains earlier geographic thought may be Foundational Context or Intellectual Lineage."
+    "role": "One concise role label: Reinforcement, Comparative Research, Narrative Advancement, Branch Narrative, Foundational Context, Intellectual Lineage, Geographic Diversification, Reference Evidence, War-Hinge Evidence, Military-Strategic Bridge, Campaign/Theater Evidence, French Military Perspective, British Military Perspective, Political Argument, Imperial Counter-Claim, Benchmark Object, Thesis-Supporting Object, or another short role if none fit.",
+    "reason": "Why this role fits based on evidence from the listing and collection context, not cartographer name alone. Distinguish relationship from advancement. For example, another owned-anchor example may be Comparative Research or Reinforcement, a map that opens a new story chapter may be Narrative Advancement or Branch Narrative, a war-era theater map may be Military-Strategic Bridge or Campaign/Theater Evidence, and a map that explains earlier geographic thought may be Foundational Context or Intellectual Lineage."
   },
   "map_function": {
-    "function": "One concise object/function label such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Scientific-Theoretical Cartography, Scientific / Corrective Cartography, Speculative Geography, Foundational Reference, Propaganda / Claims Map, Reference / Compilation Map, or another short label if better supported.",
-    "reason": "What the map does as an object. Explain whether its importance comes from boundaries, administration, navigation, settlement, exploration, scientific correction, theoretical debate, speculative geography, claims-making, compilation/reference use, foundational worldview, or another supported function."
+    "function": "One concise object/function label such as Boundary Map, Administrative Map, Maritime Chart, Commercial Geography, Settlement Geography, Exploration Map, Scientific / Survey Map, Scientific-Theoretical Cartography, Scientific / Corrective Cartography, Speculative Geography, Foundational Reference, Political Argument / Counter-Claim Map, Propaganda / Claims Map, Military Cartography, War Theater Map, Campaign Map, Battle Map, Siege Plan, Fortification Plan, Campaign / Theater Compilation, Strategic Regional Map, War-Context Boundary Map, Reference / Compilation Map, or another short label if better supported.",
+    "reason": "What the map does as an object. Explain whether its importance comes from boundaries, administration, navigation, settlement, exploration, scientific correction, theoretical debate, speculative geography, claims-making, counter-claim/political argument, military theater/campaign/siege geography, compilation/reference use, foundational worldview, or another supported function."
   },
-  "collection_relationship": "How this may relate to the inferred collection narrative, owned maps, reference maps, target maps, thesis, or notes. This is about relationship strength, narrative chapter, and contextual fit only, not whether to buy it. Mention specific related maps only when supported by the provided context.",
+  "collection_relationship": "How this may relate to the inferred collection narrative, owned maps, reference maps, target maps, thesis, or notes. This is about relationship strength, narrative chapter, and contextual fit only, not collection judgment. Mention specific related maps only when supported by the provided context.",
   "collection_advancement": {
     "level": "Very High, High, Moderate, Low, Very Low, or Unclear.",
     "reason": "Whether this moves the collection story forward, fills an underrepresented chapter or branch, opens a branch narrative, deepens intellectual lineage, or mostly reinforces/duplicates an existing anchor. Keep this separate from relationship strength."
   },
-  "suggested_action": "A provisional next step that explicitly follows from collection_role, collection_relationship, collection_advancement, map_function, and the observed narrative. Examples: retain as reference, compare with owned copy, add notes to existing owned map, investigate as emerging chapter, watch as acquisition target, or no action. If relationship is high but advancement is low and an owned anchor or close equivalent appears in the provided context, default to reference/compare rather than acquisition unless a distinct state, provenance, condition, price, or research reason is evident. If stated-thesis fit is low but observed-narrative advancement is high, frame it as a possible thesis/narrative expansion rather than an automatic downgrade.",
+  "suggested_action": "Collection Judgment: a provisional judgment that explicitly follows from collection_role, collection_relationship, collection_advancement, map_function, and the observed narrative. Say what the map does for the collection thesis using collection-use language, not purchase advice. Examples: thesis-central bridge object, thesis-supporting reference, branch-forming object, military bridge object, reference/comparison object, benchmark object, redundant with owned anchor, outside current thesis, useful for research notes, or possible future direction if the thesis expands. If relationship is high but advancement is low and an owned anchor or close equivalent appears in the provided context, frame it as reference/compare/research-notes value unless a distinct phase, function, perspective, scale, format, genre, institutional context, geographic theater, military layer, political argument, map family, state/edition significance, unique perspective, or materially new content is evident.",
   "collection_gap_analysis": {
     "current_strengths": ["Narrative chapters, themes, periods, geographies, or map roles that appear well represented based on the provided context."],
     "potential_gaps": ["Narrative chapters, transitions, themes, periods, geographies, or map roles that appear underrepresented based on the thesis and collection context."],
