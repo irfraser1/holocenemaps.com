@@ -475,6 +475,17 @@ function hasMilitaryWarEvidence(text: string) {
   ]);
 }
 
+function isProclamationAdministrativeMap(text: string) {
+  return hasAny(text, [
+    /\bProclamation of 1763\b/i,
+    /\b1763\s+Proclamation\b/i,
+    /\bpost-war\s+British\s+administrative\b/i,
+    /\bBritish\s+administrative\s+(?:map|boundary|policy|geography)\b/i,
+    /\badministrative\s+(?:map|boundary|policy|geography)\b[\s\S]{0,140}\bProclamation\b/i,
+    /\bProclamation\b[\s\S]{0,140}\badministrative\s+(?:map|boundary|policy|geography)\b/i,
+  ]);
+}
+
 function normalizeOwnedAnchorRedundancy(value: any) {
   const text = [
     value?.likely_narrative_chapter,
@@ -507,16 +518,18 @@ function normalizeOwnedAnchorRedundancy(value: any) {
     /\bclose equivalent\b/i,
   ]);
   const ownedProclamationAnchor = hasAny(text, [
-    /\b(?:owned|existing|already own(?:s|ed)?)\b[\s\S]{0,240}\b(?:Proclamation|Gibson)\b/i,
-    /\b(?:Proclamation|Gibson)\b[\s\S]{0,240}\b(?:owned|existing|already own(?:s|ed)?)\b/i,
+    /\b(?:owned|existing|already own(?:s|ed)?)\b[\s\S]{0,320}\b(?:Proclamation|Gibson|1763)\b/i,
+    /\b(?:Proclamation|Gibson|1763)\b[\s\S]{0,320}\b(?:owned|existing|already own(?:s|ed)?)\b/i,
   ]);
   const sameProclamationPolicy = hasAny(text, [
     /\bsame\s+(?:1763\s+)?Proclamation\s+(?:policy|event|moment|map)\b/i,
     /\bsame\s+(?:policy|historical moment)\b[\s\S]{0,120}\bProclamation\b/i,
     /\bcovers?\s+(?:the\s+)?same\s+(?:1763\s+)?Proclamation\s+(?:policy|event|moment|map)\b/i,
     /\b(?:same|owned|existing)\s+Gibson\s+(?:anchor|map|example|copy)\b/i,
+    /\b(?:owned|existing)\s+(?:1763\s+)?Proclamation\s+anchor\b[\s\S]{0,200}\b(?:same|policy|event|moment)\b/i,
+    /\b(?:same|policy|event|moment)\b[\s\S]{0,200}\b(?:owned|existing)\s+(?:1763\s+)?Proclamation\s+anchor\b/i,
   ]);
-  const sameProclamationAnchor = ownedProclamationAnchor && sameProclamationPolicy;
+  const sameProclamationAnchor = ownedProclamationAnchor && (sameProclamationPolicy || isProclamationAdministrativeMap(text));
 
   if (!ownedAnchor || !redundantSameMoment) {
     return value;
@@ -538,19 +551,11 @@ function normalizeOwnedAnchorRedundancy(value: any) {
     ...value,
     collection_role: {
       role: "Reference Evidence / Reinforcement",
-      reason: cleanText(
-        value?.collection_role?.reason ||
-          "The imported map appears to document or reinforce an already-owned anchor moment rather than opening a new collection chapter.",
-        700,
-      ),
+      reason: "The imported map appears to document or reinforce an already-owned 1763 Proclamation anchor moment rather than opening a new collection chapter. Because the same policy/event/moment is already anchored, its collection role is reference and comparison evidence.",
     },
     map_function: {
       function: "Administrative / Boundary / Proclamation Map",
-      reason: cleanText(
-        value?.map_function?.reason ||
-          "The imported map's collection function is administrative/proclamation boundary evidence rather than a military hinge or political counter-claim object.",
-        600,
-      ),
+      reason: "The imported map's function is administrative/proclamation boundary evidence. French and Indian War aftermath or transition-to-governance language does not by itself make a post-war Proclamation map War-Hinge Evidence.",
     },
     collection_advancement: {
       level: "Low",
@@ -645,6 +650,7 @@ French and Indian War / Seven Years' War crisis, 1754-1763:
 - If source evidence mentions Braddock, Jefferys, Recueil des Plans, Pouchot, Bellin, Louisbourg, Quebec, Ticonderoga, Niagara, Frontenac, Montreal, St. Lawrence, Lake Ontario, New York-Canada theater, campaigns, expeditions, battles, sieges, forts, or war theaters, consider War-Hinge Evidence, Military-Strategic Bridge, Campaign/Theater Evidence, French Military Perspective, or British Military Perspective.
 - Advancement may be Moderate or High when the map fills the war-hinge layer between claims and resolution, even if owned maps exist elsewhere in the broad thesis.
 - War-Hinge Evidence applies primarily to conflict, campaign, theater, siege, fortification, expedition, or war-context maps. Do not use War-Hinge Evidence for post-war administrative or proclamation maps merely because they describe the aftermath of the French and Indian War.
+- If the map is a Proclamation of 1763 / post-war British administrative boundary map and an owned 1763 Proclamation/Gibson anchor already covers the same policy/event/moment, treat it as Reference Evidence / Reinforcement with Low advancement unless concrete distinct state, edition, provenance, condition, unique content, or similar evidence is named.
 
 Military cartography:
 - If source evidence mentions battles, campaigns, forts, troop positions, troop movements, sieges, theaters of conflict, naval battles, military strategy, expeditions, or war plans, do not default to Claims Map or Exploration Map.
