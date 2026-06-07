@@ -271,8 +271,6 @@ function buildDistinctiveEvidence(inputText: string, importedMetadata: ImportedM
       patterns: [
         /French and Indian War/i,
         /Seven Years'? War/i,
-        /\b175[4-9]\b/i,
-        /\b176[0-3]\b/i,
         /Braddock/i,
         /Jefferys/i,
         /Recueil des Plans/i,
@@ -434,6 +432,22 @@ function hasDistinctCollectionContribution(text: string) {
   ]);
 }
 
+function hasConcreteOwnedAnchorException(text: string) {
+  const concreteSignals = [
+    /\bdistinct\s+(?:state|edition|issue|provenance|condition|price|perspective|content|variant|copy)\b/i,
+    /\bunique\s+(?:perspective|content|provenance|state|edition|variant|copy)\b/i,
+    /\bmaterially\s+new\s+(?:content|evidence|perspective)\b/i,
+    /\bunusually\s+favo[u]?rable\s+price\b/i,
+    /\bcondition\s+advantage\b/i,
+  ];
+  return hasAny(text, concreteSignals) && !hasAny(text, [
+    /\bunless\s+(?:there\s+is\s+|it\s+has\s+|a\s+)?(?:a\s+)?distinct\b/i,
+    /\bonly\s+if\s+(?:there\s+is\s+|it\s+has\s+|a\s+)?(?:a\s+)?distinct\b/i,
+    /\bif\s+(?:there\s+is\s+|it\s+has\s+|a\s+)?(?:a\s+)?distinct\b/i,
+    /\bno\s+(?:clear\s+)?distinct\b/i,
+  ]);
+}
+
 function normalizeOwnedAnchorRedundancy(value: any) {
   const text = [
     value?.likely_narrative_chapter,
@@ -465,8 +479,22 @@ function normalizeOwnedAnchorRedundancy(value: any) {
     /\bcompar(?:e|ison|ative)\b/i,
     /\bclose equivalent\b/i,
   ]);
+  const sameProclamationAnchor = hasAny(text, [
+    /\b(?:owned|existing|already own(?:s|ed)?)\b[\s\S]{0,240}\b(?:Proclamation|1763|Gibson)\b/i,
+    /\b(?:Proclamation|1763|Gibson)\b[\s\S]{0,240}\b(?:owned|existing|already own(?:s|ed)?)\b/i,
+    /\bsame\s+(?:1763\s+)?Proclamation\s+(?:policy|event|moment|map)\b/i,
+    /\bsame\s+(?:policy|historical moment)\b[\s\S]{0,120}\bProclamation\b/i,
+  ]);
 
-  if (!ownedAnchor || !redundantSameMoment || hasDistinctCollectionContribution(text)) {
+  if (!ownedAnchor || !redundantSameMoment) {
+    return value;
+  }
+
+  if (!sameProclamationAnchor && hasDistinctCollectionContribution(text)) {
+    return value;
+  }
+
+  if (sameProclamationAnchor && hasConcreteOwnedAnchorException(text)) {
     return value;
   }
 
@@ -478,6 +506,14 @@ function normalizeOwnedAnchorRedundancy(value: any) {
         value?.collection_role?.reason ||
           "The imported map appears to document or reinforce an already-owned anchor moment rather than opening a new collection chapter.",
         700,
+      ),
+    },
+    map_function: {
+      function: "Administrative / Boundary / Proclamation Map",
+      reason: cleanText(
+        value?.map_function?.reason ||
+          "The imported map's collection function is administrative/proclamation boundary evidence rather than a military hinge or political counter-claim object.",
+        600,
       ),
     },
     collection_advancement: {
@@ -572,6 +608,7 @@ French and Indian War / Seven Years' War crisis, 1754-1763:
 - Maps from this phase should not automatically be generic Act II claims maps or Act III British-resolution reference maps.
 - If source evidence mentions Braddock, Jefferys, Recueil des Plans, Pouchot, Bellin, Louisbourg, Quebec, Ticonderoga, Niagara, Frontenac, Montreal, St. Lawrence, Lake Ontario, New York-Canada theater, campaigns, expeditions, battles, sieges, forts, or war theaters, consider War-Hinge Evidence, Military-Strategic Bridge, Campaign/Theater Evidence, French Military Perspective, or British Military Perspective.
 - Advancement may be Moderate or High when the map fills the war-hinge layer between claims and resolution, even if owned maps exist elsewhere in the broad thesis.
+- War-Hinge Evidence applies primarily to conflict, campaign, theater, siege, fortification, expedition, or war-context maps. Do not use War-Hinge Evidence for post-war administrative or proclamation maps merely because they describe the aftermath of the French and Indian War.
 
 Military cartography:
 - If source evidence mentions battles, campaigns, forts, troop positions, troop movements, sieges, theaters of conflict, naval battles, military strategy, expeditions, or war plans, do not default to Claims Map or Exploration Map.
@@ -582,6 +619,7 @@ Political argument / counter-claim maps:
 - If source evidence says the map critiques, challenges, disputes, scrutinizes, rebuts, or defends against another empire's claims, do not classify it only as Claims Map.
 - Prefer Political Argument / Counter-Claim Map, Imperial Counter-Claim, Imperial Polemic, British response to French claims, French response to British claims, or Counter-Claim / Territorial Dispute Map when supported.
 - These maps may be strong thesis bridge objects because they show how one imperial power interpreted another's claims.
+- Political Argument / Counter-Claim Map requires explicit source evidence of critique, rebuttal, polemic, competing claim argument, or challenge to another empire's claims. Do not use it merely because a map shows boundaries, governments, proclamation lines, or imperial policy.
 
 Final owned-anchor consistency check:
 - Before writing collection_role, collection_advancement, collection_gap_analysis, and suggested_action, check whether the imported map covers an already-owned anchor's same chapter, event, date/period, policy, historical moment, map family, or narrative function.
@@ -593,6 +631,7 @@ Final owned-anchor consistency check:
 - If you want Moderate or High advancement despite an owned anchor, you must explicitly name the distinct non-redundant phase, function, perspective, scale, format, genre, institutional context, geographic theater, military layer, political argument, map family, state/edition significance, or other materially distinct collection reason.
 - This owned-anchor redundancy rule does not apply to successor chapters that genuinely extend the observed narrative, such as post-Revolutionary / Treaty Settlement / American Independence material that is not already anchored.
 - This owned-anchor redundancy rule also does not apply merely because the map shares a broad thesis area or chapter with owned maps. Same chapter does not equal redundancy.
+- However, if an owned anchor covers the same 1763 Proclamation policy/event/moment and the candidate does not identify a concrete distinct state, edition, provenance, condition advantage, unusually favorable price, unique perspective, or materially new content, this rule overrides War-Hinge Evidence, Political Argument, Thesis-Supporting Object, or other distinct-looking role/function labels. Normalize to Reference Evidence / Reinforcement, Administrative / Boundary / Proclamation Map, Low advancement, and reference/compare/research-notes value.
 
 Classification calibration:
 - Preserve the owned-anchor guardrail: high relationship + low advancement + existing owned anchor should remain reference / compare / research-notes value by default.
